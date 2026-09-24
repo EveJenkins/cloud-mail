@@ -120,9 +120,9 @@
                     </span>
                     <span class="email-content">{{ item.listText || item.text || '\u200B' }}</span>
                   </div>
-                  <div class="row-tags" v-if="props.showInboxSummary && (mailCategory(item) || item.code || item.attList?.length)">
+                  <div class="row-tags" v-if="props.showInboxSummary && (mailCategory(item) || extractVerificationCode(item) || item.attList?.length)">
                     <span class="mail-badge category" v-if="mailCategory(item)">{{ mailCategory(item) }}</span>
-                    <span class="mail-badge code" v-if="item.code"><Icon icon="solar:check-circle-bold" width="11" />{{ settingStore.lang === 'zh' ? '含验证码' : 'Code detected' }}</span>
+                    <span class="mail-badge code" v-if="extractVerificationCode(item)"><Icon icon="solar:check-circle-bold" width="11" />{{ settingStore.lang === 'zh' ? '含验证码' : 'Code detected' }}</span>
                     <span class="mail-badge" v-if="item.attList?.length"><Icon icon="solar:paperclip-linear" width="12" />{{ item.attList.length }} {{ settingStore.lang === 'zh' ? '附件' : 'attachments' }}</span>
                   </div>
                   <div class="user-info" v-if="showUserInfo">
@@ -394,12 +394,28 @@ function avatarGradient(value = '') {
   return `linear-gradient(135deg, ${from}, ${to})`
 }
 
+function extractVerificationCode(item = {}) {
+  const serverCode = String(item.code || '').trim()
+  if (serverCode) return serverCode
+
+  const source = `${item.subject || ''} ${item.listText || ''} ${item.text || ''} ${item.content || ''}`
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;|&#160;/gi, ' ')
+      .replace(/\s+/g, ' ')
+  if (!/(验证码|校验码|动态码|一次性密码|otp|verification\s*code|security\s*code|authentication\s*code)/i.test(source)) return ''
+
+  const labelled = source.match(/(?:验证码|校验码|动态码|一次性密码|otp|verification\s*code|security\s*code|authentication\s*code)[^A-Z0-9]{0,20}([A-Z0-9]{4,8})/i)
+  return labelled?.[1] || source.match(/\b\d{4,8}\b/)?.[0] || ''
+}
+
 function mailCategory(item = {}) {
   const source = `${item.subject || ''} ${item.listText || ''} ${item.text || ''}`.toLowerCase()
-  if (item.code) return settingStore.lang === 'zh' ? '系统' : 'System'
+  if (extractVerificationCode(item)) return settingStore.lang === 'zh' ? '系统' : 'System'
   if (/(报价|询价|quotation|quote|rfq)/i.test(source)) return settingStore.lang === 'zh' ? '供应商报价' : 'Supplier quote'
   if (/(运单|物流|清关|提单|装箱单|快递|shipment|tracking|customs|dhl|fedex|ups)/i.test(source)) return settingStore.lang === 'zh' ? '物流单据' : 'Logistics'
-  if (/(询盘|采购|需求|inquiry|enquiry|request for)/i.test(source)) return settingStore.lang === 'zh' ? '客户询盘' : 'Customer inquiry'
+  if (/(询盘|采购|需求|我(?:要|想要|需要)|有(?:现)?货(?:吗|么)?|有没有货|能否提供|是否有货|多少钱|价格|inquiry|enquiry|request for|\bneed\b|\bwant\b|looking for|do you have|can you supply|availability|in stock)/i.test(source)) return settingStore.lang === 'zh' ? '客户询盘' : 'Customer inquiry'
   if (/(已送达|送达通知|delivered|delivery notice)/i.test(source)) return settingStore.lang === 'zh' ? '发送通知' : 'Delivery notice'
   return ''
 }

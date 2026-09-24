@@ -265,7 +265,7 @@ const emailCategory = computed(() => {
   if (detectedCode.value) return settingStore.lang === 'zh' ? '系统' : 'System'
   if (/(报价|询价|quotation|quote|rfq)/i.test(source)) return settingStore.lang === 'zh' ? '供应商报价' : 'Supplier quote'
   if (/(运单|物流|清关|提单|装箱单|快递|shipment|tracking|customs|dhl|fedex|ups)/i.test(source)) return settingStore.lang === 'zh' ? '物流单据' : 'Logistics'
-  if (/(询盘|采购|需求|inquiry|enquiry|request for)/i.test(source)) return settingStore.lang === 'zh' ? '客户询盘' : 'Customer inquiry'
+  if (/(询盘|采购|需求|我(?:要|想要|需要)|有(?:现)?货(?:吗|么)?|有没有货|能否提供|是否有货|多少钱|价格|inquiry|enquiry|request for|\bneed\b|\bwant\b|looking for|do you have|can you supply|availability|in stock)/i.test(source)) return settingStore.lang === 'zh' ? '客户询盘' : 'Customer inquiry'
   if (/(已送达|送达通知|delivered|delivery notice)/i.test(source)) return settingStore.lang === 'zh' ? '发送通知' : 'Delivery notice'
   return ''
 })
