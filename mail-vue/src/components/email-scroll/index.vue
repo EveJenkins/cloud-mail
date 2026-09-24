@@ -1,5 +1,5 @@
 <template>
-  <div class="email-container">
+  <div class="email-container" :class="{ 'has-summary': props.showInboxSummary }">
     <div class="header-actions">
       <el-checkbox
           v-model="checkAll"
@@ -1294,6 +1294,7 @@ function loadData() {
     background-color: #c2dbff;
   }*/
 }
+.email-container.has-summary { grid-template-rows: auto auto 1fr; }
 
 .inbox-summary {
   display: flex;
