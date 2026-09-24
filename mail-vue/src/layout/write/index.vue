@@ -153,6 +153,7 @@ import {ElMessageBox} from "element-plus";
 defineExpose({
   open,
   openReply,
+  openReplyWithContent,
   openForward,
   openDraft
 })
@@ -634,6 +635,35 @@ function close() {
     }
   })
 
+}
+
+function openReplyWithContent(email, replyText = '') {
+  resetForm();
+  email.subject = email.subject || ''
+  form.receiveEmail.push(email.sendEmail)
+  form.subject = /^(Re:|Re：|回复：|回复:)/i.test(email.subject) ? email.subject : 'Re: ' + email.subject
+  form.sendType = 'reply'
+  form.emailId = email.emailId
+  defValue.value = ''
+
+  const safeText = String(replyText)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
+      .replaceAll('\n', '<br>')
+
+  setTimeout(() => {
+    defValue.value = `<div>${safeText}</div><div><br></div><div>${formatDetailDate(email.createTime)} ${email.name || ''} &lt;${email.sendEmail}&gt; ${t('wrote')}:</div><blockquote class="mceNonEditable" style="margin:0 0 0 .8ex;border-left:1px solid #ccc;padding-left:1ex;">${formatImage(email.content) || `<pre style="font-family:inherit;word-break:break-word;white-space:pre-wrap;margin:0">${email.text || ''}</pre>`}</blockquote>`
+    open()
+    nextTick(() => {
+      backReply.content = editor.value.getContent()
+      backReply.subject = form.subject
+      backReply.receiveEmail = [...form.receiveEmail]
+      backReply.sendType = form.sendType
+    })
+  })
 }
 
 async function saveDraftNow() {

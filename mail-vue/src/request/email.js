@@ -24,3 +24,7 @@ export function emailSend(form,progress) {
         noMsg: true
     })
 }
+
+export function emailAiReply(emailId, tone, language, variant = false) {
+    return http.post('/email/aiReply', {emailId, tone, language, variant}, {noMsg: true, timeout: 45 * 1000})
+}

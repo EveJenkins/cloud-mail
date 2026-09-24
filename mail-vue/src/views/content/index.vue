@@ -104,26 +104,55 @@
         </div>
         <section class="quick-reply" v-if="emailStore.contentData.showReply" v-perm="'email:send'">
           <div class="quick-reply-heading">
-            <div>
-              <Icon icon="solar:reply-linear" width="18" height="18"/>
-              <strong>{{ settingStore.lang === 'zh' ? '快速回复' : 'Quick reply' }}</strong>
+            <div class="ai-reply-title">
+              <span class="ai-mark"><Icon icon="solar:magic-stick-3-linear" width="18" height="18"/></span>
+              <div>
+                <strong>Workers AI {{ settingStore.lang === 'zh' ? '智能回复' : 'Smart reply' }}</strong>
+                <small>{{ settingStore.lang === 'zh' ? '根据邮件上下文生成，可在发送前自由修改' : 'Context-aware draft, fully editable before sending' }}</small>
+              </div>
             </div>
-            <span>{{ settingStore.lang === 'zh' ? `回复给 ${email.name || email.sendEmail}` : `Reply to ${email.name || email.sendEmail}` }}</span>
+            <span class="reply-recipient">{{ settingStore.lang === 'zh' ? `回复给 ${email.name || email.sendEmail}` : `Reply to ${email.name || email.sendEmail}` }}</span>
+          </div>
+          <div class="ai-controls">
+            <div class="tone-options">
+              <span class="control-label">{{ settingStore.lang === 'zh' ? '语气' : 'Tone' }}</span>
+              <button v-for="item in toneOptions" :key="item.value" type="button" :class="{ active: aiTone === item.value }" @click="aiTone = item.value">{{ item.label }}</button>
+            </div>
+            <label class="language-control">
+              <span>{{ settingStore.lang === 'zh' ? '语言' : 'Language' }}</span>
+              <select v-model="aiLanguage">
+                <option value="auto">{{ settingStore.lang === 'zh' ? '自动识别' : 'Auto' }}</option>
+                <option value="zh">简体中文</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+            <button class="ai-generate" type="button" :disabled="aiGenerating" @click="generateAiReply(false)">
+              <Icon :icon="aiGenerating ? 'svg-spinners:ring-resize' : 'solar:stars-minimalistic-bold'" width="16" height="16"/>
+              {{ aiGenerating ? (settingStore.lang === 'zh' ? '正在起草…' : 'Drafting…') : (quickReply ? (settingStore.lang === 'zh' ? '重新起草' : 'Regenerate') : (settingStore.lang === 'zh' ? '起草回复' : 'Draft reply')) }}
+            </button>
+          </div>
+          <div class="ai-insight" v-if="aiCategory || aiSummary">
+            <span v-if="aiCategory">{{ aiCategory }}</span>
+            <p v-if="aiSummary">{{ aiSummary }}</p>
           </div>
           <div class="quick-reply-editor" :class="{ focused: quickReplyFocused }">
             <textarea
                 v-model="quickReply"
-                :placeholder="settingStore.lang === 'zh' ? '输入回复内容，Ctrl / ⌘ + Enter 发送…' : 'Write a reply, Ctrl / ⌘ + Enter to send…'"
-                rows="3"
+                :placeholder="settingStore.lang === 'zh' ? '点击“起草回复”交给 Workers AI，或直接输入回复内容…' : 'Let Workers AI draft a reply, or write your own…'"
+                rows="5"
                 @focus="quickReplyFocused = true"
                 @blur="quickReplyFocused = false"
                 @keydown.ctrl.enter.prevent="sendQuickReply"
                 @keydown.meta.enter.prevent="sendQuickReply"
             ></textarea>
             <div class="quick-reply-footer">
-              <button class="reply-tool" type="button" @click="openReply">
+              <button class="reply-tool" type="button" @click="openReplyWithDraft">
                 <Icon icon="solar:pen-new-square-linear" width="17" height="17"/>
-                <span>{{ settingStore.lang === 'zh' ? '完整编辑' : 'Full editor' }}</span>
+                <span>{{ settingStore.lang === 'zh' ? '在写信页打开' : 'Open in composer' }}</span>
+              </button>
+              <button v-if="quickReply" class="reply-tool" type="button" :disabled="aiGenerating" @click="generateAiReply(true)">
+                <Icon icon="solar:refresh-linear" width="16" height="16"/>
+                <span>{{ settingStore.lang === 'zh' ? '换一版' : 'Another version' }}</span>
               </button>
               <span class="reply-shortcut">Ctrl / ⌘ + Enter</span>
               <button class="quick-send" type="button" :disabled="quickSending || !quickReply.trim()" @click="sendQuickReply">
@@ -148,7 +177,7 @@ import ShadowHtml from '@/components/shadow-html/index.vue'
 import {computed, reactive, ref, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox, ElNotification} from 'element-plus'
-import {emailDelete, emailRead, emailSend} from "@/request/email.js";
+import {emailAiReply, emailDelete, emailRead, emailSend} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
@@ -191,6 +220,14 @@ const srcList = reactive([])
 const quickReply = ref('')
 const quickReplyFocused = ref(false)
 const quickSending = ref(false)
+const aiGenerating = ref(false)
+const aiTone = ref('formal')
+const aiLanguage = ref('auto')
+const aiCategory = ref('')
+const aiSummary = ref('')
+const toneOptions = computed(() => settingStore.lang === 'zh'
+    ? [{value: 'formal', label: '正式'}, {value: 'brief', label: '简洁'}, {value: 'friendly', label: '友好'}]
+    : [{value: 'formal', label: 'Formal'}, {value: 'brief', label: 'Brief'}, {value: 'friendly', label: 'Friendly'}])
 const telegramEnabled = computed(() => settingStore.settings?.tgBotStatus === 0)
 const senderInitials = computed(() => {
   const value = String(email.value.name || email.value.sendEmail || 'M').replace(/@.*/, '').trim()
@@ -214,6 +251,10 @@ watch(() => accountStore.currentAccountId, () => {
 watch(() => email.value?.emailId, () => {
   quickReply.value = ''
   quickReplyFocused.value = false
+  aiCategory.value = ''
+  aiSummary.value = ''
+  aiTone.value = 'formal'
+  aiLanguage.value = 'auto'
 })
 
 let readRequesting = false
@@ -273,6 +314,35 @@ function handleKeyDown(event) {
 
 function openReply() {
   uiStore.writerRef.openReply(email.value)
+}
+
+function openReplyWithDraft() {
+  if (quickReply.value.trim()) {
+    uiStore.writerRef.openReplyWithContent(email.value, quickReply.value.trim())
+  } else {
+    openReply()
+  }
+}
+
+async function generateAiReply(variant = false) {
+  if (aiGenerating.value) return
+  aiGenerating.value = true
+  try {
+    const data = await emailAiReply(email.value.emailId, aiTone.value, aiLanguage.value, variant)
+    quickReply.value = data?.draft || ''
+    aiCategory.value = data?.category || ''
+    aiSummary.value = data?.summary || ''
+    if (!quickReply.value) throw new Error(settingStore.lang === 'zh' ? '未生成有效回复' : 'No reply was generated')
+  } catch (error) {
+    ElNotification({
+      title: settingStore.lang === 'zh' ? '智能起草暂不可用' : 'Smart drafting unavailable',
+      type: 'warning',
+      message: settingStore.lang === 'zh' ? '你仍可在下方直接输入并发送回复。' : 'You can still write and send a reply below.',
+      position: 'bottom-right',
+    })
+  } finally {
+    aiGenerating.value = false
+  }
 }
 
 function openForward() {
@@ -504,10 +574,11 @@ const handleDelete = () => {
 
   .quick-reply {
     margin-top: 16px;
-    padding: 14px;
+    padding: 16px;
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
-    background: var(--surface-2);
+    background: linear-gradient(150deg, var(--surface), color-mix(in srgb, var(--brand-soft) 42%, var(--surface)));
+    box-shadow: var(--sh-1);
   }
 
   .quick-reply-heading {
@@ -517,9 +588,24 @@ const handleDelete = () => {
     justify-content: space-between;
     gap: 12px;
   }
-  .quick-reply-heading > div { display: flex; align-items: center; gap: 7px; color: var(--text); }
+  .quick-reply-heading > div { display: flex; align-items: center; gap: 9px; color: var(--text); }
   .quick-reply-heading strong { font-size: 13.5px; }
   .quick-reply-heading > span { overflow: hidden; color: var(--text-3); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
+  .ai-reply-title small { display: block; margin-top: 2px; color: var(--text-3); font-size: 11.5px; font-weight: 400; }
+  .ai-mark { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--brand-500), #0ea5e9); border-radius: 10px; box-shadow: 0 6px 16px color-mix(in srgb, var(--brand-500) 24%, transparent); }
+  .ai-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 10px; }
+  .tone-options { display: flex; align-items: center; gap: 5px; }
+  .control-label, .language-control > span { color: var(--text-3); font-size: 11.5px; }
+  .tone-options button, .ai-generate { border: 0; font: inherit; cursor: pointer; }
+  .tone-options button { height: 30px; padding: 0 10px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-size: 11.5px; }
+  .tone-options button.active { color: var(--brand-700); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 44%, var(--border)); font-weight: 700; }
+  .language-control { display: flex; align-items: center; gap: 6px; }
+  .language-control select { height: 30px; padding: 0 27px 0 9px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; outline: 0; font: inherit; font-size: 11.5px; }
+  .ai-generate { min-height: 32px; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; color: #fff; background: linear-gradient(135deg, var(--brand-600), #0b8f79); border-radius: 8px; font-size: 12px; font-weight: 700; box-shadow: 0 6px 14px color-mix(in srgb, var(--brand-600) 20%, transparent); }
+  .ai-generate:disabled { cursor: wait; opacity: .65; }
+  .ai-insight { display: flex; align-items: center; gap: 8px; margin: -1px 0 10px; color: var(--text-2); }
+  .ai-insight span { flex: 0 0 auto; padding: 3px 7px; color: var(--brand-700); background: var(--brand-soft); border-radius: 999px; font-size: 10.5px; font-weight: 700; }
+  .ai-insight p { margin: 0; overflow: hidden; font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
 
   .quick-reply-editor {
     overflow: hidden;
@@ -534,7 +620,7 @@ const handleDelete = () => {
   }
   .quick-reply-editor textarea {
     width: 100%;
-    min-height: 82px;
+    min-height: 116px;
     display: block;
     resize: vertical;
     padding: 13px 14px 8px;
@@ -808,7 +894,12 @@ const handleDelete = () => {
   .container .content .email-info .sender-secondary { white-space: normal; }
   .container .quick-reply { padding: 10px; border-radius: var(--r-md); }
   .container .quick-reply-heading > span,
+  .container .ai-reply-title small,
   .container .reply-shortcut { display: none; }
+  .container .ai-controls { align-items: stretch; }
+  .container .tone-options { width: 100%; }
+  .container .ai-generate { margin-left: auto; }
+  .container .reply-tool span { display: none; }
   .container .quick-reply-footer { gap: 7px; }
   .container .quick-send { margin-left: auto; }
 }
