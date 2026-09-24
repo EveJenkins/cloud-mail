@@ -16,6 +16,7 @@
         <div class="email-title">
           {{ email.subject }}
         </div>
+        <div class="message-card">
         <div class="code-card" v-if="email.code">
           <div class="code-insight">
             <span class="code-icon"><Icon icon="solar:clock-circle-linear" width="19" height="19" /></span>
@@ -73,6 +74,29 @@
               </div>
             </div>
           </div>
+          <div class="delivery-trace">
+            <div class="trace-heading">
+              <Icon icon="solar:route-linear" width="17" height="17"/>
+              <strong>{{ settingStore.lang === 'zh' ? '邮件处理轨迹' : 'Message processing path' }}</strong>
+            </div>
+            <div class="trace-item">
+              <span class="trace-dot success"></span>
+              <span>{{ settingStore.lang === 'zh' ? '邮件已由 Cloudflare Email Routing 接收' : 'Accepted by Cloudflare Email Routing' }}</span>
+            </div>
+            <div class="trace-item" v-if="email.code">
+              <span class="trace-dot success"></span>
+              <span>{{ settingStore.lang === 'zh' ? 'Workers AI 已识别验证码' : 'Verification code detected by Workers AI' }}</span>
+            </div>
+            <div class="trace-item" v-if="email.attList?.length">
+              <span class="trace-dot success"></span>
+              <span>{{ settingStore.lang === 'zh' ? `附件已存储至 R2（${email.attList.length} 个）` : `Attachments stored in R2 (${email.attList.length})` }}</span>
+            </div>
+            <div class="trace-item" v-if="telegramEnabled">
+              <span class="trace-dot brand"></span>
+              <span>{{ settingStore.lang === 'zh' ? 'Telegram 推送通道已启用' : 'Telegram push channel enabled' }}</span>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </el-scrollbar>
@@ -127,6 +151,7 @@ const email = computed(() => emailStore.contentData.email || {
 })
 const showPreview = ref(false)
 const srcList = reactive([])
+const telegramEnabled = computed(() => settingStore.settings?.tgBotStatus === 0)
 
 const { t } = useI18n()
 watch(() => accountStore.currentAccountId, () => {
@@ -345,6 +370,15 @@ const handleDelete = () => {
     margin-bottom: 16px;
   }
 
+  .message-card {
+    overflow: hidden;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    box-shadow: var(--sh-1);
+  }
+
   .code-card {
     margin-bottom: 18px;
     padding: 14px 16px;
@@ -356,6 +390,20 @@ const handleDelete = () => {
     border-radius: var(--r-md);
     background: linear-gradient(135deg, color-mix(in srgb, var(--success) 10%, transparent), var(--brand-soft));
   }
+
+  .delivery-trace {
+    margin-top: 20px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    color: var(--text-2);
+    background: var(--surface-2);
+  }
+  .trace-heading { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--text); font-size: 13.5px; }
+  .trace-item { display: flex; align-items: center; gap: 9px; min-height: 27px; font-size: 12.5px; }
+  .trace-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; }
+  .trace-dot.success { background: var(--success); }
+  .trace-dot.brand { background: var(--brand-500); }
   .code-insight { display: flex; align-items: center; gap: 10px; }
   .code-insight strong, .code-insight span { display: block; }
   .code-insight strong { color: var(--success); font-size: 12px; }

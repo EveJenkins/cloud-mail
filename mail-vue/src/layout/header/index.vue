@@ -2,12 +2,16 @@
   <div class="header" :class="!hasPerm('email:send') ? 'not-send' : ''">
     <div class="header-btn">
       <hanburger @click="changeAside"></hanburger>
-      <span class="breadcrumb-item">{{ $t(route.meta.title) }}</span>
     </div>
-    <div v-perm="'email:send'" class="writer-box" @click="openSend">
-      <div class="writer">
-        <Icon icon="material-symbols:edit-outline-sharp" width="22" height="22"/>
-      </div>
+    <div class="global-search">
+      <Icon class="search-icon" icon="solar:magnifer-linear" width="18" height="18"/>
+      <input
+          ref="searchRef"
+          v-model="searchQuery"
+          :placeholder="settingStore.lang === 'zh' ? '搜索邮件、发件人、主题、验证码…' : 'Search mail, sender, subject or code…'"
+          aria-label="Global search"
+      />
+      <kbd>Ctrl K</kbd>
     </div>
     <div class="toolbar">
       <div v-if="uiStore.dark" class="sun-icon icon-item" @click="openDark($event)">
@@ -80,7 +84,7 @@ import {Icon} from "@iconify/vue";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
 import {useRoute} from "vue-router";
-import {computed, ref} from "vue";
+import {computed, onMounted, onUnmounted, ref} from "vue";
 import {useSettingStore} from "@/store/setting.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
@@ -94,6 +98,17 @@ const uiStore = useUiStore();
 const logoutLoading = ref(false)
 const userInfoShow = ref(false)
 const userinfoRef = ref({})
+const searchRef = ref(null)
+const searchQuery = ref('')
+
+function handleGlobalSearchShortcut(event) {
+  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
+  event.preventDefault()
+  searchRef.value?.focus()
+}
+
+onMounted(() => window.addEventListener('keydown', handleGlobalSearchShortcut))
+onUnmounted(() => window.removeEventListener('keydown', handleGlobalSearchShortcut))
 
 const accountCount = computed(() => {
   return userStore.user.role.accountCount
@@ -361,12 +376,45 @@ function formatName(email) {
   display: grid;
   height: 100%;
   gap: 14px;
-  grid-template-columns: auto auto 1fr;
-  padding: 0 10px;
+  grid-template-columns: auto minmax(240px, 560px) 1fr;
+  padding: 0 12px;
 }
 
 .header.not-send {
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(240px, 560px) 1fr;
+}
+
+.global-search {
+  width: 100%;
+  height: 36px;
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .search-icon { position: absolute; left: 11px; color: var(--text-3); pointer-events: none; }
+  input {
+    width: 100%;
+    height: 36px;
+    padding: 0 64px 0 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    outline: none;
+    color: var(--text);
+    background: var(--surface-2);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  input:focus { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+  input::placeholder { color: var(--text-3); }
+  kbd {
+    position: absolute;
+    right: 8px;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-3);
+    background: var(--surface-3);
+    font: 11px/1.35 inherit;
+  }
 }
 
 .writer-box {
@@ -403,6 +451,14 @@ function formatName(email) {
   min-width: 0;
 }
 
+@media (max-width: 767px) {
+  .header { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 6px; padding: 0 8px; }
+  .header.not-send { grid-template-columns: 38px minmax(0, 1fr) auto; }
+  .global-search { height: 36px; }
+  .global-search input { padding-right: 10px; font-size: 12.5px; }
+  .global-search kbd { display: none; }
+}
+
 .breadcrumb-item {
   font-weight: 650;
   font-size: 15px;
@@ -417,7 +473,7 @@ function formatName(email) {
   justify-content: end;
   gap: 15px;
   @media (max-width: 767px) {
-    gap: 10px;
+    gap: 2px;
   }
 
   .icon-item {
@@ -474,6 +530,11 @@ function formatName(email) {
       margin-right: 10px;
       bottom: 10px;
     }
+  }
+
+  @media (max-width: 767px) {
+    .notice { margin-right: 0; }
+    .avatar .setting-icon { display: none; }
   }
 
 }

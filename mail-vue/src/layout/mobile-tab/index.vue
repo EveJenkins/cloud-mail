@@ -12,6 +12,9 @@
     <button v-if="hasPerm('analysis:query')" :class="{ active: route.meta.name === 'analysis' }" @click="go('analysis')">
       <Icon icon="fluent:data-pie-20-regular" /><span>{{ $t('analytics') }}</span>
     </button>
+    <button v-else v-perm="'email:send'" :class="{ active: route.meta.name === 'send' }" @click="go('send')">
+      <Icon icon="solar:plain-2-linear" /><span>{{ $t('sent') }}</span>
+    </button>
     <button :class="{ active: route.meta.name === 'setting' }" @click="go('setting')">
       <Icon icon="fluent:settings-48-regular" /><span>{{ $t('settings') }}</span>
     </button>

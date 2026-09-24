@@ -11,8 +11,9 @@
                :time-sort="params.timeSort"
                :email-read="emailRead"
                :show-unread="true"
+               :show-inbox-summary="true"
                :selected-id="selectedEmailId"
-               :row-height="isDesktop ? 104 : 0"
+               :row-height="isDesktop ? 104 : (isPhone ? 108 : 0)"
                actionLeft="4px"
                @jump="jumpContent"
   >
@@ -63,10 +64,12 @@ const params = reactive({
   timeSort: 0,
 })
 const isDesktop = ref(window.innerWidth >= 1280)
+const isPhone = ref(window.innerWidth < 768)
 const selectedEmailId = ref(null)
 
 const handleViewport = () => {
   isDesktop.value = window.innerWidth >= 1280
+  isPhone.value = window.innerWidth < 768
 }
 
 onMounted(() => {
@@ -213,6 +216,12 @@ function getEmailList(emailId, size) {
 .with-preview .mail-list-pane :deep(.email-row .email-right) { display: none; }
 .with-preview .mail-list-pane :deep(.email-row.right-checked),
 .with-preview .mail-list-pane :deep(.email-row:hover) { box-shadow: inset 3px 0 0 var(--brand-600); }
+
+@media (max-width: 767px) {
+  .mail-list-pane :deep(.email-row) { min-height: 108px; padding: 12px 12px 12px 8px; align-items: flex-start; }
+  .mail-list-pane :deep(.email-row .sender-avatar) { margin-top: 1px; }
+  .mail-list-pane :deep(.email-row .title) { min-width: 0; padding-right: 0; }
+}
 
 .icon {
   cursor: pointer;

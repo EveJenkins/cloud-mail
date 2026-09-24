@@ -27,6 +27,13 @@
       </div>
     </div>
 
+    <div class="inbox-summary" v-if="props.showInboxSummary">
+      <span class="summary-chip active">{{ settingStore.lang === 'zh' ? '全部' : 'All' }} {{ total }}</span>
+      <span class="summary-chip">{{ settingStore.lang === 'zh' ? '未读' : 'Unread' }} {{ unreadCount }}</span>
+      <span class="summary-chip">{{ settingStore.lang === 'zh' ? '含附件' : 'Attachments' }} {{ attachmentCount }}</span>
+      <span class="summary-chip">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }} {{ codeCount }}</span>
+    </div>
+
     <div ref="scroll" class="scroll">
       <UseVirtualList ref="scrollbarRef"
                         @scroll="onScroll"
@@ -308,6 +315,10 @@ const props = defineProps({
   rowHeight: {
     type: Number,
     default: 0
+  },
+  showInboxSummary: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -425,6 +436,9 @@ const { arrivedState } = useScroll(scrollbarRef, {
 const list = computed(() => {
   return [...emailList, ...expandList]
 })
+const unreadCount = computed(() => emailList.filter(item => item.unread === EmailUnreadEnum.UNREAD).length)
+const attachmentCount = computed(() => emailList.filter(item => item.attList?.length > 0).length)
+const codeCount = computed(() => emailList.filter(item => item.code).length)
 
 const itemHeight = computed(() => {
     if (props.rowHeight > 0) return props.rowHeight;
@@ -1280,6 +1294,29 @@ function loadData() {
     background-color: #c2dbff;
   }*/
 }
+
+.inbox-summary {
+  display: flex;
+  gap: 6px;
+  padding: 9px 12px 10px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  scrollbar-width: none;
+}
+.inbox-summary::-webkit-scrollbar { display: none; }
+.summary-chip {
+  flex: 0 0 auto;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--text-3);
+  background: var(--surface-3);
+  font-size: 11.5px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.summary-chip.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 650; }
 
 :deep(.sender-avatar) {
   width: 36px;
