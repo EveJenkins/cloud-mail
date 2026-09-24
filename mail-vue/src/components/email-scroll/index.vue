@@ -65,15 +65,15 @@
                  :key="item.emailId"
                  @contextmenu="handleContextmenu($event, item)"
             >
-              <el-checkbox :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
+              <el-checkbox v-if="!props.showInboxSummary" :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
                            v-model="item.checked"
                            :disabled="!item.checked && isSelectMax"
                            @click.stop></el-checkbox>
-              <div @click.stop="starChange(item)" class="pc-star" v-if="showStar">
+              <div @click.stop="starChange(item)" class="pc-star" v-if="showStar && !props.showInboxSummary">
                 <Icon v-if="item.isStar" icon="fluent-color:star-16" width="20" height="20"/>
                 <Icon v-else icon="solar:star-line-duotone" width="18" height="18"/>
               </div>
-              <div v-if="!showStar"></div>
+              <div v-if="!showStar && !props.showInboxSummary"></div>
               <div class="sender-avatar" :style="{ background: avatarGradient(item.name || item.sendEmail) }">
                 {{ senderInitials(item.name || item.sendEmail) }}
               </div>
@@ -100,13 +100,16 @@
                       <Icon v-if="item.isStar" icon="fluent-color:star-16" width="18" height="18"/>
                     </span>
                   </span>
+                  <button v-if="props.showInboxSummary && showStar" class="summary-star" type="button" :title="$t('star')" @click.stop="starChange(item)">
+                    <Icon :icon="item.isStar ? 'fluent-color:star-16' : 'solar:star-line-duotone'" width="15" height="15"/>
+                  </button>
                   <span class="phone-time">{{ item.formatCreateTime }}</span>
                 </div>
                 <div>
                   <div class="email-text">
                     <span class="email-subject" :style="(item.unread === EmailUnreadEnum.UNREAD && showUnread)  ? 'font-weight: bold' : ''">
                       <div class="unread" v-if="!isMobile && (item.unread === EmailUnreadEnum.UNREAD && showUnread) "/>
-                      <span v-if="item.code" class="code-tag" @click.stop="copyCode(item.code)">
+                      <span v-if="item.code && !props.showInboxSummary" class="code-tag" @click.stop="copyCode(item.code)">
                         <Icon icon="solar:check-circle-bold" width="12" height="12" />{{ t('codeLabel') }} {{ item.code }}
                       </span>
                       <span class="subject-text">
@@ -117,8 +120,9 @@
                     </span>
                     <span class="email-content">{{ item.listText || item.text || '\u200B' }}</span>
                   </div>
-                  <div class="row-tags" v-if="props.showInboxSummary && (item.code || item.attList?.length)">
-                    <span class="mail-badge code" v-if="item.code"><Icon icon="solar:check-circle-bold" width="11" />{{ settingStore.lang === 'zh' ? '验证码已识别' : 'Code detected' }}</span>
+                  <div class="row-tags" v-if="props.showInboxSummary && (mailCategory(item) || item.code || item.attList?.length)">
+                    <span class="mail-badge category" v-if="mailCategory(item)">{{ mailCategory(item) }}</span>
+                    <span class="mail-badge code" v-if="item.code"><Icon icon="solar:check-circle-bold" width="11" />{{ settingStore.lang === 'zh' ? '含验证码' : 'Code detected' }}</span>
                     <span class="mail-badge" v-if="item.attList?.length"><Icon icon="solar:paperclip-linear" width="12" />{{ item.attList.length }} {{ settingStore.lang === 'zh' ? '附件' : 'attachments' }}</span>
                   </div>
                   <div class="user-info" v-if="showUserInfo">
@@ -388,6 +392,16 @@ function avatarGradient(value = '') {
   const score = Array.from(String(value)).reduce((sum, char) => sum + char.charCodeAt(0), 0)
   const [from, to] = palettes[score % palettes.length]
   return `linear-gradient(135deg, ${from}, ${to})`
+}
+
+function mailCategory(item = {}) {
+  const source = `${item.subject || ''} ${item.listText || ''} ${item.text || ''}`.toLowerCase()
+  if (item.code) return settingStore.lang === 'zh' ? '系统' : 'System'
+  if (/(报价|询价|quotation|quote|rfq)/i.test(source)) return settingStore.lang === 'zh' ? '供应商报价' : 'Supplier quote'
+  if (/(运单|物流|清关|提单|装箱单|快递|shipment|tracking|customs|dhl|fedex|ups)/i.test(source)) return settingStore.lang === 'zh' ? '物流单据' : 'Logistics'
+  if (/(询盘|采购|需求|inquiry|enquiry|request for)/i.test(source)) return settingStore.lang === 'zh' ? '客户询盘' : 'Customer inquiry'
+  if (/(已送达|送达通知|delivered|delivery notice)/i.test(source)) return settingStore.lang === 'zh' ? '发送通知' : 'Delivery notice'
+  return ''
 }
 const position = ref(
     DOMRect.fromRect({
@@ -1387,6 +1401,27 @@ function loadData() {
 :deep(.row-tags) { min-height: 20px; margin-top: 7px; display: flex; align-items: center; gap: 6px; overflow: hidden; }
 :deep(.mail-badge) { height: 20px; padding: 0 7px; display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); border-radius: 6px; background: var(--surface-3); font-size: 10.5px; font-weight: 650; white-space: nowrap; }
 :deep(.mail-badge.code) { color: var(--brand-700); background: var(--brand-soft); }
+:deep(.mail-badge.category) { color: var(--success); background: color-mix(in srgb, var(--success) 11%, var(--surface)); }
+
+.email-container.has-summary :deep(.email-row) {
+  align-items: flex-start;
+  min-height: 104px;
+  padding: 13px 16px;
+}
+.email-container.has-summary :deep(.sender-avatar) { margin-top: 1px; }
+.email-container.has-summary :deep(.title) { min-width: 0; display: block; }
+.email-container.has-summary :deep(.email-sender) { display: flex; align-items: center; gap: 6px; }
+.email-container.has-summary :deep(.email-sender .name) { min-width: 0; flex: 1; display: block; }
+.email-container.has-summary :deep(.email-sender .name > span:first-child) { display: block; color: var(--text); font-size: 12.5px; }
+.email-container.has-summary :deep(.email-sender .name > span:last-child) { display: none; }
+.email-container.has-summary :deep(.phone-time) { display: block; flex: none; color: var(--text-3); font-size: 11px; }
+.email-container.has-summary :deep(.summary-star) { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
+.email-container.has-summary :deep(.summary-star:hover) { background: var(--surface-3); }
+.email-container.has-summary :deep(.email-text) { display: block; min-width: 0; }
+.email-container.has-summary :deep(.email-subject) { display: block; margin-top: 2px; padding: 0; color: var(--text); font-size: 12.5px; line-height: 19px; }
+.email-container.has-summary :deep(.email-content) { display: block; margin-top: 3px; padding: 0; color: var(--text-3); font-size: 11.5px; line-height: 18px; }
+.email-container.has-summary :deep(.row-tags) { margin-top: 6px; }
+.email-container.has-summary :deep(.email-right) { display: none; }
 
 
 .phone-star {

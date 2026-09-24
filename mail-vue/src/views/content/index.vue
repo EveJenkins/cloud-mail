@@ -21,16 +21,9 @@
         <div class="email-title">
           {{ email.subject }}
         </div>
-        <div class="code-card" v-if="email.code">
-          <div class="code-insight">
-            <span class="code-icon"><Icon icon="solar:clock-circle-linear" width="19" height="19" /></span>
-            <div>
-              <strong>Workers AI {{ settingStore.lang === 'zh' ? '自动识别' : 'detected code' }}</strong>
-              <span>{{ settingStore.lang === 'zh' ? '验证码已提取，可一键复制' : 'Ready to copy' }}</span>
-            </div>
-          </div>
-          <span class="code-value">{{ email.code }}</span>
-          <el-button type="primary" @click="copyCode">{{ settingStore.lang === 'zh' ? '复制' : 'Copy' }}</el-button>
+        <div class="detail-badges">
+          <span class="detail-badge category" v-if="emailCategory">{{ emailCategory }}</span>
+          <span class="detail-badge">{{ senderScope }}</span>
         </div>
         <div class="content">
           <div class="email-info">
@@ -49,6 +42,22 @@
             <el-alert v-if="email.status === 3" :closable="false" :title="toMessage(email.message)" class="email-msg" type="error" show-icon />
             <el-alert v-if="email.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
             <el-alert v-if="email.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
+          </div>
+          <div class="code-card" v-if="email.code">
+            <div class="code-card-head">
+              <div class="code-insight">
+                <span class="code-icon"><Icon icon="solar:shield-check-linear" width="19" height="19" /></span>
+                <div>
+                  <strong>Workers AI {{ settingStore.lang === 'zh' ? '已识别验证码' : 'detected a verification code' }}</strong>
+                  <span>{{ settingStore.lang === 'zh' ? '验证码已安全提取，可一键复制' : 'Ready to copy safely' }}</span>
+                </div>
+              </div>
+              <span class="ai-badge">AI</span>
+            </div>
+            <div class="code-card-body">
+              <span class="code-value">{{ email.code }}</span>
+              <el-button type="primary" @click="copyCode"><Icon icon="solar:copy-linear" width="15" />{{ settingStore.lang === 'zh' ? '复制验证码' : 'Copy code' }}</el-button>
+            </div>
           </div>
           <el-scrollbar class="htm-scrollbar" :class="!email.attList?.length ? 'bottom-distance' : ''">
             <ShadowHtml class="shadow-html" :html="formatImage(email.content)" v-if="email.content" />
@@ -102,7 +111,11 @@
           </div>
         </div>
         </div>
-        <section class="quick-reply" v-if="emailStore.contentData.showReply" v-perm="'email:send'">
+        <section class="system-notice" v-if="email.code">
+          <span class="notice-icon"><Icon icon="solar:shield-check-linear" width="18" /></span>
+          <div><strong>{{ settingStore.lang === 'zh' ? '系统通知类邮件，无需回复' : 'System notification — no reply needed' }}</strong><p>{{ settingStore.lang === 'zh' ? 'Workers AI 已识别为验证码通知，因此不会生成回复草稿；验证码可直接复制使用。' : 'Workers AI recognized a verification-code notice, so no reply draft is generated.' }}</p></div>
+        </section>
+        <section class="quick-reply" v-else-if="emailStore.contentData.showReply" v-perm="'email:send'">
           <div class="quick-reply-heading">
             <div class="ai-reply-title">
               <span class="ai-mark"><Icon icon="solar:magic-stick-3-linear" width="18" height="18"/></span>
@@ -229,6 +242,22 @@ const toneOptions = computed(() => settingStore.lang === 'zh'
     ? [{value: 'formal', label: '正式'}, {value: 'brief', label: '简洁'}, {value: 'friendly', label: '友好'}]
     : [{value: 'formal', label: 'Formal'}, {value: 'brief', label: 'Brief'}, {value: 'friendly', label: 'Friendly'}])
 const telegramEnabled = computed(() => settingStore.settings?.tgBotStatus === 0)
+const emailCategory = computed(() => {
+  const source = `${email.value.subject || ''} ${email.value.text || ''}`.toLowerCase()
+  if (email.value.code) return settingStore.lang === 'zh' ? '系统' : 'System'
+  if (/(报价|询价|quotation|quote|rfq)/i.test(source)) return settingStore.lang === 'zh' ? '供应商报价' : 'Supplier quote'
+  if (/(运单|物流|清关|提单|装箱单|快递|shipment|tracking|customs|dhl|fedex|ups)/i.test(source)) return settingStore.lang === 'zh' ? '物流单据' : 'Logistics'
+  if (/(询盘|采购|需求|inquiry|enquiry|request for)/i.test(source)) return settingStore.lang === 'zh' ? '客户询盘' : 'Customer inquiry'
+  if (/(已送达|送达通知|delivered|delivery notice)/i.test(source)) return settingStore.lang === 'zh' ? '发送通知' : 'Delivery notice'
+  return ''
+})
+const senderScope = computed(() => {
+  const senderDomain = String(email.value.sendEmail || '').split('@')[1]?.toLowerCase()
+  const accountDomain = String(accountStore.currentAccount?.email || userStore.user?.email || '').split('@')[1]?.toLowerCase()
+  const internal = senderDomain && accountDomain && senderDomain === accountDomain
+  if (settingStore.lang === 'zh') return internal ? '公司内部' : '外部来信'
+  return internal ? 'Internal' : 'External'
+})
 const senderInitials = computed(() => {
   const value = String(email.value.name || email.value.sendEmail || 'M').replace(/@.*/, '').trim()
   return value.split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'M'
@@ -885,11 +914,41 @@ const handleDelete = () => {
   margin-bottom: 30px;
 }
 
+/* Structured inbox detail cards from the enterprise redesign. */
+.container .message-card {
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.container .email-title { margin-bottom: 8px; }
+.detail-badges { margin-bottom: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.detail-badge { min-height: 22px; padding: 3px 8px; display: inline-flex; align-items: center; color: var(--text-3); background: var(--surface-3); border-radius: 6px; font-size: 10.5px; font-weight: 700; }
+.detail-badge.category { color: var(--success); background: color-mix(in srgb, var(--success) 11%, var(--surface)); }
+.container .content .email-info { margin-bottom: 14px; padding: 0; border: 0; }
+.container .content .email-info .sender-summary { padding: 0; }
+.container .code-card { margin: 0 0 16px; padding: 15px 16px; display: block; }
+.code-card-head, .code-card-body { display: flex; align-items: center; gap: 12px; }
+.code-card-head { justify-content: space-between; }
+.code-card-body { margin-top: 10px; flex-wrap: wrap; }
+.code-card-body .el-button { margin-left: 0; }
+.ai-badge { padding: 3px 7px; color: var(--success); background: var(--surface); border-radius: 6px; font-size: 10.5px; font-weight: 750; }
+.container .htm-scrollbar { min-height: 120px; padding: 20px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
+.container .bottom-distance { margin-bottom: 0; }
+.container .content .att { margin: 16px 0 0; background: var(--surface); box-shadow: var(--sh-1); }
+.container .delivery-trace { margin-top: 16px; background: var(--surface); box-shadow: var(--sh-1); }
+.system-notice { margin-top: 16px; padding: 15px 16px; display: flex; align-items: flex-start; gap: 11px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2); }
+.notice-icon { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: var(--text-3); background: var(--surface-3); border-radius: 9px; }
+.system-notice strong { font-size: 13px; }
+.system-notice p { margin: 4px 0 0; color: var(--text-3); font-size: 11.5px; line-height: 1.6; }
+
 @media (max-width: 767px) {
   .header-actions { padding: 6px 10px; }
   .detail-action { padding: 0 9px; }
   .container { padding: 16px 12px 28px; }
-  .container .message-card { padding: 17px; border-radius: var(--r-md); }
+  .container .message-card { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .container .email-title { font-size: 19px; }
   .container .code-card .el-button { width: 100%; margin-left: 0; }
   .container .content .email-info .sender-secondary { white-space: normal; }
