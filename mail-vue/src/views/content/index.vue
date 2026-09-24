@@ -102,6 +102,37 @@
           </div>
         </div>
         </div>
+        <section class="quick-reply" v-if="emailStore.contentData.showReply" v-perm="'email:send'">
+          <div class="quick-reply-heading">
+            <div>
+              <Icon icon="solar:reply-linear" width="18" height="18"/>
+              <strong>{{ settingStore.lang === 'zh' ? '快速回复' : 'Quick reply' }}</strong>
+            </div>
+            <span>{{ settingStore.lang === 'zh' ? `回复给 ${email.name || email.sendEmail}` : `Reply to ${email.name || email.sendEmail}` }}</span>
+          </div>
+          <div class="quick-reply-editor" :class="{ focused: quickReplyFocused }">
+            <textarea
+                v-model="quickReply"
+                :placeholder="settingStore.lang === 'zh' ? '输入回复内容，Ctrl / ⌘ + Enter 发送…' : 'Write a reply, Ctrl / ⌘ + Enter to send…'"
+                rows="3"
+                @focus="quickReplyFocused = true"
+                @blur="quickReplyFocused = false"
+                @keydown.ctrl.enter.prevent="sendQuickReply"
+                @keydown.meta.enter.prevent="sendQuickReply"
+            ></textarea>
+            <div class="quick-reply-footer">
+              <button class="reply-tool" type="button" @click="openReply">
+                <Icon icon="solar:pen-new-square-linear" width="17" height="17"/>
+                <span>{{ settingStore.lang === 'zh' ? '完整编辑' : 'Full editor' }}</span>
+              </button>
+              <span class="reply-shortcut">Ctrl / ⌘ + Enter</span>
+              <button class="quick-send" type="button" :disabled="quickSending || !quickReply.trim()" @click="sendQuickReply">
+                <Icon icon="solar:plain-2-bold" width="16" height="16"/>
+                <span>{{ quickSending ? (settingStore.lang === 'zh' ? '发送中…' : 'Sending…') : (settingStore.lang === 'zh' ? '发送回复' : 'Send reply') }}</span>
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
     </el-scrollbar>
     <el-image-viewer
@@ -116,8 +147,8 @@
 import ShadowHtml from '@/components/shadow-html/index.vue'
 import {computed, reactive, ref, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
-import {ElMessage, ElMessageBox} from 'element-plus'
-import {emailDelete, emailRead} from "@/request/email.js";
+import {ElMessage, ElMessageBox, ElNotification} from 'element-plus'
+import {emailDelete, emailRead, emailSend} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
@@ -131,6 +162,7 @@ import {allEmailDelete} from "@/request/all-email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useI18n} from "vue-i18n";
 import {EmailUnreadEnum} from "@/enums/email-enum.js";
+import {useUserStore} from "@/store/user.js";
 
 const props = defineProps({
   embedded: {
@@ -145,6 +177,7 @@ const uiStore = useUiStore();
 const settingStore = useSettingStore();
 const accountStore = useAccountStore();
 const emailStore = useEmailStore();
+const userStore = useUserStore();
 const router = useRouter()
 const email = computed(() => emailStore.contentData.email || {
   emailId: 0,
@@ -155,6 +188,9 @@ const email = computed(() => emailStore.contentData.email || {
 })
 const showPreview = ref(false)
 const srcList = reactive([])
+const quickReply = ref('')
+const quickReplyFocused = ref(false)
+const quickSending = ref(false)
 const telegramEnabled = computed(() => settingStore.settings?.tgBotStatus === 0)
 const senderInitials = computed(() => {
   const value = String(email.value.name || email.value.sendEmail || 'M').replace(/@.*/, '').trim()
@@ -173,6 +209,11 @@ const senderGradient = computed(() => {
 const { t } = useI18n()
 watch(() => accountStore.currentAccountId, () => {
   handleBack()
+})
+
+watch(() => email.value?.emailId, () => {
+  quickReply.value = ''
+  quickReplyFocused.value = false
 })
 
 let readRequesting = false
@@ -236,6 +277,74 @@ function openReply() {
 
 function openForward() {
   uiStore.writerRef.openForward(email.value)
+}
+
+function escapeHtml(value) {
+  return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
+}
+
+async function sendQuickReply() {
+  const replyText = quickReply.value.trim()
+  if (!replyText) {
+    ElMessage({
+      message: settingStore.lang === 'zh' ? '请输入回复内容' : 'Please enter a reply',
+      type: 'warning',
+      plain: true,
+    })
+    return
+  }
+  if (quickSending.value) return
+
+  const currentAccount = accountStore.currentAccount?.email
+      ? accountStore.currentAccount
+      : userStore.user.account
+  const subject = email.value.subject || ''
+  const replySubject = /^(Re:|Re：|回复：|回复:)/i.test(subject) ? subject : `Re: ${subject}`
+  const html = `<div>${escapeHtml(replyText).replaceAll('\n', '<br>')}</div>`
+  const payload = {
+    sendEmail: currentAccount.email || userStore.user.email,
+    receiveEmail: [email.value.sendEmail],
+    accountId: currentAccount.accountId,
+    name: currentAccount.name || userStore.user.name,
+    subject: replySubject,
+    content: html,
+    text: replyText,
+    sendType: 'reply',
+    emailId: email.value.emailId,
+    attachments: [],
+  }
+
+  quickSending.value = true
+  try {
+    const sentEmails = await emailSend(payload, () => {})
+    sentEmails.forEach(item => emailStore.sendScroll?.addItem(item))
+    userStore.refreshUserInfo()
+    quickReply.value = ''
+    ElNotification({
+      title: settingStore.lang === 'zh' ? '回复已发送' : 'Reply sent',
+      type: 'success',
+      message: replySubject,
+      position: 'bottom-right',
+    })
+  } catch (error) {
+    ElNotification({
+      title: settingStore.lang === 'zh' ? '回复发送失败' : 'Reply failed',
+      type: error.code === 403 ? 'warning' : 'error',
+      message: error.message,
+      position: 'bottom-right',
+    })
+    if (error.code === 401) {
+      localStorage.removeItem('token')
+      router.replace('/login')
+    }
+  } finally {
+    quickSending.value = false
+  }
 }
 
 function toMessage(message) {
@@ -392,6 +501,96 @@ const handleDelete = () => {
     background: var(--surface);
     box-shadow: var(--sh-1);
   }
+
+  .quick-reply {
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-2);
+  }
+
+  .quick-reply-heading {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .quick-reply-heading > div { display: flex; align-items: center; gap: 7px; color: var(--text); }
+  .quick-reply-heading strong { font-size: 13.5px; }
+  .quick-reply-heading > span { overflow: hidden; color: var(--text-3); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
+
+  .quick-reply-editor {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .quick-reply-editor.focused {
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 3px var(--brand-soft);
+  }
+  .quick-reply-editor textarea {
+    width: 100%;
+    min-height: 82px;
+    display: block;
+    resize: vertical;
+    padding: 13px 14px 8px;
+    border: 0;
+    outline: 0;
+    color: var(--text);
+    background: transparent;
+    font: inherit;
+    font-size: 13.5px;
+    line-height: 1.65;
+  }
+  .quick-reply-editor textarea::placeholder { color: var(--text-3); }
+  .quick-reply-footer {
+    min-height: 48px;
+    padding: 7px 9px 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .reply-tool,
+  .quick-send {
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+  }
+  .reply-tool {
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 9px;
+    color: var(--text-2);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .reply-tool:hover { color: var(--brand-700); background: var(--brand-soft); }
+  .reply-shortcut { margin-left: auto; color: var(--text-3); font-size: 10.5px; }
+  .quick-send {
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 13px;
+    color: #fff;
+    background: var(--brand-600);
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--brand-600) 22%, transparent);
+  }
+  .quick-send:hover:not(:disabled) { background: var(--brand-700); }
+  .quick-send:disabled { cursor: not-allowed; opacity: .48; box-shadow: none; }
 
   .code-card {
     margin-bottom: 18px;
@@ -607,6 +806,11 @@ const handleDelete = () => {
   .container .email-title { font-size: 19px; }
   .container .code-card .el-button { width: 100%; margin-left: 0; }
   .container .content .email-info .sender-secondary { white-space: normal; }
+  .container .quick-reply { padding: 10px; border-radius: var(--r-md); }
+  .container .quick-reply-heading > span,
+  .container .reply-shortcut { display: none; }
+  .container .quick-reply-footer { gap: 7px; }
+  .container .quick-send { margin-left: auto; }
 }
 
 
