@@ -43,7 +43,7 @@
             <el-alert v-if="email.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
             <el-alert v-if="email.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
           </div>
-          <div class="code-card" v-if="email.code">
+          <div class="code-card" v-if="detectedCode">
             <div class="code-card-head">
               <div class="code-insight">
                 <span class="code-icon"><Icon icon="solar:shield-check-linear" width="19" height="19" /></span>
@@ -55,7 +55,7 @@
               <span class="ai-badge">AI</span>
             </div>
             <div class="code-card-body">
-              <span class="code-value">{{ email.code }}</span>
+              <span class="code-value">{{ detectedCode }}</span>
               <el-button type="primary" @click="copyCode"><Icon icon="solar:copy-linear" width="15" />{{ settingStore.lang === 'zh' ? '复制验证码' : 'Copy code' }}</el-button>
             </div>
           </div>
@@ -96,7 +96,7 @@
               <span class="trace-dot success"></span>
               <span>{{ settingStore.lang === 'zh' ? '邮件已由 Cloudflare Email Routing 接收' : 'Accepted by Cloudflare Email Routing' }}</span>
             </div>
-            <div class="trace-item" v-if="email.code">
+            <div class="trace-item" v-if="detectedCode">
               <span class="trace-dot success"></span>
               <span>{{ settingStore.lang === 'zh' ? 'Workers AI 已识别验证码' : 'Verification code detected by Workers AI' }}</span>
             </div>
@@ -111,7 +111,7 @@
           </div>
         </div>
         </div>
-        <section class="system-notice" v-if="email.code">
+        <section class="system-notice" v-if="detectedCode">
           <span class="notice-icon"><Icon icon="solar:shield-check-linear" width="18" /></span>
           <div><strong>{{ settingStore.lang === 'zh' ? '系统通知类邮件，无需回复' : 'System notification — no reply needed' }}</strong><p>{{ settingStore.lang === 'zh' ? 'Workers AI 已识别为验证码通知，因此不会生成回复草稿；验证码可直接复制使用。' : 'Workers AI recognized a verification-code notice, so no reply draft is generated.' }}</p></div>
         </section>
@@ -242,9 +242,27 @@ const toneOptions = computed(() => settingStore.lang === 'zh'
     ? [{value: 'formal', label: '正式'}, {value: 'brief', label: '简洁'}, {value: 'friendly', label: '友好'}]
     : [{value: 'formal', label: 'Formal'}, {value: 'brief', label: 'Brief'}, {value: 'friendly', label: 'Friendly'}])
 const telegramEnabled = computed(() => settingStore.settings?.tgBotStatus === 0)
+const detectedCode = computed(() => {
+  const serverCode = String(email.value.code || '').trim()
+  if (serverCode) return serverCode
+
+  const source = `${email.value.subject || ''} ${email.value.text || ''} ${email.value.content || ''}`
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;|&#160;/gi, ' ')
+      .replace(/\s+/g, ' ')
+
+  if (!/(验证码|校验码|动态码|一次性密码|otp|verification\s*code|security\s*code|authentication\s*code)/i.test(source)) return ''
+
+  const labelled = source.match(/(?:验证码|校验码|动态码|一次性密码|otp|verification\s*code|security\s*code|authentication\s*code)[^A-Z0-9]{0,20}([A-Z0-9]{4,8})/i)
+  if (labelled?.[1]) return labelled[1]
+
+  return source.match(/\b\d{4,8}\b/)?.[0] || ''
+})
 const emailCategory = computed(() => {
   const source = `${email.value.subject || ''} ${email.value.text || ''}`.toLowerCase()
-  if (email.value.code) return settingStore.lang === 'zh' ? '系统' : 'System'
+  if (detectedCode.value) return settingStore.lang === 'zh' ? '系统' : 'System'
   if (/(报价|询价|quotation|quote|rfq)/i.test(source)) return settingStore.lang === 'zh' ? '供应商报价' : 'Supplier quote'
   if (/(运单|物流|清关|提单|装箱单|快递|shipment|tracking|customs|dhl|fedex|ups)/i.test(source)) return settingStore.lang === 'zh' ? '物流单据' : 'Logistics'
   if (/(询盘|采购|需求|inquiry|enquiry|request for)/i.test(source)) return settingStore.lang === 'zh' ? '客户询盘' : 'Customer inquiry'
@@ -476,7 +494,7 @@ function formateReceive(recipient) {
 }
 
 async function copyCode() {
-  await navigator.clipboard.writeText(String(email.value.code))
+  await navigator.clipboard.writeText(detectedCode.value)
   ElMessage({ message: t('copySuccessMsg'), type: 'success', plain: true })
 }
 
