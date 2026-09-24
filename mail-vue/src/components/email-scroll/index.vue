@@ -1414,7 +1414,7 @@ function loadData() {
 .email-container.has-summary :deep(.email-sender .name) { min-width: 0; flex: 1; display: block; }
 .email-container.has-summary :deep(.email-sender .name > span:first-child) { display: block; color: var(--text); font-size: 12.5px; }
 .email-container.has-summary :deep(.email-sender .name > span:last-child) { display: none; }
-.email-container.has-summary :deep(.phone-time) { display: block; flex: none; color: var(--text-3); font-size: 11px; }
+.email-container.has-summary :deep(.phone-time) { display: block !important; flex: none; color: var(--text-3); font-size: 11px; }
 .email-container.has-summary :deep(.summary-star) { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
 .email-container.has-summary :deep(.summary-star:hover) { background: var(--surface-3); }
 .email-container.has-summary :deep(.email-text) { display: block; min-width: 0; }
