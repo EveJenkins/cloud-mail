@@ -34,14 +34,22 @@ const aiService = {
 			max_tokens: 700
 		});
 
-		const content = typeof response === 'string' ? response : response?.response || '';
-		const match = String(content).match(/\{[\s\S]*\}/);
-		if (!match) throw new Error('Workers AI returned an invalid reply');
-		const parsed = JSON.parse(match[0]);
+		const content = String(typeof response === 'string' ? response : response?.response || response?.result?.response || '').trim();
+		if (!content) throw new Error('Workers AI returned an empty reply');
+		let parsed = {};
+		const match = content.match(/\{[\s\S]*\}/);
+		if (match) {
+			try {
+				parsed = JSON.parse(match[0]);
+			} catch (e) {
+				parsed = {};
+			}
+		}
+		const fallbackDraft = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 		return {
 			category: String(parsed.category || '').slice(0, 80),
 			summary: String(parsed.summary || '').slice(0, 240),
-			draft: String(parsed.draft || '').trim().slice(0, 5000)
+			draft: String(parsed.draft || fallbackDraft).trim().slice(0, 5000)
 		};
 	},
 

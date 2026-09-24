@@ -334,10 +334,11 @@ async function generateAiReply(variant = false) {
     aiSummary.value = data?.summary || ''
     if (!quickReply.value) throw new Error(settingStore.lang === 'zh' ? '未生成有效回复' : 'No reply was generated')
   } catch (error) {
+	const errorMessage = error?.response?.data?.message || error?.message || ''
     ElNotification({
       title: settingStore.lang === 'zh' ? '智能起草暂不可用' : 'Smart drafting unavailable',
       type: 'warning',
-      message: settingStore.lang === 'zh' ? '你仍可在下方直接输入并发送回复。' : 'You can still write and send a reply below.',
+	  message: errorMessage || (settingStore.lang === 'zh' ? '你仍可在下方直接输入并发送回复。' : 'You can still write and send a reply below.'),
       position: 'bottom-right',
     })
   } finally {
