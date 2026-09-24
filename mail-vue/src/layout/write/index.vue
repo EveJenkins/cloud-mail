@@ -138,6 +138,7 @@ import {formatDetailDate} from "@/utils/day.js";
 import {useSettingStore} from "@/store/setting.js";
 import {userDraftStore} from "@/store/draft.js";
 import {useWriterStore} from "@/store/writer.js";
+import {useUiStore} from "@/store/ui.js";
 import db from "@/db/db.js";
 import dayjs from "dayjs";
 import {useI18n} from "vue-i18n";
@@ -154,6 +155,7 @@ defineExpose({
 
 const {t} = useI18n()
 const writerStore = useWriterStore();
+const uiStore = useUiStore()
 const draftStore = userDraftStore()
 const settingStore = useSettingStore()
 const emailStore = useEmailStore();
@@ -627,7 +629,7 @@ function formatImage(content) {
   return content.replace(/{{domain}}/g, toOssDomain(domain) + '/');
 }
 
-function open() {
+async function open() {
   if (!accountStore.currentAccount.email) {
     form.sendEmail = userStore.user.email;
     form.accountId = userStore.user.account.accountId;
@@ -638,15 +640,17 @@ function open() {
     form.name = accountStore.currentAccount.name;
   }
   show.value = true;
-  editor.value.focus()
+  await nextTick()
+  editor.value?.focus?.()
 }
 
-function openDraft(draft) {
+async function openDraft(draft) {
   Object.assign(form, {...draft})
   defValue.value = ''
   setTimeout(() => defValue.value = form.content)
   show.value = true;
-  editor.value.focus()
+  await nextTick()
+  editor.value?.focus?.()
 }
 
 const handleKeyDown = (event) => {
