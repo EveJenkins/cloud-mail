@@ -1,72 +1,107 @@
 <template>
   <div class="send" v-show="show">
     <div class="write-box">
-      <div class="title">
-        <div class="title-left">
-          <span class="title-text">
-            <Icon icon="hugeicons:quill-write-01" width="28" height="28"/>
+      <header class="compose-header">
+        <div class="compose-heading">
+          <span class="compose-icon">
+            <Icon icon="hugeicons:quill-write-01" width="23" height="23"/>
           </span>
-          <span class="sender">{{ $t('sender') }}:</span>
-          <span class="sender-name">{{ form.name }}</span>
-          <span class="send-email"><{{ form.sendEmail }}></span>
+          <div class="compose-title-copy">
+            <strong>{{ composeTitle }}</strong>
+            <span>{{ settingStore.lang === 'zh' ? '创建一封清晰、专业的邮件' : 'Create a clear, professional message' }}</span>
+          </div>
         </div>
-        <div @click="close" style="cursor: pointer;">
-          <Icon icon="material-symbols-light:close-rounded" width="22" height="22"/>
+        <div class="compose-header-actions">
+          <button class="draft-button" type="button" @click="saveDraftNow">
+            <Icon icon="solar:diskette-outline" width="18" height="18"/>
+            <span>{{ settingStore.lang === 'zh' ? '存草稿' : 'Save draft' }}</span>
+          </button>
+          <button class="close-button" type="button" :aria-label="t('close')" @click="close">
+            <Icon icon="material-symbols-light:close-rounded" width="24" height="24"/>
+          </button>
         </div>
-      </div>
+      </header>
       <div class="container">
-        <el-input-tag  @add-tag="addTagChange" tag-type="primary" @input="inputChange" size="default" v-model="form.receiveEmail" >
-          <template #prefix>
-            <div class="item-title" >{{ $t('recipient') }}</div>
-            <el-select
-                ref="mySelect"
-                class="write-select"
-                popper-class="write-select"
-                :show-arrow="false"
-                :no-match-text="' '"
-                :no-data-text="' '"
-                @visible-change="selectStatusChange"
-                @change="selectChange"
-            >
-              <el-option
-                  v-for="item in selectRecipientList"
-                  :key="item"
-                  :label="item"
-                  :value="item"
-                  style="color: #999896;"
-              />
-            </el-select>
-          </template>
-          <template #suffix>
-            <div style="display: flex;margin-right: 3px;">
-              <Icon icon="fa7-solid:user-plus" width="20" height="20" class="add-contact" @click.stop="openContacts" />
-            </div>
-          </template>
-        </el-input-tag>
-        <el-input v-model="form.subject" :placeholder="t('subject')" />
-        <tinyEditor :def-value="defValue" ref="editor" @change="change" @focus="focusChange" />
-        <div class="button-item">
-          <div class="att-add" @click="chooseFile">
-            <Icon icon="iconamoon:attachment-fill" width="24" height="24"/>
+        <section class="message-meta">
+          <div class="sender-row">
+            <span class="sender-avatar">{{ senderInitial }}</span>
+            <span class="meta-label">{{ $t('sender') }}</span>
+            <strong class="sender-name">{{ form.name }}</strong>
+            <span class="send-email">&lt;{{ form.sendEmail }}&gt;</span>
           </div>
-          <div class="att-clear" @click="clearContent">
-            <Icon icon="icon-park-outline:clear-format" width="24" height="24 "/>
-          </div>
-          <div class="att-list">
-            <div class="att-item" v-for="(item,index) in form.attachments" :key="index">
-              <Icon v-bind="getIconByName(item.filename)"/>
-              <span class="att-filename">{{ item.filename }}</span>
-              <span class="att-size">{{ formatBytes(item.size) }}</span>
-              <Icon style="cursor: pointer;" icon="material-symbols-light:close-rounded" @click="delAtt(index)"
-                    width="22" height="22"/>
+          <div class="field-row recipient-row">
+            <label>{{ $t('recipient') }}</label>
+            <div class="recipient-control">
+              <el-input-tag @add-tag="addTagChange" tag-type="primary" @input="inputChange" size="default" v-model="form.receiveEmail">
+                <template #prefix>
+                  <el-select
+                      ref="mySelect"
+                      class="write-select"
+                      popper-class="write-select"
+                      :show-arrow="false"
+                      :no-match-text="' '"
+                      :no-data-text="' '"
+                      @visible-change="selectStatusChange"
+                      @change="selectChange"
+                  >
+                    <el-option
+                        v-for="item in selectRecipientList"
+                        :key="item"
+                        :label="item"
+                        :value="item"
+                        style="color: #999896;"
+                    />
+                  </el-select>
+                </template>
+              </el-input-tag>
+              <button class="contacts-button" type="button" @click.stop="openContacts">
+                <Icon icon="fa7-solid:user-plus" width="17" height="17"/>
+                <span>{{ settingStore.lang === 'zh' ? '通讯录' : 'Contacts' }}</span>
+              </button>
             </div>
           </div>
-          <div>
-            <el-button type="primary" @click="sendEmail" v-if="form.sendType === 'reply'">{{ $t('reply') }}</el-button>
-            <el-button type="primary" @click="sendEmail" v-else-if="form.sendType === 'forward'">{{ $t('forward') }}</el-button>
-            <el-button type="primary" @click="sendEmail" v-else>{{ $t('send') }}</el-button>
+          <div class="field-row subject-row">
+            <label>{{ $t('subject') }}</label>
+            <el-input v-model="form.subject" :placeholder="settingStore.lang === 'zh' ? '请输入邮件主题' : 'Enter a subject'" />
           </div>
-        </div>
+        </section>
+
+        <section class="editor-shell">
+          <tinyEditor :def-value="defValue" ref="editor" @change="change" @focus="focusChange" />
+        </section>
+
+        <section class="compose-footer" @dragover.prevent @drop.prevent="handleDrop">
+          <div class="attachment-zone">
+            <div class="footer-tools">
+              <button class="tool-button" type="button" @click="chooseFile">
+                <Icon icon="iconamoon:attachment-fill" width="19" height="19"/>
+                <span>{{ settingStore.lang === 'zh' ? '添加附件' : 'Add attachment' }}</span>
+              </button>
+              <button class="tool-button tool-button-muted" type="button" @click="clearContent">
+                <Icon icon="icon-park-outline:clear-format" width="18" height="18"/>
+                <span>{{ settingStore.lang === 'zh' ? '清空内容' : 'Clear' }}</span>
+              </button>
+              <span class="drop-tip">
+                <Icon icon="solar:cloud-upload-linear" width="17" height="17"/>
+                {{ settingStore.lang === 'zh' ? '可将文件拖到此处，附件安全存储至 Cloudflare R2' : 'Drop files here · secured by Cloudflare R2' }}
+              </span>
+            </div>
+            <div class="att-list" v-if="form.attachments.length">
+              <div class="att-item" v-for="(item,index) in form.attachments" :key="`${item.filename}-${index}`">
+                <span class="attachment-icon"><Icon v-bind="getIconByName(item.filename)"/></span>
+                <span class="att-filename">{{ item.filename }}</span>
+                <span class="att-size">{{ formatBytes(item.size) }}</span>
+                <button type="button" class="remove-attachment" @click="delAtt(index)">
+                  <Icon icon="material-symbols-light:close-rounded" width="20" height="20"/>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button class="send-button" type="button" @click="sendEmail">
+            <Icon icon="solar:plain-2-bold" width="18" height="18"/>
+            <span>{{ sendActionLabel }}</span>
+          </button>
+        </section>
       </div>
     </div>
     <el-dialog top="10vh" v-model="showContacts" @closed="clearSelectContact" :title="t('recentContacts')">
@@ -162,6 +197,17 @@ const form = reactive({
 const selectRecipientList = ref([])
 
 const contacts = computed(() => writerStore.sendRecipientRecord.map(item => ({email: item})))
+const senderInitial = computed(() => (form.name || form.sendEmail || 'S').trim().charAt(0).toUpperCase())
+const composeTitle = computed(() => {
+  if (form.sendType === 'reply') return t('reply')
+  if (form.sendType === 'forward') return t('forward')
+  return settingStore.lang === 'zh' ? '写邮件' : 'New message'
+})
+const sendActionLabel = computed(() => {
+  if (form.sendType === 'reply') return t('reply')
+  if (form.sendType === 'forward') return t('forward')
+  return t('send')
+})
 
 function openContacts() {
   showContacts.value = true
@@ -270,22 +316,21 @@ function chooseFile() {
   doc.setAttribute("type", "file")
   doc.multiple = true;
   doc.click()
-  doc.onchange = async (e) => {
+  doc.onchange = (e) => addFiles(e.target.files)
+}
 
-    const fileList = e.target.files;
-
-    for (const file of fileList) {
-
-      const size = file.size
-      const filename = file.name
-      const contentType = file.type
-
-      const content = await fileToBase64(file)
-      form.attachments.push({content, filename, size, contentType})
-
-    }
-
+async function addFiles(fileList) {
+  for (const file of Array.from(fileList || [])) {
+    const size = file.size
+    const filename = file.name
+    const contentType = file.type
+    const content = await fileToBase64(file)
+    form.attachments.push({content, filename, size, contentType})
   }
+}
+
+function handleDrop(event) {
+  addFiles(event.dataTransfer?.files)
 }
 
 async function sendEmail() {
@@ -582,25 +627,33 @@ function close() {
     cancelButtonText: t('cancel'),
     type: 'warning',
     distinguishCancelAndClose: true
-  }).then(async () => {
-    const formData = {...toRaw(form)};
-    delete formData.draftId
-    delete formData.attachments
-    formData.createTime = dayjs().utc().format('YYYY-MM-DD HH:mm:ss');
-    const draftId = await db.value.draft.add({...formData})
-    db.value.att.add({draftId, attachments: toRaw(form.attachments)})
-    draftStore.refreshList++
-    show.value = false
-    await nextTick(() => {
-      resetForm()
-    })
-  }).catch((action) => {
+  }).then(saveDraftNow).catch((action) => {
     if (action === 'cancel') {
       show.value = false
       resetForm()
     }
   })
 
+}
+
+async function saveDraftNow() {
+  if (!form.content) form.content = editor.value.getContent()
+
+  if (form.draftId) {
+    draftStore.setDraft = {...toRaw(form)}
+  } else {
+    const formData = {...toRaw(form)}
+    delete formData.draftId
+    delete formData.attachments
+    formData.createTime = dayjs().utc().format('YYYY-MM-DD HH:mm:ss')
+    const draftId = await db.value.draft.add({...formData})
+    await db.value.att.add({draftId, attachments: toRaw(form.attachments)})
+    draftStore.refreshList++
+  }
+
+  show.value = false
+  await nextTick()
+  resetForm()
 }
 
 </script>
@@ -619,130 +672,267 @@ function close() {
 <style scoped lang="scss">
 .send {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
+  z-index: 1900;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, #07110d 58%, transparent);
+  backdrop-filter: blur(8px);
 
   .write-box {
-    background: var(--el-bg-color);
-    width: min(1367px, calc(100% - 80px));
-    box-shadow: var(--el-box-shadow-light);
-    border: 1px solid var(--el-border-color-light);
-    transition: var(--el-transition-duration);
-    padding: 15px;
-    border-radius: 8px;
+    width: min(1180px, 100%);
+    height: min(820px, calc(100vh - 48px));
     display: grid;
     grid-template-rows: auto 1fr;
     overflow: hidden;
-    @media (max-width: 1024px) {
-      width: 100%;
-      height: 100%;
-      border-radius: 0;
-      border: 0;
-      padding-top: 10px;
-    }
-
-    @media (min-width: 1025px) {
-      height: min(800px, calc(100vh - 60px));
-    }
-
-    .title {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-
-      .title-left {
-        align-items: center;
-        display: grid;
-        grid-template-columns: auto auto auto 1fr;
-      }
-
-      .title-text {
-      }
-
-      .sender {
-        margin-left: 8px;
-      }
-
-      .sender-name {
-        margin-left: 8px;
-        font-weight: bold;
-      }
-
-      .send-email {
-        color: #999896;
-        margin-left: 5px;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
-      }
-
-
-      div {
-        display: flex;
-        align-items: center;
-      }
-    }
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(3, 20, 12, .28);
+    transition: var(--el-transition-duration);
 
     .container {
+      min-height: 0;
       height: 100%;
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
-      gap: 15px;
-
-      .item-title {
-      }
-
-      .button-item {
-        display: grid;
-        grid-template-columns: auto auto 1fr auto;
-
-        .att-add {
-          cursor: pointer;
-        }
-
-        .att-clear {
-          cursor: pointer;
-          margin-left: 10px;
-        }
-
-        .att-list {
-          display: grid;
-          gap: 5px;
-          grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-          padding-left: 10px;
-          padding-right: 10px;
-          max-height: 110px;
-          overflow-y: auto;
-          @media (max-width: 450px) {
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-          }
-
-          .att-item {
-            display: grid;
-            grid-template-columns: auto 1fr auto auto;
-            gap: 5px;
-            height: 32px;
-            font-size: 14px;
-            padding: 4px 5px;
-            background: var(--light-ill);
-            border-radius: 4px;
-            .att-filename {
-              white-space: nowrap;
-              text-overflow: ellipsis;
-              overflow: hidden;
-            }
-          }
-        }
-      }
+      grid-template-rows: auto minmax(250px, 1fr) auto;
+      gap: 14px;
+      padding: 18px 20px 20px;
     }
   }
-
 }
+
+.compose-header {
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 18px 12px 20px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.compose-heading,
+.compose-header-actions,
+.sender-row,
+.recipient-control,
+.footer-tools {
+  display: flex;
+  align-items: center;
+}
+
+.compose-heading { min-width: 0; gap: 12px; }
+.compose-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(145deg, #11a861, #08723f);
+  border-radius: 12px;
+  box-shadow: 0 7px 18px rgba(16, 139, 80, .24);
+}
+.compose-title-copy { min-width: 0; display: grid; gap: 2px; }
+.compose-title-copy strong { color: var(--el-text-color-primary); font-size: 17px; line-height: 1.25; }
+.compose-title-copy span { color: var(--el-text-color-secondary); font-size: 12px; }
+.compose-header-actions { gap: 9px; }
+
+.draft-button,
+.close-button,
+.contacts-button,
+.tool-button,
+.remove-attachment,
+.send-button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.draft-button {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  color: var(--el-text-color-regular);
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 9px;
+}
+.draft-button:hover { color: #0a8c4d; border-color: color-mix(in srgb, #0a8c4d 45%, var(--el-border-color)); }
+.close-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  color: var(--el-text-color-secondary);
+  background: transparent;
+  border-radius: 9px;
+}
+.close-button:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
+
+.message-meta {
+  overflow: hidden;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 13px;
+}
+.sender-row,
+.field-row {
+  min-height: 48px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.field-row:last-child { border-bottom: 0; }
+.sender-row { gap: 8px; }
+.sender-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  color: #08703e;
+  font-size: 12px;
+  font-weight: 800;
+  background: #dff7e9;
+  border: 1px solid #bde9cf;
+  border-radius: 50%;
+}
+.meta-label,
+.field-row > label {
+  width: 66px;
+  flex: 0 0 66px;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+.sender-name { color: var(--el-text-color-primary); font-size: 13px; }
+.send-email {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.field-row { display: flex; align-items: center; }
+.recipient-control { min-width: 0; flex: 1; gap: 8px; }
+.recipient-control :deep(.el-input-tag) { min-width: 0; flex: 1; box-shadow: none; }
+.recipient-control :deep(.el-input-tag__wrapper) { padding-left: 0; box-shadow: none !important; }
+.subject-row :deep(.el-input) { flex: 1; }
+.subject-row :deep(.el-input__wrapper) { padding-left: 0; box-shadow: none !important; }
+.contacts-button {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  color: #087b45;
+  background: color-mix(in srgb, #12a861 10%, var(--el-bg-color));
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.editor-shell {
+  min-height: 0;
+  overflow: hidden;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 13px;
+}
+.editor-shell :deep(.tox-tinymce) { border: 0 !important; }
+.editor-shell :deep(.tox-editor-header) { border-bottom: 1px solid var(--el-border-color-lighter) !important; box-shadow: none !important; }
+.editor-shell :deep(.tox-toolbar-overlord),
+.editor-shell :deep(.tox-toolbar__primary) { background-image: none !important; }
+
+.compose-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+  padding: 12px;
+  background: var(--el-fill-color-extra-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 13px;
+}
+.attachment-zone { min-width: 0; }
+.footer-tools { min-width: 0; gap: 8px; }
+.tool-button {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  color: #087b45;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.tool-button-muted { color: var(--el-text-color-regular); }
+.tool-button:hover { border-color: #23a667; }
+.drop-tip {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  color: var(--el-text-color-secondary);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.att-list {
+  max-height: 88px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  gap: 7px;
+  overflow-y: auto;
+  margin-top: 9px;
+}
+.att-item {
+  min-width: 0;
+  height: 38px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px 4px 8px;
+  color: var(--el-text-color-primary);
+  font-size: 12.5px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+}
+.attachment-icon { display: flex; color: #129154; }
+.att-filename { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att-size { color: var(--el-text-color-secondary); font-size: 11px; white-space: nowrap; }
+.remove-attachment {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  color: var(--el-text-color-secondary);
+  background: transparent;
+  border-radius: 6px;
+}
+.remove-attachment:hover { color: #d14343; background: color-mix(in srgb, #d14343 9%, transparent); }
+.send-button {
+  height: 42px;
+  min-width: 104px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(135deg, #16a762, #087940);
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(9, 132, 71, .22);
+}
+.send-button:hover { filter: brightness(1.05); transform: translateY(-1px); }
 
 .email-row {
   white-space: nowrap;
@@ -765,10 +955,6 @@ function close() {
   margin-top: 10px;
 }
 
-.add-contact {
-  color: var(--regular-text-color)
-}
-
 .write-select {
   position: absolute;
   width: 300px;
@@ -782,7 +968,35 @@ function close() {
   padding-right: 4px;
 }
 
-.icon {
-  cursor: pointer;
+@media (max-width: 767px) {
+  .send { padding: 0; }
+  .write-box {
+    width: 100% !important;
+    height: 100% !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+  .compose-header { min-height: 60px; padding: 9px 10px 9px 13px; }
+  .compose-icon { width: 36px; height: 36px; flex-basis: 36px; border-radius: 10px; }
+  .compose-title-copy span { display: none; }
+  .draft-button { padding: 0 10px; }
+  .write-box .container { gap: 9px !important; padding: 10px !important; }
+  .sender-row, .field-row { min-height: 44px; padding: 7px 10px; }
+  .meta-label, .field-row > label { width: 52px; flex-basis: 52px; }
+  .send-email { display: none; }
+  .contacts-button span { display: none; }
+  .contacts-button { width: 32px; justify-content: center; padding: 0; }
+  .compose-footer { gap: 9px; padding: 9px; }
+  .drop-tip { display: none; }
+  .tool-button span { display: none; }
+  .tool-button { width: 34px; justify-content: center; padding: 0; }
+  .send-button { min-width: 86px; padding: 0 14px; }
+  .att-list { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 420px) {
+  .draft-button span { display: none; }
+  .draft-button { width: 36px; justify-content: center; padding: 0; }
+  .compose-title-copy strong { font-size: 15px; }
 }
 </style>
