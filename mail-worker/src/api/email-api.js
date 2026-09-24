@@ -47,6 +47,15 @@ app.post('/email/aiReply', async (c) => {
 	return c.json(result.ok(data));
 });
 
+app.post('/email/aiCompose', async (c) => {
+	const body = await c.req.json();
+	const data = await aiService.transformCompose(c, body.content, {
+		task: body.task,
+		language: body.language
+	});
+	return c.json(result.ok(data));
+});
+
 app.put('/email/read', async (c) => {
 	await emailService.read(c, await c.req.json(), userContext.getUserId(c));
 	return c.json(result.ok());

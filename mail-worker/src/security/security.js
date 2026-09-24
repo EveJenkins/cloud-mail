@@ -24,6 +24,7 @@ const exclude = [
 const requirePerms = [
 	'/email/send',
 	'/email/aiReply',
+	'/email/aiCompose',
 	'/email/delete',
 	'/account/list',
 	'/account/delete',
@@ -64,7 +65,7 @@ const requirePerms = [
 
 const premKey = {
 	'email:delete': ['/email/delete'],
-	'email:send': ['/email/send', '/email/aiReply'],
+	'email:send': ['/email/send', '/email/aiReply', '/email/aiCompose'],
 	'account:add': ['/account/add'],
 	'account:query': ['/account/list'],
 	'account:delete': ['/account/delete'],

@@ -1,109 +1,102 @@
 <template>
-  <div class="send" v-show="show">
-    <div class="write-box">
-      <header class="compose-header">
-        <div class="compose-heading">
-          <span class="compose-icon">
-            <Icon icon="hugeicons:quill-write-01" width="23" height="23"/>
-          </span>
-          <div class="compose-title-copy">
-            <strong>{{ composeTitle }}</strong>
-            <span>{{ settingStore.lang === 'zh' ? '创建一封清晰、专业的邮件' : 'Create a clear, professional message' }}</span>
-          </div>
-        </div>
-        <div class="compose-header-actions">
-          <button class="draft-button" type="button" @click="saveDraftNow">
-            <Icon icon="solar:diskette-outline" width="18" height="18"/>
-            <span>{{ settingStore.lang === 'zh' ? '存草稿' : 'Save draft' }}</span>
-          </button>
-          <button class="close-button" type="button" :aria-label="t('close')" @click="close">
-            <Icon icon="material-symbols-light:close-rounded" width="24" height="24"/>
-          </button>
+  <div class="send" :class="{ 'compose-full': !uiStore.asideShow }" v-show="show">
+    <div class="compose-workspace">
+      <header class="compose-topbar">
+        <button class="back-button" type="button" @click="close"><Icon icon="solar:alt-arrow-left-linear" width="17"/>{{ settingStore.lang === 'zh' ? '返回' : 'Back' }}</button>
+        <h1>{{ composeTitle }}</h1>
+        <div class="topbar-actions">
+          <button class="secondary-button" type="button" @click="saveDraftNow"><Icon icon="solar:diskette-outline" width="17"/>{{ settingStore.lang === 'zh' ? '存草稿' : 'Save draft' }}</button>
+          <button class="secondary-button" type="button" @click="previewMail"><Icon icon="solar:eye-linear" width="17"/>{{ settingStore.lang === 'zh' ? '预览' : 'Preview' }}</button>
+          <button class="send-button" type="button" @click="sendEmail"><Icon icon="solar:plain-2-bold" width="17"/><span>{{ sendActionLabel }}</span></button>
         </div>
       </header>
-      <div class="container">
-        <section class="message-meta">
-          <div class="sender-row">
-            <span class="sender-avatar">{{ senderInitial }}</span>
-            <span class="meta-label">{{ $t('sender') }}</span>
-            <strong class="sender-name">{{ form.name }}</strong>
-            <span class="send-email">&lt;{{ form.sendEmail }}&gt;</span>
-          </div>
-          <div class="field-row recipient-row">
-            <label>{{ $t('recipient') }}</label>
-            <div class="recipient-control">
-              <el-input-tag @add-tag="addTagChange" tag-type="primary" @input="inputChange" size="default" v-model="form.receiveEmail">
-                <template #prefix>
-                  <el-select
-                      ref="mySelect"
-                      class="write-select"
-                      popper-class="write-select"
-                      :show-arrow="false"
-                      :no-match-text="' '"
-                      :no-data-text="' '"
-                      @visible-change="selectStatusChange"
-                      @change="selectChange"
-                  >
-                    <el-option
-                        v-for="item in selectRecipientList"
-                        :key="item"
-                        :label="item"
-                        :value="item"
-                        style="color: #999896;"
-                    />
-                  </el-select>
-                </template>
-              </el-input-tag>
-              <button class="contacts-button" type="button" @click.stop="openContacts">
-                <Icon icon="fa7-solid:user-plus" width="17" height="17"/>
-                <span>{{ settingStore.lang === 'zh' ? '通讯录' : 'Contacts' }}</span>
-              </button>
-            </div>
-          </div>
-          <div class="field-row subject-row">
-            <label>{{ $t('subject') }}</label>
-            <el-input v-model="form.subject" :placeholder="settingStore.lang === 'zh' ? '请输入邮件主题' : 'Enter a subject'" />
-          </div>
-        </section>
 
-        <section class="editor-shell">
-          <tinyEditor :def-value="defValue" ref="editor" @change="change" @focus="focusChange" />
-        </section>
-
-        <section class="compose-footer" @dragover.prevent @drop.prevent="handleDrop">
-          <div class="attachment-zone">
-            <div class="footer-tools">
-              <button class="tool-button" type="button" @click="chooseFile">
-                <Icon icon="iconamoon:attachment-fill" width="19" height="19"/>
-                <span>{{ settingStore.lang === 'zh' ? '添加附件' : 'Add attachment' }}</span>
-              </button>
-              <button class="tool-button tool-button-muted" type="button" @click="clearContent">
-                <Icon icon="icon-park-outline:clear-format" width="18" height="18"/>
-                <span>{{ settingStore.lang === 'zh' ? '清空内容' : 'Clear' }}</span>
-              </button>
-              <span class="drop-tip">
-                <Icon icon="solar:cloud-upload-linear" width="17" height="17"/>
-                {{ settingStore.lang === 'zh' ? '可将文件拖到此处，附件安全存储至 Cloudflare R2' : 'Drop files here · secured by Cloudflare R2' }}
-              </span>
-            </div>
-            <div class="att-list" v-if="form.attachments.length">
-              <div class="att-item" v-for="(item,index) in form.attachments" :key="`${item.filename}-${index}`">
-                <span class="attachment-icon"><Icon v-bind="getIconByName(item.filename)"/></span>
-                <span class="att-filename">{{ item.filename }}</span>
-                <span class="att-size">{{ formatBytes(item.size) }}</span>
-                <button type="button" class="remove-attachment" @click="delAtt(index)">
-                  <Icon icon="material-symbols-light:close-rounded" width="20" height="20"/>
-                </button>
+      <div class="compose-grid">
+        <main class="compose-main-card">
+          <section class="message-meta">
+            <div class="field-row recipient-row">
+              <label>{{ $t('recipient') }}</label>
+              <div class="recipient-control">
+                <el-input-tag @add-tag="addTagChange" tag-type="primary" @input="inputChange" size="default" v-model="form.receiveEmail" :placeholder="settingStore.lang === 'zh' ? '继续输入，回车分隔…' : 'Type and press Enter…'">
+                  <template #prefix>
+                    <el-select ref="mySelect" class="write-select" popper-class="write-select" :show-arrow="false" :no-match-text="' '" :no-data-text="' '" @visible-change="selectStatusChange" @change="selectChange">
+                      <el-option v-for="item in selectRecipientList" :key="item" :label="item" :value="item" style="color:#999896" />
+                    </el-select>
+                  </template>
+                </el-input-tag>
+                <button class="inline-link" type="button" @click.stop="openContacts">{{ settingStore.lang === 'zh' ? '通讯录' : 'Contacts' }}</button>
               </div>
             </div>
+            <div class="field-row subject-row">
+              <label>{{ $t('subject') }}</label>
+              <el-input v-model="form.subject" :placeholder="settingStore.lang === 'zh' ? '请输入邮件主题' : 'Enter a subject'" />
+            </div>
+            <div class="field-row identity-row">
+              <label>{{ settingStore.lang === 'zh' ? '发件身份' : 'From' }}</label>
+              <div class="sender-identity"><span class="sender-avatar">{{ senderInitial }}</span><strong>{{ form.name }}</strong><span>&lt;{{ form.sendEmail }}&gt;</span></div>
+              <span class="quota-hint">{{ quotaHint }}</span>
+            </div>
+          </section>
+
+          <section class="editor-shell">
+            <tinyEditor :def-value="defValue" ref="editor" @change="change" @focus="focusChange" />
+          </section>
+
+          <div class="editor-status">
+            <span>{{ settingStore.lang === 'zh' ? `字符 ${contentStats.characters}` : `${contentStats.characters} characters` }}</span>
+            <span>{{ settingStore.lang === 'zh' ? `词数 ${contentStats.words}` : `${contentStats.words} words` }}</span>
+            <span>{{ settingStore.lang === 'zh' ? `图片 ${contentStats.images}` : `${contentStats.images} images` }}</span>
+            <span>{{ settingStore.lang === 'zh' ? `正文大小 ${contentStats.size}` : `Body ${contentStats.size}` }}</span>
+            <span class="compatibility"><Icon icon="solar:shield-check-linear" width="14"/>{{ settingStore.lang === 'zh' ? '已内联样式 · 兼容主流客户端' : 'Inline styles · client compatible' }}</span>
           </div>
-          <button class="send-button" type="button" @click="sendEmail">
-            <Icon icon="solar:plain-2-bold" width="18" height="18"/>
-            <span>{{ sendActionLabel }}</span>
-          </button>
-        </section>
+
+          <section class="attachment-zone" @dragover.prevent @drop.prevent="handleDrop">
+            <div class="attachment-head">
+              <div><strong>{{ settingStore.lang === 'zh' ? '附件' : 'Attachments' }}</strong><span>{{ form.attachments.length }} {{ settingStore.lang === 'zh' ? '个' : 'files' }} · {{ attachmentTotal }}（{{ settingStore.lang === 'zh' ? '上限 25 MB' : '25 MB limit' }}）</span></div>
+              <button class="add-attachment" type="button" @click="chooseFile"><Icon icon="solar:add-circle-linear" width="17"/>{{ settingStore.lang === 'zh' ? '添加' : 'Add' }}</button>
+            </div>
+            <div class="empty-attachments" v-if="!form.attachments.length"><Icon icon="solar:cloud-upload-linear" width="18"/>{{ settingStore.lang === 'zh' ? '暂无附件。点击“添加”或将文件拖到这里' : 'No attachments. Add or drop files here.' }}</div>
+            <div class="att-list" v-else>
+              <div class="att-item" v-for="(item,index) in form.attachments" :key="`${item.filename}-${index}`">
+                <span class="attachment-icon"><Icon v-bind="getIconByName(item.filename)"/></span><span class="att-filename">{{ item.filename }}</span><span class="att-size">{{ formatBytes(item.size) }}</span>
+                <button type="button" class="remove-attachment" @click="delAtt(index)"><Icon icon="material-symbols-light:close-rounded" width="20"/></button>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <aside class="compose-aside">
+          <section class="side-card recipient-insight">
+            <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '收件人洞察' : 'Recipient insight' }}</span><small>{{ form.receiveEmail.length }} {{ settingStore.lang === 'zh' ? '位' : 'people' }}</small></div>
+            <div v-if="recipientInsights.length" class="insight-list">
+              <div class="insight-person" v-for="item in recipientInsights" :key="item.email"><span>{{ item.initial }}</span><div><strong>{{ item.email }}</strong><small>{{ item.domain }} · {{ item.internal ? (settingStore.lang === 'zh' ? '公司内部' : 'Internal') : (settingStore.lang === 'zh' ? '外部联系人' : 'External') }}</small></div></div>
+            </div>
+            <div v-else class="side-empty">{{ settingStore.lang === 'zh' ? '添加收件人后显示域名与发送范围' : 'Add recipients to see delivery context' }}</div>
+            <button class="contact-book-button" type="button" @click="openContacts"><Icon icon="solar:user-plus-linear" width="17"/>{{ settingStore.lang === 'zh' ? '从通讯录添加' : 'Add from contacts' }}</button>
+          </section>
+
+          <section class="side-card preflight-card">
+            <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '发送前检查' : 'Pre-send checks' }}</span><small :class="{warning: composeChecks.some(item => !item.ok)}">{{ composeChecks.filter(item => !item.ok).length ? `${composeChecks.filter(item => !item.ok).length} ${settingStore.lang === 'zh' ? '项提醒' : 'warnings'}` : (settingStore.lang === 'zh' ? '已就绪' : 'Ready') }}</small></div>
+            <div class="check-list"><div v-for="item in composeChecks" :key="item.label" :class="['check-item', {ok:item.ok, warning:!item.ok}]"><Icon :icon="item.ok ? 'solar:check-circle-bold' : 'solar:danger-circle-linear'" width="15"/><div><strong>{{ item.label }}</strong><small>{{ item.detail }}</small></div></div></div>
+          </section>
+
+          <section class="side-card">
+            <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '快捷插入' : 'Quick insert' }}</span><small>{{ settingStore.lang === 'zh' ? '点击写入正文' : 'Insert into body' }}</small></div>
+            <div class="phrase-list"><button v-for="phrase in quickPhrases" :key="phrase.label" type="button" @click="insertPhrase(phrase.text)">{{ phrase.label }}</button></div>
+          </section>
+
+          <section class="side-card">
+            <div class="side-title"><span>AI {{ settingStore.lang === 'zh' ? '翻译' : 'Translate' }}</span><small>Workers AI</small></div>
+            <div class="translate-row"><select v-model="translateLanguage"><option value="en">English</option><option value="zh">简体中文</option></select><button type="button" :disabled="translating || !form.text.trim()" @click="translateBody"><Icon :icon="translating ? 'svg-spinners:ring-resize' : 'solar:translation-2-linear'" width="16"/>{{ translating ? (settingStore.lang === 'zh' ? '翻译中' : 'Translating') : (settingStore.lang === 'zh' ? '翻译正文' : 'Translate') }}</button></div>
+            <p>{{ settingStore.lang === 'zh' ? '翻译会替换当前正文，发送前仍可继续编辑。' : 'Translation replaces the current body and remains editable.' }}</p>
+          </section>
+        </aside>
       </div>
     </div>
+
+    <el-dialog v-model="showMailPreview" class="mail-preview-dialog" :title="settingStore.lang === 'zh' ? '邮件预览' : 'Email preview'" width="min(760px, calc(100vw - 28px))">
+      <div class="preview-message"><div class="preview-meta"><span><b>{{ $t('sender') }}</b> {{ form.name }} &lt;{{ form.sendEmail }}&gt;</span><span><b>{{ $t('recipient') }}</b> {{ form.receiveEmail.join(', ') || '—' }}</span></div><h2>{{ form.subject || (settingStore.lang === 'zh' ? '（未填写主题）' : '(No subject)') }}</h2><ShadowHtml class="preview-body" :html="previewContent" /></div>
+    </el-dialog>
     <el-dialog top="10vh" v-model="showContacts" @closed="clearSelectContact" :title="t('recentContacts')">
       <el-table ref="contactsTabRef" row-key="email" :data="contacts" style="height: 445px">
         <el-table-column type="selection" width="32" />
@@ -129,10 +122,11 @@
 </template>
 <script setup>
 import tinyEditor from '@/components/tiny-editor/index.vue'
+import ShadowHtml from '@/components/shadow-html/index.vue'
 import {h, nextTick, onMounted, onUnmounted, reactive, ref, toRaw, computed} from "vue";
 import {Icon} from "@iconify/vue";
 import {useUserStore} from "@/store/user.js";
-import {emailSend} from "@/request/email.js";
+import {emailAiCompose, emailSend} from "@/request/email.js";
 import {isEmail} from "@/utils/verify-utils.js";
 import {useAccountStore} from "@/store/account.js";
 import {useEmailStore} from "@/store/email.js";
@@ -173,6 +167,10 @@ let sending = false
 const defValue = ref('')
 const contactsTabRef = ref({})
 const showContacts = ref(false)
+const showMailPreview = ref(false)
+const previewContent = ref('')
+const translating = ref(false)
+const translateLanguage = ref('en')
 const mySelect = ref()
 let selectStatus = false
 const backReply = reactive({
@@ -209,6 +207,50 @@ const sendActionLabel = computed(() => {
   if (form.sendType === 'forward') return t('forward')
   return t('send')
 })
+const quotaHint = computed(() => {
+  const max = Number(userStore.user.role?.sendCount) || 0
+  const used = Number(userStore.user.sendCount) || 0
+  if (!max) return settingStore.lang === 'zh' ? '本月外发配额不限' : 'Unlimited monthly quota'
+  return settingStore.lang === 'zh' ? `剩余配额 ${Math.max(0, max - used)} 封 / 本月` : `${Math.max(0, max - used)} messages remaining`
+})
+const attachmentBytes = computed(() => form.attachments.reduce((sum, item) => sum + (Number(item.size) || 0), 0))
+const attachmentTotal = computed(() => formatBytes(attachmentBytes.value))
+const contentStats = computed(() => {
+  const text = String(form.text || '').trim()
+  const html = String(form.content || '')
+  return {
+    characters: text.length,
+    words: text ? text.split(/\s+/).filter(Boolean).length : 0,
+    images: (html.match(/<img\b/gi) || []).length,
+    size: formatBytes(new Blob([html]).size),
+  }
+})
+const recipientInsights = computed(() => {
+  const internalDomains = (settingStore.domainList || []).map(item => String(item).replace(/^@/, '').toLowerCase())
+  return form.receiveEmail.map(email => {
+    const domain = String(email).split('@')[1]?.toLowerCase() || ''
+    return { email, domain: domain || '—', initial: String(email).charAt(0).toUpperCase(), internal: internalDomains.includes(domain) }
+  })
+})
+const composeChecks = computed(() => [
+  { label: settingStore.lang === 'zh' ? '收件人' : 'Recipients', detail: form.receiveEmail.length ? `${form.receiveEmail.length} ${settingStore.lang === 'zh' ? '位' : 'people'}` : (settingStore.lang === 'zh' ? '尚未添加' : 'Not added'), ok: form.receiveEmail.length > 0 },
+  { label: settingStore.lang === 'zh' ? '邮件主题' : 'Subject', detail: form.subject.trim() ? (settingStore.lang === 'zh' ? '已填写' : 'Complete') : (settingStore.lang === 'zh' ? '尚未填写' : 'Missing'), ok: Boolean(form.subject.trim()) },
+  { label: settingStore.lang === 'zh' ? '正文内容' : 'Message body', detail: form.text.trim() ? `${contentStats.value.characters} ${settingStore.lang === 'zh' ? '字' : 'characters'}` : (settingStore.lang === 'zh' ? '正文为空' : 'Empty'), ok: Boolean(form.text.trim()) },
+  { label: settingStore.lang === 'zh' ? '附件大小' : 'Attachment size', detail: attachmentBytes.value ? attachmentTotal.value : (settingStore.lang === 'zh' ? '无附件' : 'No attachments'), ok: attachmentBytes.value <= 25 * 1024 * 1024 },
+])
+const quickPhrases = computed(() => settingStore.lang === 'zh' ? [
+  {label:'报价有效期', text:'本报价自发出之日起 30 天内有效。'},
+  {label:'交期说明', text:'具体交付时间将在订单确认后另行通知。'},
+  {label:'付款条款', text:'付款条款请以双方最终确认的订单为准。'},
+  {label:'质保条款', text:'产品质保范围与期限以正式合同约定为准。'},
+  {label:'索要图纸', text:'烦请提供对应型号、OE 号或技术图纸，以便进一步确认。'},
+] : [
+  {label:'Quote validity', text:'This quotation is valid for 30 days from the date of issue.'},
+  {label:'Lead time', text:'The final lead time will be confirmed after the order is placed.'},
+  {label:'Payment terms', text:'Payment terms are subject to the final confirmed order.'},
+  {label:'Warranty', text:'Warranty coverage and duration are subject to the final contract.'},
+  {label:'Request drawing', text:'Please provide the model, OE number, or technical drawing for further confirmation.'},
+])
 
 function openContacts() {
   showContacts.value = true
@@ -332,6 +374,36 @@ async function addFiles(fileList) {
 
 function handleDrop(event) {
   addFiles(event.dataTransfer?.files)
+}
+
+function previewMail() {
+  form.content = editor.value.getContent?.() || form.content
+  previewContent.value = formatImage(form.content) || `<p>${settingStore.lang === 'zh' ? '（正文为空）' : '(Empty message)'}</p>`
+  showMailPreview.value = true
+}
+
+function insertPhrase(text) {
+  const html = `<p>${String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</p>`
+  editor.value.insertContent?.(html)
+}
+
+async function translateBody() {
+  if (translating.value) return
+  const content = editor.value.getContent?.() || form.content
+  if (!String(form.text || '').trim()) return
+  translating.value = true
+  try {
+    const data = await emailAiCompose(content, 'translate', translateLanguage.value)
+    const translated = String(data?.text || '')
+    if (!translated) throw new Error(settingStore.lang === 'zh' ? '未生成译文' : 'No translation returned')
+    const html = translated.split(/\n{2,}/).map(part => `<p>${part.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>`).join('')
+    editor.value.setContent?.(html)
+    ElMessage({message: settingStore.lang === 'zh' ? '正文翻译完成' : 'Message translated', type: 'success', plain: true})
+  } catch (error) {
+    ElMessage({message: error?.response?.data?.message || error?.message || (settingStore.lang === 'zh' ? '翻译失败' : 'Translation failed'), type: 'warning', plain: true})
+  } finally {
+    translating.value = false
+  }
 }
 
 async function sendEmail() {
@@ -458,6 +530,7 @@ function resetForm() {
   form.receiveEmail = []
   form.subject = ''
   form.content = ''
+  form.text = ''
   form.manyType = null
   form.attachments = []
   form.sendType = ''
@@ -467,6 +540,8 @@ function resetForm() {
   backReply.subject = ''
   backReply.receiveEmail = []
   backReply.sendType = ''
+  showMailPreview.value = false
+  previewContent.value = ''
   editor.value.clearEditor()
 }
 
@@ -733,6 +808,7 @@ async function saveDraftNow() {
     }
   }
 }
+.send.compose-full { left: 0; }
 
 .compose-header {
   min-height: 70px;
@@ -1028,5 +1104,118 @@ async function saveDraftNow() {
   .draft-button span { display: none; }
   .draft-button { width: 36px; justify-content: center; padding: 0; }
   .compose-title-copy strong { font-size: 15px; }
+}
+
+/* Full-page compose workspace, aligned with the product redesign reference. */
+.send {
+  inset: 56px 0 0 var(--sidebar-w);
+  z-index: 90;
+  display: block;
+  padding: 0;
+  overflow: auto;
+  background: var(--surface-2);
+  backdrop-filter: none;
+}
+.compose-workspace { width: min(1080px, calc(100% - 32px)); min-height: 100%; margin: 0 auto; padding: 24px 0 36px; }
+.compose-topbar { height: 42px; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.compose-topbar h1 { margin: 0; color: var(--text); font-size: 17px; font-weight: 800; letter-spacing: -.25px; }
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.back-button, .secondary-button, .inline-link, .add-attachment, .contact-book-button, .phrase-list button, .translate-row button { border: 0; font: inherit; cursor: pointer; }
+.back-button, .secondary-button { height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 11px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 9px; font-size: 12.5px; font-weight: 650; }
+.back-button:hover, .secondary-button:hover { color: var(--brand-700); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); background: var(--brand-soft); }
+.topbar-actions .send-button { height: 38px; min-width: 80px; padding: 0 14px; border-radius: 9px; font-size: 12.5px; }
+.compose-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 16px; }
+.compose-main-card { min-width: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
+.compose-main-card .message-meta { overflow: visible; border: 0; border-radius: 0; background: var(--surface); }
+.compose-main-card .field-row { min-height: 46px; padding: 7px 16px; border-bottom: 1px solid var(--border); }
+.compose-main-card .field-row > label { width: 64px; flex-basis: 64px; color: var(--text-2); font-size: 12.5px; font-weight: 700; }
+.recipient-control { gap: 7px; }
+.recipient-control :deep(.el-input-tag__wrapper) { min-height: 30px; }
+.inline-link { flex: 0 0 auto; padding: 4px 0; color: var(--brand-700); background: transparent; font-size: 12px; font-weight: 700; }
+.subject-row :deep(.el-input__inner) { color: var(--text); font-weight: 650; }
+.identity-row { gap: 8px; }
+.sender-identity { min-width: 0; display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 12px; }
+.sender-identity strong { color: var(--text); font-size: 12.5px; }
+.sender-avatar { width: 26px; height: 26px; flex-basis: 26px; }
+.quota-hint { margin-left: auto; color: var(--text-3); font-size: 11px; white-space: nowrap; }
+.compose-main-card .editor-shell { height: 450px; min-height: 360px; overflow: hidden; border: 0; border-radius: 0; background: var(--surface); }
+.compose-main-card .editor-shell :deep(.tox-editor-header) { padding: 0 8px !important; background: var(--surface-2) !important; border-bottom: 1px solid var(--border) !important; }
+.compose-main-card .editor-shell :deep(.tox-toolbar-overlord), .compose-main-card .editor-shell :deep(.tox-toolbar__primary) { background: var(--surface-2) !important; }
+.compose-main-card .editor-shell :deep(.tox-edit-area) { background: var(--surface); }
+.editor-status { min-height: 36px; padding: 7px 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--text-3); background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 10.5px; }
+.editor-status .compatibility { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
+.attachment-zone { padding: 14px 16px; background: var(--surface-2); }
+.attachment-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.attachment-head > div { display: flex; align-items: center; gap: 9px; }
+.attachment-head strong { color: var(--text-2); font-size: 12px; }
+.attachment-head span { color: var(--text-3); font-size: 11px; }
+.add-attachment { height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 0 9px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 11.5px; }
+.empty-attachments { min-height: 32px; margin-top: 8px; display: flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 11.5px; }
+.compose-main-card .att-list { max-height: 130px; }
+.compose-aside { display: grid; gap: 14px; }
+.side-card { min-width: 0; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
+.side-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.side-title > span { color: var(--text-3); font-size: 11.5px; font-weight: 750; }
+.side-title small { margin-left: auto; padding: 3px 7px; color: var(--text-3); background: var(--surface-2); border-radius: 7px; font-size: 10.5px; }
+.side-title small.warning { color: #b45309; background: #fff3dd; }
+.insight-list { display: grid; gap: 8px; }
+.insight-person { min-width: 0; display: flex; align-items: center; gap: 9px; }
+.insight-person > span { width: 32px; height: 32px; flex: 0 0 32px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #f59e0b, #f97316); border-radius: 50%; font-size: 11px; font-weight: 800; }
+.insight-person > div { min-width: 0; display: grid; gap: 2px; }
+.insight-person strong, .insight-person small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.insight-person strong { color: var(--text); font-size: 11.5px; }
+.insight-person small { color: var(--text-3); font-size: 10.5px; }
+.side-empty { padding: 10px; color: var(--text-3); background: var(--surface-2); border-radius: 8px; font-size: 11.5px; line-height: 1.55; }
+.contact-book-button { width: 100%; height: 36px; margin-top: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--brand-700); background: var(--brand-soft); border-radius: 8px; font-size: 12px; font-weight: 750; }
+.check-list { display: grid; gap: 6px; }
+.check-item { min-height: 52px; padding: 8px 9px; display: flex; align-items: flex-start; gap: 7px; border-radius: 8px; }
+.check-item.ok { color: var(--success); background: color-mix(in srgb, var(--success) 9%, var(--surface)); }
+.check-item.warning { color: #b45309; background: color-mix(in srgb, #f59e0b 11%, var(--surface)); }
+.check-item > div { display: grid; gap: 2px; }
+.check-item strong { font-size: 11.5px; }
+.check-item small { color: var(--text-3); font-size: 10.5px; }
+.phrase-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.phrase-list button { padding: 5px 8px; color: var(--text-2); background: var(--surface-2); border: 1px solid transparent; border-radius: 999px; font-size: 10.5px; }
+.phrase-list button:hover { color: var(--brand-700); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 25%, var(--border)); }
+.translate-row { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
+.translate-row select { min-width: 0; height: 34px; padding: 0 8px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; outline: 0; font: inherit; font-size: 11.5px; }
+.translate-row button { height: 34px; display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; color: #fff; background: var(--brand-600); border-radius: 8px; font-size: 11.5px; font-weight: 700; }
+.translate-row button:disabled { cursor: not-allowed; opacity: .5; }
+.side-card > p { margin: 8px 0 0; color: var(--text-3); font-size: 10.5px; line-height: 1.55; }
+:global(.mail-preview-dialog) { width: min(760px, calc(100vw - 28px)) !important; border-radius: 14px !important; }
+:global(.mail-preview-dialog .el-dialog__body) { padding-top: 8px; }
+.preview-message { padding: 4px 6px 12px; }
+.preview-meta { display: flex; flex-wrap: wrap; gap: 7px 20px; color: var(--text-3); font-size: 11.5px; }
+.preview-meta b { color: var(--text-2); }
+.preview-message h2 { margin: 13px 0 18px; color: var(--text); font-size: 18px; }
+.preview-body { min-height: 240px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text); line-height: 1.75; }
+
+@media (max-width: 1200px) {
+  .compose-workspace { width: calc(100% - 24px); }
+  .compose-grid { grid-template-columns: minmax(0, 1fr) 285px; gap: 12px; }
+}
+@media (max-width: 1024px) {
+  .send { inset: 56px 0 0 0; }
+  .compose-grid { grid-template-columns: minmax(0, 1fr); }
+  .compose-aside { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .send { inset: 52px 0 58px 0; }
+  .compose-workspace { width: 100%; padding: 10px 10px 24px; }
+  .compose-topbar { height: auto; min-height: 42px; flex-wrap: wrap; }
+  .compose-topbar h1 { font-size: 15px; }
+  .topbar-actions { gap: 5px; }
+  .secondary-button { width: 36px; padding: 0; font-size: 0; }
+  .topbar-actions .send-button { min-width: 68px; padding: 0 10px; }
+  .compose-main-card { border-radius: var(--r-md); }
+  .compose-main-card .field-row { align-items: flex-start; flex-direction: column; gap: 5px; padding: 9px 11px; }
+  .compose-main-card .field-row > label { width: auto; flex-basis: auto; }
+  .recipient-control { width: 100%; flex-wrap: wrap; }
+  .recipient-control :deep(.el-input-tag) { flex-basis: 100%; }
+  .quota-hint { margin-left: 0; }
+  .compose-main-card .editor-shell { height: 420px; min-height: 320px; }
+  .editor-status { gap: 7px; padding: 7px 10px; }
+  .editor-status .compatibility { width: 100%; margin-left: 0; }
+  .compose-aside { grid-template-columns: minmax(0, 1fr); }
 }
 </style>
