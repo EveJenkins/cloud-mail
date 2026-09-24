@@ -1,191 +1,176 @@
 <template>
-  <el-scrollbar class="scroll">
-    <div>
-      <div class="title" >
-        <Icon icon="mdi:email-outline" width="24" height="24" />
-        <div>{{settingStore.settings.title}}</div>
-      </div>
-      <el-menu :collapse="false" text-color="#fff" active-text-color="#fff" style="margin-top: 10px">
+  <div class="aside-shell">
+    <div class="title">
+      <span class="brand-mark"><Icon icon="mdi:email-outline" width="19" height="19" /></span>
+      <div>{{ settingStore.settings.title }}</div>
+      <span class="role-badge">{{ userStore.user.role?.name || 'User' }}</span>
+    </div>
+
+    <div class="compose-wrap" v-perm="'email:send'">
+      <el-button type="primary" class="compose-btn" @click="openWriter">
+        <Icon icon="material-symbols:edit-outline" width="18" height="18" />
+        <span>{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</span>
+      </el-button>
+    </div>
+
+    <el-scrollbar class="scroll">
+      <el-menu :collapse="false">
+        <div class="group-title">MAIL</div>
         <el-menu-item @click="router.push({name: 'email'})" index="email"
                       :class="route.meta.name === 'email' ? 'choose-item' : ''">
-          <Icon icon="hugeicons:mailbox-01" width="20" height="20" />
-          <span class="menu-name" style="margin-left: 16px">{{$t('inbox')}}</span>
-        </el-menu-item>
-        <el-menu-item @click="router.push({name: 'send'})" index="send" v-perm="'email:send'"
-                      :class="route.meta.name === 'send' ? 'choose-item' : ''">
-          <Icon icon="cil:send" width="20" height="20" />
-          <span class="menu-name" style="margin-left: 16px">{{$t('sent')}}</span>
-        </el-menu-item>
-        <el-menu-item @click="router.push({name: 'draft'})" index="draft" v-perm="'email:send'"
-                      :class="route.meta.name === 'draft' ? 'choose-item' : ''">
-          <Icon icon="ep:document" width="19" height="19" />
-          <span class="menu-name" style="margin-left: 17px">{{$t('drafts')}}</span>
+          <Icon icon="hugeicons:mailbox-01" width="19" height="19" />
+          <span class="menu-name">{{ $t('inbox') }}</span>
         </el-menu-item>
         <el-menu-item @click="router.push({name: 'star'})" index="star"
                       :class="route.meta.name === 'star' ? 'choose-item' : ''">
-          <Icon icon="solar:star-line-duotone" width="20" height="20" />
-          <span class="menu-name" style="margin-left: 16px">{{$t('starred')}}</span>
+          <Icon icon="solar:star-line-duotone" width="19" height="19" />
+          <span class="menu-name">{{ $t('starred') }}</span>
+        </el-menu-item>
+        <el-menu-item @click="router.push({name: 'send'})" index="send" v-perm="'email:send'"
+                      :class="route.meta.name === 'send' ? 'choose-item' : ''">
+          <Icon icon="cil:send" width="18" height="18" />
+          <span class="menu-name">{{ $t('sent') }}</span>
+        </el-menu-item>
+        <el-menu-item @click="router.push({name: 'draft'})" index="draft" v-perm="'email:send'"
+                      :class="route.meta.name === 'draft' ? 'choose-item' : ''">
+          <Icon icon="ep:document" width="18" height="18" />
+          <span class="menu-name">{{ $t('drafts') }}</span>
         </el-menu-item>
         <el-menu-item @click="router.push({name: 'setting'})" index="setting"
                       :class="route.meta.name === 'setting' ? 'choose-item' : ''">
-          <Icon icon="fluent:settings-48-regular" width="20" height="20" />
-          <span class="menu-name" style="margin-left: 16px">{{$t('settings')}}</span>
+          <Icon icon="fluent:settings-48-regular" width="19" height="19" />
+          <span class="menu-name">{{ $t('settings') }}</span>
         </el-menu-item>
-        <div class="manage-title" v-perm="['all-email:query','user:query','role:query','setting:query','analysis:query','reg-key:query']">
-          <div>{{$t('manage')}}</div>
-        </div>
+
+        <div class="manage-title" v-perm="['all-email:query','user:query','role:query','setting:query','analysis:query','reg-key:query']">ADMIN</div>
         <el-menu-item @click="router.push({name: 'analysis'})" index="analysis" v-perm="'analysis:query'"
                       :class="route.meta.name === 'analysis' ? 'choose-item' : ''">
-          <Icon icon="fluent:data-pie-20-regular" width="24" height="24" />
-          <span class="menu-name" style="margin-left: 13px">{{$t('analytics')}}</span>
+          <Icon icon="fluent:data-pie-20-regular" width="20" height="20" />
+          <span class="menu-name">{{ $t('analytics') }}</span>
         </el-menu-item>
-        <el-menu-item @click="router.push({name: 'user'})" index="setting" v-perm="'user:query'"
+        <el-menu-item @click="router.push({name: 'user'})" index="user" v-perm="'user:query'"
                       :class="route.meta.name === 'user' ? 'choose-item' : ''">
-          <Icon icon="si:user-alt-2-line" width="20" height="20" />
-          <span class="menu-name" style="margin-left: 16px">{{$t('allUsers')}}</span>
+          <Icon icon="si:user-alt-2-line" width="19" height="19" />
+          <span class="menu-name">{{ $t('allUsers') }}</span>
         </el-menu-item>
         <el-menu-item @click="router.push({name: 'all-email'})" index="all-email" v-perm="'all-email:query'"
                       :class="route.meta.name === 'all-email' ? 'choose-item' : ''">
-          <Icon icon="fluent:mail-list-28-regular" width="22" height="22" />
-          <span class="menu-name" style="margin-left: 15px">{{$t('allMail')}}</span>
+          <Icon icon="fluent:mail-list-28-regular" width="20" height="20" />
+          <span class="menu-name">{{ $t('allMail') }}</span>
         </el-menu-item>
-        <el-menu-item @click="router.push({name: 'role'})" index="setting" v-perm="'role:query'"
+        <el-menu-item @click="router.push({name: 'role'})" index="role" v-perm="'role:query'"
                       :class="route.meta.name === 'role' ? 'choose-item' : ''">
-          <Icon icon="fluent:lock-closed-16-regular" width="22" height="22" />
-          <span class="menu-name" style="margin-left: 15px">{{$t('permissions')}}</span>
+          <Icon icon="fluent:lock-closed-16-regular" width="20" height="20" />
+          <span class="menu-name">{{ $t('permissions') }}</span>
         </el-menu-item>
         <el-menu-item @click="router.push({name: 'reg-key'})" index="reg-key" v-perm="'reg-key:query'"
                       :class="route.meta.name === 'reg-key' ? 'choose-item' : ''">
-          <Icon icon="fluent:fingerprint-20-filled" width="22" height="22" />
-          <span class="menu-name" style="margin-left: 15px">{{$t('inviteCode')}}</span>
+          <Icon icon="fluent:fingerprint-20-filled" width="20" height="20" />
+          <span class="menu-name">{{ $t('inviteCode') }}</span>
         </el-menu-item>
         <el-menu-item @click="router.push({name: 'sys-setting'})" index="sys-setting" v-perm="'setting:query'"
                       :class="route.meta.name === 'sys-setting' ? 'choose-item' : ''">
-          <Icon icon="eos-icons:system-ok-outlined" width="18" height="18" style="margin-left: 2px" />
-          <span class="menu-name" style="margin-left: 17px">{{$t('SystemSettings')}}</span>
+          <Icon icon="eos-icons:system-ok-outlined" width="19" height="19" />
+          <span class="menu-name">{{ $t('SystemSettings') }}</span>
         </el-menu-item>
       </el-menu>
+    </el-scrollbar>
+
+    <div class="quota-card">
+      <div class="quota-head">
+        <span>{{ settingStore.lang === 'zh' ? '本月发送配额' : 'Monthly quota' }}</span>
+        <span>{{ quotaText }}</span>
+      </div>
+      <div class="quota-track"><span :style="{ width: quotaPercent + '%' }"></span></div>
+      <div class="quota-foot" :class="{ warning: quotaPercent >= 80 }">
+        <span>{{ quotaStatus }}</span>
+        <Icon :icon="quotaPercent >= 80 ? 'solar:danger-triangle-linear' : 'solar:check-circle-linear'" />
+      </div>
     </div>
-  </el-scrollbar>
+  </div>
 </template>
 
 <script setup>
-import router from "@/router/index.js";
-import { useRoute } from "vue-router";
-import {Icon} from "@iconify/vue";
-import {useSettingStore} from "@/store/setting.js";
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { Icon } from '@iconify/vue'
+import router from '@/router/index.js'
+import { useSettingStore } from '@/store/setting.js'
+import { useUiStore } from '@/store/ui.js'
+import { useUserStore } from '@/store/user.js'
 
-const settingStore = useSettingStore();
-const route = useRoute();
+const settingStore = useSettingStore()
+const uiStore = useUiStore()
+const userStore = useUserStore()
+const route = useRoute()
 
+const quotaMax = computed(() => Number(userStore.user.role?.sendCount) || 0)
+const quotaUsed = computed(() => Number(userStore.user.sendCount) || 0)
+const quotaPercent = computed(() => quotaMax.value ? Math.min(100, Math.round(quotaUsed.value / quotaMax.value * 100)) : 0)
+const quotaText = computed(() => quotaMax.value ? `${quotaUsed.value} / ${quotaMax.value}` : (settingStore.lang === 'zh' ? '不限' : 'Unlimited'))
+const quotaStatus = computed(() => quotaPercent.value >= 80
+  ? (settingStore.lang === 'zh' ? '即将达到上限' : 'Near limit')
+  : (settingStore.lang === 'zh' ? '运行正常' : 'Healthy'))
+
+function openWriter() {
+  uiStore.writerRef?.open?.()
+}
 </script>
 
 <style lang="scss" scoped>
+.aside-shell {
+  width: var(--sidebar-w);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
 
 .title {
-  margin: 22px 16px 26px;
-  height: 48px;
-  border-radius: 14px;
+  height: 56px;
+  padding: 0 16px;
+  flex: none;
   display: flex;
-  position: relative;
-  font-size: 16px;
-  font-weight: bold;
   align-items: center;
-  justify-content: flex-start;
-  gap: 11px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, .075);
-  border: 1px solid rgba(255, 255, 255, .09);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
-  transition: all 0.3s ease;
-  max-width: 240px;
-  padding: 0 14px;
-  > div {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    max-width: calc(240px - 20px - 30px);
-  }
-
-  :deep(.el-icon) {
-    flex-shrink: 0;
-    font-size: 20px;
-  }
-
-  .user-right-icon {
-    align-self: center;
-    position: absolute;
-    font-size: 12px;
-    right: 8px;
-    color: #ffffff;
-  }
-
-}
-
-
-.manage-title {
-  margin: 24px 0 9px;
-  padding-left: 20px;
-  color: rgba(207, 220, 245, .48);
-  font-size: 10px;
+  gap: 10px;
+  color: var(--text);
+  font-size: 15.5px;
   font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+
+  > div { max-width: 112px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 }
 
+.brand-mark { width: 32px; height: 32px; flex: none; display: grid; place-items: center; color: #fff; border-radius: 10px; background: linear-gradient(135deg, var(--brand-500), #25d366); }
+.role-badge { margin-left: auto; max-width: 62px; overflow: hidden; text-overflow: ellipsis; padding: 3px 7px; border-radius: 6px; color: var(--brand-600); background: var(--brand-soft); font-size: 10px; font-weight: 700; }
+.compose-wrap { padding: 0 16px 12px; }
+.compose-btn { width: 100%; height: 40px; display: flex; gap: 7px; }
+.scroll { flex: 1; min-height: 0; padding: 0 16px; }
+.group-title, .manage-title { padding: 8px 12px 6px; color: var(--text-3); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.manage-title { padding-top: 22px; }
+
+.el-menu { width: 100%; padding-bottom: 24px; border-right: 0; background: transparent; }
 .el-menu-item {
-  margin: 5px 12px !important;
-  border-radius: 10px;
-  height: 42px;
-  padding: 10px 12px !important;
-  color: rgba(229, 237, 251, .72) !important;
-  transition: color .18s ease, background-color .18s ease, transform .18s ease;
+  height: 40px;
+  margin: 3px 0 !important;
+  padding: 0 12px !important;
+  gap: 11px;
+  border-radius: var(--r-sm);
+  color: var(--text-2) !important;
+  background: transparent !important;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
+.el-menu-item:hover { color: var(--text) !important; background: var(--surface-3) !important; }
+.el-menu-item.choose-item { color: var(--brand-600) !important; background: var(--brand-soft) !important; box-shadow: inset 3px 0 0 var(--brand-600); font-weight: 650; }
+.menu-name { margin-left: 0; user-select: none; }
 
-.choose-item {
-  font-weight: 600;
-  color: #fff !important;
-  background: var(--aside-menu-active-background) !important;
-  box-shadow: inset 3px 0 0 #7897ff;
-}
-
-@media (hover: hover) {
-  .el-menu-item:hover {
-    color: #fff !important;
-    background: rgba(255, 255, 255, 0.07) !important;
-    transform: translateX(2px);
-  }
-}
-
-.menu-name {
-  user-select: none;
-}
-
-
-:deep(.el-scrollbar__wrap--hidden-default ) {
-  background: var(--aside-backgound) !important;
-}
-
-:deep(.el-menu-item) {
-  background: var(--aside-backgound);
-}
-
-:deep(.el-menu) {
-  background: var(--aside-backgound);
-}
-
-.el-menu {
-  border-right: 0;
-  width: 260px;
-  padding-bottom: 24px;
-}
-
-:deep(.el-divider__text) {
-  background: var(--aside-backgound);
-  color: #FFFFFF;
-}
-
-.scroll {
-
-}
+.quota-card { flex: none; margin: 12px; padding: 12px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--border); }
+.quota-head, .quota-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+.quota-head { color: var(--text-2); font-weight: 600; }
+.quota-head span:last-child { color: var(--text-3); font-variant-numeric: tabular-nums; }
+.quota-track { height: 6px; margin: 9px 0 8px; overflow: hidden; border-radius: 99px; background: var(--border); }
+.quota-track span { display: block; height: 100%; min-width: 4px; border-radius: inherit; background: var(--brand-600); transition: width var(--dur) var(--ease); }
+.quota-foot { justify-content: flex-start; color: var(--success); font-size: 11.5px; }
+.quota-foot svg { margin-left: auto; }
+.quota-foot.warning { color: var(--warning); }
 </style>

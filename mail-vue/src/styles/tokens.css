@@ -1,0 +1,47 @@
+:root {
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-soft: rgba(37, 99, 235, .10);
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+  --info: #0891b2;
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --border: #e6ebf2;
+  --border-strong: #d5dde8;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --sh-1: 0 1px 2px rgba(15, 23, 42, .06);
+  --sh-2: 0 4px 16px rgba(15, 23, 42, .08);
+  --sh-3: 0 18px 48px rgba(15, 23, 42, .14);
+  --dur: 180ms;
+  --ease: cubic-bezier(.22, .61, .36, 1);
+  --sidebar-w: 248px;
+  --mail-list-w: 392px;
+}
+
+html.dark {
+  --bg: #070b14;
+  --surface: #0e1524;
+  --surface-2: #131c2e;
+  --surface-3: #1a2436;
+  --border: #1f2a3d;
+  --border-strong: #2b3648;
+  --text: #e8eefb;
+  --text-2: #a3b0c7;
+  --text-3: #6b7a94;
+  --brand-soft: rgba(96, 165, 250, .14);
+  --sh-2: 0 4px 16px rgba(0, 0, 0, .45);
+  --sh-3: 0 18px 48px rgba(0, 0, 0, .55);
+}

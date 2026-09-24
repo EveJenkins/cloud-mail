@@ -146,8 +146,8 @@ const handleResize = () => {
 
 .main-box-show {
   display: grid;
-  grid-template-columns: 260px  1fr;
-  height: calc(100% - 60px);
+  grid-template-columns: minmax(280px, 320px) 1fr;
+  height: calc(100% - 56px);
   @media (max-width: 767px) {
     grid-template-columns: 1fr;
   }
@@ -156,12 +156,16 @@ const handleResize = () => {
 .main-box-hide {
   display: grid;
   grid-template-columns: 1fr;
-  height: calc(100% - 60px);
+  height: calc(100% - 56px);
 }
 
 
 .main-view {
-  background: var(--el-bg-color);
+  background: var(--bg);
+}
+
+@media (max-width: 767px) {
+  .main-box-show, .main-box-hide { height: calc(100% - 52px); }
 }
 
 

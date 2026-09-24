@@ -3,26 +3,30 @@
     <div class="login-backdrop" :class="{ 'custom-backdrop': settingStore.settings.background }" :style="background"></div>
     <section class="brand-panel" aria-label="Product introduction">
       <div class="brand-lockup">
-        <div class="brand-mark"><Icon icon="solar:letter-bold-duotone" width="28" height="28" /></div>
+        <div class="brand-mark"><Icon icon="mdi:email-outline" width="21" height="21" /></div>
         <span>{{ settingStore.settings.title }}</span>
+        <span class="platform-badge">Cloudflare Workers</span>
       </div>
       <div class="brand-message">
-        <span class="brand-eyebrow">ENTERPRISE MAIL</span>
-        <h1>让每一次沟通<br><em>专业、可靠、高效。</em></h1>
-        <p>面向现代团队的安全邮件工作台，在清晰、有序的体验中连接每一项重要业务。</p>
+        <h1>一个域名，<br/>撑起整套邮箱服务</h1>
+        <p>基于 Cloudflare Workers 的极简邮箱：收发附件走 R2，发信走 Resend，验证码由 Workers AI 自动识别。</p>
+        <div class="brand-stats">
+          <div><strong>∞</strong><span>域名下可开邮箱数</span></div>
+          <div><strong>$0</strong><span>Workers 免费额度起步</span></div>
+        </div>
         <div class="brand-features">
-          <span><Icon icon="solar:shield-check-linear" /> 安全连接</span>
-          <span><Icon icon="solar:bolt-linear" /> 高效协作</span>
-          <span><Icon icon="solar:cloud-check-linear" /> 稳定可靠</span>
+          <span><Icon icon="solar:check-circle-bold" /> 群发 / 内嵌图片</span>
+          <span><Icon icon="solar:check-circle-bold" /> TG 机器人推送</span>
+          <span><Icon icon="solar:check-circle-bold" /> 开放 API 批量建号</span>
+          <span><Icon icon="solar:check-circle-bold" /> RBAC 配额控制</span>
         </div>
       </div>
-      <div class="brand-footnote">SECURE COMMUNICATION · BUILT FOR BUSINESS</div>
+      <div class="brand-footnote">CLOUDFLARE · R2 · RESEND · WORKERS AI</div>
     </section>
     <div class="form-wrapper">
       <div class="container">
-        <div class="form-brand-mark"><Icon icon="solar:letter-bold-duotone" width="24" height="24" /></div>
-        <span class="form-kicker">WELCOME BACK</span>
-        <span class="form-title">{{ settingStore.settings.title }}</span>
+        <div class="form-brand-mark"><Icon icon="mdi:email-outline" width="21" height="21" /></div>
+        <span class="form-title">{{ show === 'login' ? (settingStore.lang === 'zh' ? '登录你的邮箱' : 'Sign in to your mailbox') : $t('regTitle') }}</span>
         <span class="form-desc" v-if="show === 'login'">{{ $t('loginTitle') }}</span>
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
         <div v-show="show === 'login'">
@@ -647,7 +651,7 @@ function submitRegister() {
 .form-wrapper {
   position: fixed;
   right: 0;
-  width: min(46vw, 680px);
+  width: 47.5vw;
   height: 100%;
   z-index: 10;
   display: flex;
@@ -660,17 +664,17 @@ function submitRegister() {
 
 .container {
   background: v-bind(loginOpacity);
-  padding: 48px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: min(440px, calc(100% - 64px));
+  width: min(400px, calc(100% - 48px));
   height: auto;
-  min-height: 540px;
-  border: 1px solid rgba(255, 255, 255, .72);
-  border-radius: 24px;
-  box-shadow: 0 30px 80px rgba(15, 23, 42, .16), 0 2px 12px rgba(15, 23, 42, .06);
-  backdrop-filter: blur(24px) saturate(140%);
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-3);
+  backdrop-filter: blur(18px) saturate(130%);
   @media (max-width: 1024px) {
     padding: 36px 28px;
     width: calc(100% - 48px);
@@ -695,23 +699,15 @@ function submitRegister() {
   }
 
   .form-desc {
-    margin-top: 7px;
-    margin-bottom: 28px;
+    margin-top: 6px;
+    margin-bottom: 24px;
     color: var(--form-desc-color);
   }
 
   .form-title {
     font-weight: 700;
-    font-size: 28px !important;
-    letter-spacing: -.6px;
-  }
-
-  .form-kicker {
-    margin: 20px 0 4px;
-    color: var(--el-color-primary);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.8px;
+    font-size: 22px !important;
+    letter-spacing: -.3px;
   }
 
   .form-brand-mark {
@@ -722,8 +718,7 @@ function submitRegister() {
     align-items: center;
     justify-content: center;
     color: white;
-    background: var(--enterprise-gradient);
-    box-shadow: 0 10px 24px rgba(46, 91, 255, .25);
+    background: linear-gradient(135deg, var(--brand-500), #25d366);
     @media (max-width: 767px) { display: flex; }
   }
 
@@ -738,7 +733,7 @@ function submitRegister() {
   }
 
   :deep(.el-input__wrapper) {
-    border-radius: 10px;
+    border-radius: var(--r-sm);
     background: var(--el-bg-color);
     box-shadow: 0 0 0 1px var(--el-border-color) inset;
   }
@@ -844,7 +839,7 @@ function submitRegister() {
   padding: 0;
   overflow-x: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) min(46vw, 680px);
+  grid-template-columns: 1.05fr .95fr;
 }
 
 .login-backdrop {
@@ -852,9 +847,13 @@ function submitRegister() {
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(circle at 18% 18%, rgba(89, 126, 247, .28), transparent 28%),
-    radial-gradient(circle at 62% 82%, rgba(47, 196, 182, .14), transparent 24%),
-    linear-gradient(135deg, #07162f 0%, #102b55 46%, #eaf1fb 46.1%, #f6f8fc 100%);
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+    radial-gradient(1200px 600px at 12% 18%, rgba(37,99,235,.30), transparent 60%),
+    radial-gradient(900px 500px at 88% 12%, rgba(37,211,102,.22), transparent 62%),
+    radial-gradient(1000px 700px at 70% 90%, rgba(139,92,246,.24), transparent 60%),
+    linear-gradient(160deg,#0b1220 0%, #111c33 55%, #0a1220 100%);
+  background-size: 44px 44px, 44px 44px, auto, auto, auto, auto;
 }
 
 .custom-backdrop::after {
@@ -869,23 +868,26 @@ function submitRegister() {
   z-index: 2;
   min-width: 0;
   height: 100%;
-  padding: clamp(32px, 4vw, 68px);
+  padding: 48px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   color: white;
 }
 
-.brand-lockup { display: flex; align-items: center; gap: 13px; font-weight: 650; font-size: 17px; }
-.brand-mark { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.25); border-radius: 14px; background: rgba(255,255,255,.1); backdrop-filter: blur(12px); }
-.brand-message { max-width: 700px; }
-.brand-eyebrow { display: inline-block; margin-bottom: 22px; color: #82a8ff; font-size: 12px; font-weight: 700; letter-spacing: 2.4px; }
-.brand-message h1 { font-size: clamp(42px, 4.3vw, 68px); line-height: 1.14; letter-spacing: -2.4px; font-weight: 650; }
-.brand-message h1 em { color: #8eb4ff; font-style: normal; }
-.brand-message p { max-width: 570px; margin-top: 26px; color: rgba(231, 238, 250, .72); font-size: 16px; line-height: 1.9; }
-.brand-features { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 36px; color: rgba(255,255,255,.82); }
-.brand-features span { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.brand-features svg { color: #8eb4ff; font-size: 18px; }
+.brand-lockup { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+.brand-mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg, var(--brand-500), #25d366); }
+.platform-badge { margin-left: 6px; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,.14); color: #cfe0ff; font-size: 10.5px; font-weight: 650; }
+.brand-message { max-width: 540px; }
+.brand-message h1 { font-size: clamp(36px, 3.3vw, 48px); line-height: 1.14; letter-spacing: -1.5px; font-weight: 800; }
+.brand-message p { max-width: 530px; margin-top: 20px; color: rgba(255,255,255,.7); font-size: 15px; line-height: 1.85; }
+.brand-stats { max-width: 450px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; }
+.brand-stats > div { padding: 16px; border: 1px solid rgba(255,255,255,.12); border-radius: var(--r-lg); background: rgba(255,255,255,.07); }
+.brand-stats strong { display: block; font-size: 24px; line-height: 1.1; }
+.brand-stats span { display: block; margin-top: 6px; color: rgba(255,255,255,.6); font-size: 13px; }
+.brand-features { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 30px; color: rgba(255,255,255,.58); }
+.brand-features span { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+.brand-features svg { color: #25d366; font-size: 14px; }
 .brand-footnote { color: rgba(255,255,255,.4); font-size: 10px; letter-spacing: 1.7px; }
 
 @media (max-width: 767px) {
@@ -895,6 +897,12 @@ function submitRegister() {
   .form-wrapper { width: 100%; padding: 24px 0; overflow-y: auto; }
   .container { min-height: auto; background: rgba(255,255,255,.96); }
   :global(.dark) .container { background: rgba(18,25,38,.94); border-color: rgba(255,255,255,.1); }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  #login-box { grid-template-columns: 1fr; }
+  .brand-panel { display: none; }
+  .form-wrapper { width: 100%; }
 }
 
 </style>

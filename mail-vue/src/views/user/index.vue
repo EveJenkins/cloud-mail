@@ -68,6 +68,14 @@
           <el-table-column :formatter="formatterSend" label-class-name="send" column-key="send"
                            :filtered-value="filteredValue" :filters="filters" v-if="sendNumShow" :label="$t('tabSent')"
                            prop="sendEmailCount"/>
+          <el-table-column v-if="sendNumShow" :label="locale === 'zh' ? '发送配额' : 'Send quota'" min-width="170">
+            <template #default="props">
+              <div class="quota-cell" :class="quotaLevel(props.row)">
+                <div><span>{{ formatSendCount(props.row) }}</span><small>{{ quotaLabel(props.row) }}</small></div>
+                <div class="quota-line"><span :style="{ width: quotaPercent(props.row) + '%' }"></span></div>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column :formatter="formatterAccount" label-class-name="account" column-key="account"
                            :filtered-value="filteredValue" :filters="filters" v-if="accountNumShow"
                            :label="$t('tabMailboxes')"
@@ -803,6 +811,25 @@ function formatSendCount(user) {
   return count
 }
 
+function quotaPercent(user) {
+  const max = Number(user.sendAction?.sendCount) || 0
+  return max ? Math.min(100, Math.round((Number(user.sendCount) || 0) / max * 100)) : 0
+}
+
+function quotaLevel(user) {
+  const percent = quotaPercent(user)
+  return percent >= 100 ? 'danger' : percent >= 80 ? 'warning' : 'normal'
+}
+
+function quotaLabel(user) {
+  if (!user.sendAction?.hasPerm) return locale.value === 'zh' ? '无权限' : 'No access'
+  if (!user.sendAction?.sendCount) return locale.value === 'zh' ? '不限' : 'Unlimited'
+  const percent = quotaPercent(user)
+  if (percent >= 100) return locale.value === 'zh' ? '已超限' : 'Exceeded'
+  if (percent >= 80) return locale.value === 'zh' ? '临近上限' : 'Near limit'
+  return locale.value === 'zh' ? '正常' : 'Healthy'
+}
+
 function toRoleName(type) {
 
   if (type === 0) {
@@ -1225,6 +1252,18 @@ function adjustWidth() {
   :deep(.el-select__wrapper) {
     min-height: 28px;
   }
+}
+
+.quota-cell {
+  min-width: 130px;
+  > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+  small { color: var(--success); font-size: 11px; }
+  .quota-line { height: 5px; margin-top: 7px; overflow: hidden; border-radius: 99px; background: var(--border); }
+  .quota-line span { display: block; height: 100%; border-radius: inherit; background: var(--success); }
+  &.warning small { color: var(--warning); }
+  &.warning .quota-line span { background: var(--warning); }
+  &.danger small { color: var(--danger); }
+  &.danger .quota-line span { background: var(--danger); }
 }
 
 .dialog {

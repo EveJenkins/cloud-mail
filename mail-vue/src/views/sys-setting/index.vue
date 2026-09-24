@@ -1836,10 +1836,11 @@ function editSetting(settingForm, refreshStatus = true) {
 }
 
 .settings-card {
-  background-color: var(--el-bg-color);
-  border-radius: 6px;
-  border: 1px solid var(--el-border-color);
-  transition: all 300ms;
+  background-color: var(--surface);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--sh-1);
+  transition: all var(--dur) var(--ease);
   overflow: hidden;
   max-width: 900px;
   width: 100%;

@@ -18,6 +18,7 @@
       </el-main>
     </el-container>
   </el-container>
+  <MobileTab />
   <writer ref="writerRef" />
 </template>
 
@@ -25,6 +26,7 @@
 import Aside from '@/layout/aside/index.vue'
 import Header from '@/layout/header/index.vue'
 import Main from '@/layout/main/index.vue'
+import MobileTab from '@/layout/mobile-tab/index.vue'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import {useUiStore} from "@/store/ui.js";
 import writer from '@/layout/write/index.vue'
@@ -60,10 +62,8 @@ onBeforeUnmount(() => {
 }
 
 .aside-show {
-  -webkit-box-shadow: var(--aside-right-border);
-  box-shadow: var(--aside-right-border);
   transform: translateX(0);
-  transition: all 100ms ease;
+  transition: all var(--dur) var(--ease);
   z-index: 101;
   @media (max-width: 1025px) {
     position: fixed;
@@ -76,8 +76,8 @@ onBeforeUnmount(() => {
 }
 
 .el-aside {
-  width: auto;
-  transition: all 100ms ease;
+  width: var(--sidebar-w);
+  transition: all var(--dur) var(--ease);
 }
 
 .layout {
@@ -102,10 +102,9 @@ onBeforeUnmount(() => {
 }
 
 .el-header {
-  height: 64px;
-  background: color-mix(in srgb, var(--el-bg-color) 88%, transparent);
-  backdrop-filter: blur(18px);
-  border-bottom: solid 1px color-mix(in srgb, var(--el-border-color) 68%, transparent);
+  height: 56px;
+  background: var(--surface);
+  border-bottom: solid 1px var(--border);
   padding: 0 0 0 0;
 }
 
@@ -124,5 +123,10 @@ onBeforeUnmount(() => {
   display: flex;
   pointer-events: none;
   opacity: 0;
+}
+
+@media (max-width: 767px) {
+  .main-container { padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+  .el-header { height: 52px; }
 }
 </style>

@@ -54,6 +54,9 @@
                 <Icon v-else icon="solar:star-line-duotone" width="18" height="18"/>
               </div>
               <div v-if="!showStar"></div>
+              <div class="sender-avatar" :style="{ background: avatarGradient(item.name || item.sendEmail) }">
+                {{ senderInitials(item.name || item.sendEmail) }}
+              </div>
               <div class="title" :class="accountShow ? 'title-column' : 'title-column'">
 
                 <div class="email-sender" :style=" (showStatus ? 'gap: 10px;' : '') + ((item.unread === EmailUnreadEnum.UNREAD && showUnread)  ? 'font-weight: bold' : '')">
@@ -83,7 +86,9 @@
                   <div class="email-text">
                     <span class="email-subject" :style="(item.unread === EmailUnreadEnum.UNREAD && showUnread)  ? 'font-weight: bold' : ''">
                       <div class="unread" v-if="!isMobile && (item.unread === EmailUnreadEnum.UNREAD && showUnread) "/>
-                      <span v-if="item.code" class="code-tag" @click.stop="copyCode(item.code)">[{{ t('codeLabel') }}{{ item.code }}]</span>
+                      <span v-if="item.code" class="code-tag" @click.stop="copyCode(item.code)">
+                        <Icon icon="solar:check-circle-bold" width="12" height="12" />{{ t('codeLabel') }} {{ item.code }}
+                      </span>
                       <span class="subject-text">
                         <slot name="subject" :email="item" >
                           {{ item.subject || '\u200B' }}
@@ -329,6 +334,23 @@ const MAX_SELECT_COUNT = 95;
 const checkedEmailCount = ref(0);
 const isSelectMax = computed(() => checkedEmailCount.value >= MAX_SELECT_COUNT);
 let timer = null
+
+function senderInitials(value = '') {
+  const text = String(value).trim()
+  if (!text) return 'M'
+  const parts = text.replace(/@.*/, '').split(/[\s._-]+/).filter(Boolean)
+  return parts.slice(0, 2).map(part => part[0]).join('').toUpperCase()
+}
+
+function avatarGradient(value = '') {
+  const palettes = [
+    ['#3b82f6', '#6366f1'], ['#f59e0b', '#ef4444'], ['#25d366', '#0ea5e9'],
+    ['#8b5cf6', '#ec4899'], ['#64748b', '#334155']
+  ]
+  const score = Array.from(String(value)).reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  const [from, to] = palettes[score % palettes.length]
+  return `linear-gradient(135deg, ${from}, ${to})`
+}
 const position = ref(
     DOMRect.fromRect({
       x: 0,
@@ -970,16 +992,17 @@ function loadData() {
 
 :deep(.email-row) {
   display: flex;
-  padding: 8px 0;
+  padding: 11px 16px 11px 0;
   justify-content: space-between;
   box-shadow: var(--header-actions-border);
   cursor: pointer;
   align-items: center;
   position: relative;
   transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
-  height: 48px;
+  min-height: 72px;
+  height: auto;
   @media (max-width: 1366px) {
-    height: 83px;
+    min-height: 88px;
   }
 
   @media (pointer: coarse) {
@@ -987,7 +1010,8 @@ function loadData() {
     user-select: none;
   }
   &.all-email {
-    height: 65px;
+    min-height: 82px;
+    height: auto;
     @media (max-width: 1366px) {
       height: 132px;
     }
@@ -1031,7 +1055,7 @@ function loadData() {
   .checkbox {
     display: flex;
     padding-left: 15px;
-    padding-right: 20px;
+    padding-right: 12px;
     justify-content: center;
   }
 
@@ -1058,7 +1082,7 @@ function loadData() {
   .title {
     flex: 1;
     display: grid;
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 210px 1fr;
     @media (max-width: 1366px) {
       padding-right: 15px;
     }
@@ -1169,10 +1193,17 @@ function loadData() {
       .code-tag {
         flex: 0 0 auto;
         max-width: 170px;
-        height: 20px;
-        line-height: 20px;
-        font-size: 14px;
-        color: var(--el-text-color-primary);
+        height: 22px;
+        padding: 0 7px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border-radius: 6px;
+        line-height: 22px;
+        font-size: 12px;
+        font-weight: 650;
+        color: var(--success);
+        background: color-mix(in srgb, var(--success) 12%, transparent);
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -1235,6 +1266,20 @@ function loadData() {
   }*/
 }
 
+:deep(.sender-avatar) {
+  width: 36px;
+  height: 36px;
+  margin-right: 12px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 750;
+  letter-spacing: .02em;
+}
+
 
 .phone-star {
   display: none;
@@ -1273,9 +1318,11 @@ function loadData() {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 15px;
-  min-height: 46px;
-  padding: 5px 18px;
-  background: color-mix(in srgb, var(--el-bg-color) 94%, var(--el-color-primary-light-9));
+  min-height: 50px;
+  padding: 6px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
   box-shadow: var(--header-actions-border);
 
   .header-left {

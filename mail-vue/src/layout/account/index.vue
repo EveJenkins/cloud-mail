@@ -522,18 +522,18 @@ path[fill="#ffdda1"] {
 <style scoped lang="scss">
 .account-box {
 
-  border-right: 1px solid var(--el-border-color) !important;
-  background-color: var(--el-bg-color);
+  border-right: 1px solid var(--border) !important;
+  background-color: var(--surface);
   height: 100%;
   overflow: hidden;
 
   .head-opt {
     display: flex;
     align-items: center;
-    height: 38px;
-    box-shadow: var(--header-actions-border);
-    padding-left: 10px;
-    padding-right: 10px;
+    height: 50px;
+    border-bottom: 1px solid var(--border);
+    box-shadow: none;
+    padding: 0 14px;
 
     .icon {
       cursor: pointer;
@@ -554,7 +554,7 @@ path[fill="#ffdda1"] {
 
   .scrollbar {
     width: 100%;
-    height: calc(100% - 38px);
+    height: calc(100% - 50px);
     overflow: auto;
     @media (max-width: 767px) {
       height: calc(100% - 98px);
@@ -582,12 +582,11 @@ path[fill="#ffdda1"] {
   }
 
   .item {
-    background-color: var(--el-bg-color);
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 11px;
-    margin-left: 10px;
-    margin-right: 10px;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px;
+    margin: 10px 12px 0;
     cursor: pointer;
 
     .account {
@@ -628,6 +627,8 @@ path[fill="#ffdda1"] {
 
   .item-choose {
     background: var(--choose-account-background);
+    border-color: color-mix(in srgb, var(--brand-500) 34%, var(--border));
+    box-shadow: inset 3px 0 0 var(--brand-600);
   }
 }
 

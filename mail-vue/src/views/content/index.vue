@@ -16,6 +16,17 @@
         <div class="email-title">
           {{ email.subject }}
         </div>
+        <div class="code-card" v-if="email.code">
+          <div class="code-insight">
+            <span class="code-icon"><Icon icon="solar:clock-circle-linear" width="19" height="19" /></span>
+            <div>
+              <strong>Workers AI {{ settingStore.lang === 'zh' ? '自动识别' : 'detected code' }}</strong>
+              <span>{{ settingStore.lang === 'zh' ? '验证码已提取，可一键复制' : 'Ready to copy' }}</span>
+            </div>
+          </div>
+          <span class="code-value">{{ email.code }}</span>
+          <el-button type="primary" @click="copyCode">{{ settingStore.lang === 'zh' ? '复制' : 'Copy' }}</el-button>
+        </div>
         <div class="content">
           <div class="email-info">
             <div>
@@ -40,7 +51,7 @@
           </el-scrollbar>
           <div class="att" v-if="email.attList?.length > 0">
             <div class="att-title">
-              <span>{{$t('attachments')}}</span>
+              <span>{{$t('attachments')}} · Cloudflare R2</span>
               <span>{{$t('attCount',{total: email.attList.length})}}</span>
             </div>
             <div class="att-box">
@@ -204,6 +215,11 @@ function formateReceive(recipient) {
   return recipient.map(item => item.address).join(', ')
 }
 
+async function copyCode() {
+  await navigator.clipboard.writeText(String(email.value.code))
+  ElMessage({ message: t('copySuccessMsg'), type: 'success', plain: true })
+}
+
 function changeStar() {
   if (email.value.isStar) {
     email.value.isStar = 0;
@@ -272,11 +288,13 @@ const handleDelete = () => {
 }
 
 .header-actions {
-  padding: 9px 15px 8px;
+  min-height: 50px;
+  padding: 6px 16px;
   display: flex;
   align-items: center;
   gap: 20px;
-  box-shadow: var(--header-actions-border);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   font-size: 18px;
   .star {
     display: flex;
@@ -291,25 +309,46 @@ const handleDelete = () => {
 
 
 .scrollbar {
-  height: calc(100% - 38px);
+  height: calc(100% - 50px);
   width: 100%;
 }
 
 .container {
+  max-width: 860px;
+  margin: 0 auto;
   font-size: 14px;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 10px;
+  padding: 24px;
   @media (max-width: 1023px) {
     padding-left: 15px;
     padding-right: 15px;
   }
 
   .email-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
+    font-size: 21px;
+    font-weight: 750;
+    line-height: 1.35;
+    letter-spacing: -.3px;
+    margin-bottom: 16px;
   }
+
+  .code-card {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid color-mix(in srgb, var(--success) 28%, var(--border));
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--success) 10%, transparent), var(--brand-soft));
+  }
+  .code-insight { display: flex; align-items: center; gap: 10px; }
+  .code-insight strong, .code-insight span { display: block; }
+  .code-insight strong { color: var(--success); font-size: 12px; }
+  .code-insight span { margin-top: 2px; color: var(--text-3); font-size: 11.5px; }
+  .code-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--r-sm); color: var(--success); background: color-mix(in srgb, var(--success) 16%, transparent); }
+  .code-value { padding: 7px 12px; border: 1px dashed var(--border-strong); border-radius: var(--r-sm); background: var(--surface); color: var(--text); font-size: 22px; font-weight: 800; letter-spacing: .18em; font-variant-numeric: tabular-nums; }
+  .code-card .el-button { margin-left: auto; }
 
   .htm-scrollbar {
   }
@@ -323,8 +362,8 @@ const handleDelete = () => {
       margin-bottom: 30px;
       border: 1px solid var(--light-border-color);
       padding: 14px;
-      border-radius: 6px;
-      width: fit-content;
+      border-radius: var(--r-md);
+      width: 100%;
       .att-box {
         min-width: min(410px,calc(100vw - 60px));
         max-width: 600px;
@@ -349,7 +388,7 @@ const handleDelete = () => {
         }
         background: var(--light-ill);
         padding: 5px 7px;
-        border-radius: 4px;
+        border-radius: var(--r-sm);
         align-self: start;
         display: grid;
         grid-template-columns: auto 1fr auto auto;

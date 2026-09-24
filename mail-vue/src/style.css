@@ -1,10 +1,13 @@
+@import './styles/tokens.css';
+@import './styles/element-override.css';
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
     scrollbar-width: thin;
-    scrollbar-color: var(--dark-border) transparent;
+    scrollbar-color: var(--border-strong) transparent;
 }
 
 html, body {
@@ -36,7 +39,7 @@ body {
 }
 
 html, body {
-    background: var(--el-bg-color);
+    background: var(--bg);
 }
 
 ul, ol {
@@ -108,36 +111,30 @@ button, input, select, textarea {
 }
 
 :root {
-    --el-color-primary: #2e5bff;
-    --el-color-primary-dark-2: #2448cc;
-    --el-color-primary-light-3: #6383ff;
-    --el-color-primary-light-5: #8fa7ff;
-    --el-color-primary-light-7: #bdcaff;
-    --el-color-primary-light-9: #eef2ff;
-    --enterprise-gradient: linear-gradient(135deg, #2e5bff 0%, #597cf7 55%, #718dff 100%);
+    --enterprise-gradient: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-600) 68%, #25d366 145%);
     --enterprise-shadow: 0 12px 32px rgba(15, 23, 42, .08);
 
     --extra-light-fill: #FAFCFF;
-    --settings-page-background: #f5f7fb;
+    --settings-page-background: var(--bg);
     --light-ill: #F5F7FA;
     --light-border: #E4E7ED;
     --header-actions-border: inset 0 -1px 0 0 var(--el-border-color-lighter);
-    --aside-backgound: #0b1730;
-    --aside-menu-active-background: rgba(92, 127, 255, .2);
+    --aside-backgound: var(--surface);
+    --aside-menu-active-background: var(--brand-soft);
     --loadding-background: rgba(255, 255, 255, 0.8);
     --dark-border: #CDD0D6;
     --base-fill: #F0F2F5;
     --regular-text-color: #585d69;
     --light-border-color: #e7e9ec;
-    --aside-right-border: 8px 0 32px rgba(6, 18, 40, .12);
-    --choose-account-background: var(--el-color-primary-light-8);
+    --aside-right-border: 4px 0 16px rgba(15, 23, 42, .08);
+    --choose-account-background: var(--brand-soft);
     --el-text-color-regular: var(--el-text-color-primary);
-    --email-scroll-content-color: rgba(25, 41, 59, 0.4);
-    --email-hover-background: #F2F6FC;
+    --email-scroll-content-color: var(--text-3);
+    --email-hover-background: var(--surface-2);
     --email-right-click-background: #FDF6EC;
     --login-border: none;
-    --form-desc-color: #71717a;
-    --login-switch-color: #006be6;
+    --form-desc-color: var(--text-3);
+    --login-switch-color: var(--brand-600);
     --scrollbar-track-color: #A8ABB2;
     --base-border-color: #DCDFE6;
     --secondary-text-color: #909399;
@@ -154,8 +151,8 @@ button, input, select, textarea {
     --settings-page-background: var(--extra-light-fill);
     --light-ill: #262727;
     --light-border: #414243;
-    --aside-backgound: #080f1e;
-    --aside-menu-active-background: rgba(255, 255, 255, 0.08);
+    --aside-backgound: var(--surface);
+    --aside-menu-active-background: var(--brand-soft);
     --header-actions-border: inset 0 -1px 0 0 var(--el-border-color-lighter);
     --loadding-background: rgba(0, 0, 0, 0.3);
     --dark-border: #636466;
@@ -163,9 +160,9 @@ button, input, select, textarea {
     --regular-text-color: #bfbdbc;
     --light-border-color: #414243;
     --aside-right-border: 3px 0 5px #0A0A0A;
-    --choose-account-background: #39393A;
+    --choose-account-background: var(--brand-soft);
     --email-scroll-content-color: rgba(255, 255, 255, 0.3);
-    --email-hover-background: #1D1E1F;
+    --email-hover-background: var(--surface-2);
     --email-right-click-background: var(--email-hover-background);
     --login-border: none;
     --form-desc-color: #8D9095;
@@ -185,19 +182,19 @@ button, input, select, textarea {
 
 .el-button--primary {
     border: none;
-    background: var(--enterprise-gradient);
-    box-shadow: 0 7px 18px rgba(46, 91, 255, .2);
+    background: var(--brand-600);
+    box-shadow: 0 2px 10px var(--brand-soft);
 }
 
 @media (hover: hover) {
-    .el-button--primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(46, 91, 255, .28); }
+    .el-button--primary:hover { background: var(--brand-700); box-shadow: 0 4px 14px var(--brand-soft); }
 }
 
 .el-dialog,
 .el-dropdown__popper,
 .el-notification {
-    border-radius: 16px !important;
-    box-shadow: 0 24px 70px rgba(15, 23, 42, .16) !important;
+    border-radius: var(--r-lg) !important;
+    box-shadow: var(--sh-3) !important;
 }
 
 .el-input__wrapper,
@@ -208,10 +205,47 @@ button, input, select, textarea {
 
 .el-input__wrapper.is-focus,
 .el-select__wrapper.is-focused {
-    box-shadow: 0 0 0 1px var(--el-color-primary) inset, 0 0 0 3px rgba(46, 91, 255, .1) !important;
+    box-shadow: 0 0 0 1px var(--brand-500) inset, 0 0 0 3px var(--brand-soft) !important;
 }
 
-::selection { background: rgba(46, 91, 255, .18); }
+::selection { background: var(--brand-500); color: #fff; }
+
+*:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Prototype-aligned workspace surfaces */
+.main-view > .header-actions,
+.main-view .user-box > .header-actions {
+    min-height: 50px;
+    padding: 6px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: none !important;
+}
+
+.main-view .el-table {
+    --el-table-border-color: var(--border);
+    --el-table-header-bg-color: var(--surface-2);
+    --el-table-row-hover-bg-color: var(--surface-2);
+    background: var(--surface);
+}
+
+.main-view .el-table th.el-table__cell { height: 48px; color: var(--text-2); font-size: 12.5px; }
+.main-view .el-table td.el-table__cell { height: 54px; }
+
+.el-empty__description p { color: var(--text-3); }
+.el-pagination button,
+.el-pager li { border-radius: 7px !important; }
+
+@keyframes cm-fade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+.router-view-enter-active { animation: cm-fade .28s var(--ease); }
 
 .el-input {
     --el-input-text-color: var(--el-text-color-primary) !important;
