@@ -1,5 +1,7 @@
 <template>
-  <emailScroll ref="scroll"
+  <div class="inbox-workspace" :class="{ 'with-preview': isDesktop }">
+    <section class="mail-list-pane">
+      <emailScroll ref="scroll"
                :cancel-success="cancelStar"
                :star-success="addStar"
                :getEmailList="getEmailList"
@@ -9,6 +11,8 @@
                :time-sort="params.timeSort"
                :email-read="emailRead"
                :show-unread="true"
+               :selected-id="selectedEmailId"
+               :row-height="isDesktop ? 104 : 0"
                actionLeft="4px"
                @jump="jumpContent"
   >
@@ -19,7 +23,17 @@
             width="28" height="28"/>
     </template>
 
-  </emailScroll>
+      </emailScroll>
+    </section>
+    <section class="mail-preview-pane" v-if="isDesktop">
+      <Content v-if="selectedEmailId" embedded @close="selectedEmailId = null" />
+      <div v-else class="preview-empty">
+        <span class="preview-icon"><Icon icon="solar:letter-opened-linear" width="34" height="34" /></span>
+        <strong>{{ settingStore.lang === 'zh' ? '选择一封邮件查看详情' : 'Select a message to read' }}</strong>
+        <p>{{ settingStore.lang === 'zh' ? '邮件内容、验证码和附件将在这里显示' : 'Message content, codes and attachments appear here' }}</p>
+      </div>
+    </section>
+  </div>
 </template>
 
 <script setup>
@@ -29,11 +43,12 @@ import {useSettingStore} from "@/store/setting.js";
 import emailScroll from "@/components/email-scroll/index.vue"
 import {emailList, emailDelete, emailLatest, emailRead} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {defineOptions, h, onMounted, reactive, ref, watch} from "vue";
+import {defineOptions, h, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import { useRoute } from 'vue-router'
+import Content from '@/views/content/index.vue'
 
 defineOptions({
   name: 'email'
@@ -47,10 +62,25 @@ const scroll = ref({})
 const params = reactive({
   timeSort: 0,
 })
+const isDesktop = ref(window.innerWidth >= 1280)
+const selectedEmailId = ref(null)
+
+const handleViewport = () => {
+  isDesktop.value = window.innerWidth >= 1280
+}
 
 onMounted(() => {
   emailStore.emailScroll = scroll;
+  window.addEventListener('resize', handleViewport)
   latest()
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
+
+watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
+  if (isDesktop.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
+    openContent(scroll.value.emailList[0])
+  }
 })
 
 
@@ -64,12 +94,21 @@ function changeTimeSort() {
 }
 
 function jumpContent(email) {
+  if (isDesktop.value) {
+    openContent(email)
+    return
+  }
+  openContent(email)
+  router.push('/mail')
+}
+
+function openContent(email) {
   emailStore.contentData.email = emailStore.toContentEmail(email)
   emailStore.contentData.delType = 'logic'
   emailStore.contentData.showUnread = true
   emailStore.contentData.showStar = true
   emailStore.contentData.showReply = true
-  router.push('/mail')
+  selectedEmailId.value = email.emailId
 }
 
 const existIds = new Set();
@@ -152,7 +191,29 @@ function getEmailList(emailId, size) {
 }
 
 </script>
-<style>
+<style lang="scss" scoped>
+.inbox-workspace { height: 100%; min-width: 0; background: var(--bg); }
+.inbox-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
+.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--surface); border-right: 1px solid var(--border); }
+.mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--bg); }
+.preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
+.preview-empty strong { margin-top: 14px; color: var(--text-2); font-size: 15px; }
+.preview-empty p { margin-top: 5px; font-size: 12.5px; }
+.preview-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; color: var(--brand-600); background: var(--brand-soft); }
+
+.with-preview .mail-list-pane :deep(.email-row) { min-height: 104px; padding: 12px 16px; align-items: flex-start; }
+.with-preview .mail-list-pane :deep(.email-row .checkbox),
+.with-preview .mail-list-pane :deep(.email-row .pc-star) { display: none; }
+.with-preview .mail-list-pane :deep(.email-row .sender-avatar) { margin-top: 1px; }
+.with-preview .mail-list-pane :deep(.email-row .title) { min-width: 0; grid-template-columns: 1fr; gap: 4px; }
+.with-preview .mail-list-pane :deep(.email-row .email-sender) { grid-template-columns: 1fr auto; }
+.with-preview .mail-list-pane :deep(.email-row .email-text) { grid-template-columns: 1fr; gap: 4px; }
+.with-preview .mail-list-pane :deep(.email-row .email-subject) { padding-left: 0; }
+.with-preview .mail-list-pane :deep(.email-row .email-content) { padding-left: 0; color: var(--text-3); }
+.with-preview .mail-list-pane :deep(.email-row .email-right) { display: none; }
+.with-preview .mail-list-pane :deep(.email-row.right-checked),
+.with-preview .mail-list-pane :deep(.email-row:hover) { box-shadow: inset 3px 0 0 var(--brand-600); }
+
 .icon {
   cursor: pointer;
 }

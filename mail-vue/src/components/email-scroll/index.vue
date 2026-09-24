@@ -38,7 +38,7 @@
                         :key="keyCount"
         >
           <template #default="{ data: item, index }" >
-            <div :class="['email-row', props.type, { 'right-checked': item.rightChecked }]"
+            <div :class="['email-row', props.type, { 'right-checked': item.rightChecked, 'mail-selected': item.emailId === props.selectedId }]"
                  :data-checked="item.checked"
                  @click="jumpDetails(item)"
                  v-if="!item.expand"
@@ -300,6 +300,14 @@ const props = defineProps({
   showUnread: {
     type: Boolean,
     default: false
+  },
+  selectedId: {
+    type: [Number, String],
+    default: null
+  },
+  rowHeight: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -419,6 +427,7 @@ const list = computed(() => {
 })
 
 const itemHeight = computed(() => {
+    if (props.rowHeight > 0) return props.rowHeight;
     if (props.type === 'all-email') {
       return isMobile.value ? 132 : 65;
     } else  {
@@ -1259,6 +1268,12 @@ function loadData() {
   &.right-checked,
   &.right-checked:hover {
     background-color: var(--email-right-click-background);
+  }
+
+  &.mail-selected,
+  &.mail-selected:hover {
+    background: var(--brand-soft);
+    box-shadow: inset 3px 0 0 var(--brand-600);
   }
 
   /*&[data-checked="true"] {
