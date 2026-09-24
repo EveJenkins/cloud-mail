@@ -13,7 +13,7 @@
                :show-unread="true"
                :show-inbox-summary="true"
                :selected-id="selectedEmailId"
-               :row-height="isDesktop ? 126 : (isPhone ? 118 : 0)"
+               :row-height="isDesktop ? 104 : (isPhone ? 118 : 0)"
                actionLeft="4px"
                @jump="jumpContent"
   >
@@ -207,7 +207,7 @@ function getEmailList(emailId, size) {
 .preview-empty p { margin-top: 5px; font-size: 12.5px; }
 .preview-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; color: var(--brand-600); background: var(--brand-soft); }
 
-.with-preview .mail-list-pane :deep(.email-row) { min-height: 126px; padding: 13px 16px; align-items: flex-start; }
+.with-preview .mail-list-pane :deep(.email-row) { min-height: 104px; padding: 12px 16px; align-items: flex-start; }
 .with-preview .mail-list-pane :deep(.email-row .checkbox),
 .with-preview .mail-list-pane :deep(.email-row .pc-star) { display: none; }
 .with-preview .mail-list-pane :deep(.email-row .sender-avatar) { margin-top: 1px; }
