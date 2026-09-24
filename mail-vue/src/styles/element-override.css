@@ -1,9 +1,9 @@
 :root {
   --el-color-primary: var(--brand-600);
   --el-color-primary-dark-2: var(--brand-700);
-  --el-color-primary-light-3: #60a5fa;
-  --el-color-primary-light-5: #93c5fd;
-  --el-color-primary-light-7: #bfdbfe;
+  --el-color-primary-light-3: #4ade80;
+  --el-color-primary-light-5: #86efac;
+  --el-color-primary-light-7: #bbf7d0;
   --el-color-primary-light-9: var(--brand-50);
   --el-bg-color: var(--surface);
   --el-bg-color-page: var(--bg);

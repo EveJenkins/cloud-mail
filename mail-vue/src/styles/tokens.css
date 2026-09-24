@@ -1,10 +1,10 @@
 :root {
-  --brand-50: #eff6ff;
-  --brand-100: #dbeafe;
-  --brand-500: #3b82f6;
-  --brand-600: #2563eb;
-  --brand-700: #1d4ed8;
-  --brand-soft: rgba(37, 99, 235, .10);
+  --brand-50: #ecfdf3;
+  --brand-100: #d1fae5;
+  --brand-500: #25d366;
+  --brand-600: #15803d;
+  --brand-700: #166534;
+  --brand-soft: rgba(37, 211, 102, .12);
   --success: #16a34a;
   --warning: #f59e0b;
   --danger: #dc2626;
@@ -41,7 +41,10 @@ html.dark {
   --text: #e8eefb;
   --text-2: #a3b0c7;
   --text-3: #6b7a94;
-  --brand-soft: rgba(96, 165, 250, .14);
+  --brand-500: #6ee7a8;
+  --brand-600: #25d366;
+  --brand-700: #4ade80;
+  --brand-soft: rgba(37, 211, 102, .16);
   --sh-2: 0 4px 16px rgba(0, 0, 0, .45);
   --sh-3: 0 18px 48px rgba(0, 0, 0, .55);
 }

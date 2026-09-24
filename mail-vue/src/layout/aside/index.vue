@@ -2,8 +2,11 @@
   <div class="aside-shell">
     <div class="title">
       <span class="brand-mark"><Icon icon="mdi:email-outline" width="19" height="19" /></span>
-      <div>{{ settingStore.settings.title }}</div>
-      <span class="role-badge">{{ userStore.user.role?.name || 'User' }}</span>
+      <div class="brand-text">
+        <strong>{{ settingStore.settings.title || 'STAR MUSTANG' }}</strong>
+        <span>{{ currentDomain }}</span>
+      </div>
+      <span class="role-badge">{{ userStore.user.role?.name || (settingStore.lang === 'zh' ? '成员' : 'Member') }}</span>
     </div>
 
     <div class="compose-wrap" v-perm="'email:send'">
@@ -13,9 +16,18 @@
       </el-button>
     </div>
 
+    <button class="mailbox-card" type="button" @click="uiStore.accountShow = !uiStore.accountShow">
+      <span class="mailbox-avatar">{{ mailboxInitial }}</span>
+      <span class="mailbox-copy">
+        <strong>{{ currentMailbox }}</strong>
+        <small>{{ settingStore.lang === 'zh' ? '个人邮箱' : 'Personal mailbox' }}</small>
+      </span>
+      <Icon icon="mingcute:down-small-line" width="17" height="17" />
+    </button>
+
     <el-scrollbar class="scroll">
       <el-menu :collapse="false">
-        <div class="group-title">MAIL</div>
+        <div class="group-title">{{ settingStore.lang === 'zh' ? '邮箱' : 'MAIL' }}</div>
         <el-menu-item @click="router.push({name: 'email'})" index="email"
                       :class="route.meta.name === 'email' ? 'choose-item' : ''">
           <Icon icon="hugeicons:mailbox-01" width="19" height="19" />
@@ -42,7 +54,7 @@
           <span class="menu-name">{{ $t('settings') }}</span>
         </el-menu-item>
 
-        <div class="manage-title" v-perm="['all-email:query','user:query','role:query','setting:query','analysis:query','reg-key:query']">ADMIN</div>
+        <div class="manage-title" v-perm="['all-email:query','user:query','role:query','setting:query','analysis:query','reg-key:query']">{{ settingStore.lang === 'zh' ? '团队与设置' : 'TEAM & SETTINGS' }}</div>
         <el-menu-item @click="router.push({name: 'analysis'})" index="analysis" v-perm="'analysis:query'"
                       :class="route.meta.name === 'analysis' ? 'choose-item' : ''">
           <Icon icon="fluent:data-pie-20-regular" width="20" height="20" />
@@ -78,14 +90,15 @@
 
     <div class="quota-card">
       <div class="quota-head">
-        <span>{{ settingStore.lang === 'zh' ? '本月发送配额' : 'Monthly quota' }}</span>
+        <span>{{ settingStore.lang === 'zh' ? '本月外发配额' : 'Monthly outbound quota' }}</span>
         <span>{{ quotaText }}</span>
       </div>
       <div class="quota-track"><span :style="{ width: quotaPercent + '%' }"></span></div>
       <div class="quota-foot" :class="{ warning: quotaPercent >= 80 }">
-        <span>{{ quotaStatus }}</span>
+        <span>{{ settingStore.lang === 'zh' && quotaMax ? '超出需联系管理员' : quotaStatus }}</span>
         <Icon :icon="quotaPercent >= 80 ? 'solar:danger-triangle-linear' : 'solar:check-circle-linear'" />
       </div>
+      <p class="compliance-note" v-if="settingStore.lang === 'zh'">本系统邮件归公司所有，收发记录按合规要求留存</p>
     </div>
   </div>
 </template>
@@ -98,11 +111,21 @@ import router from '@/router/index.js'
 import { useSettingStore } from '@/store/setting.js'
 import { useUiStore } from '@/store/ui.js'
 import { useUserStore } from '@/store/user.js'
+import { useAccountStore } from '@/store/account.js'
 
 const settingStore = useSettingStore()
 const uiStore = useUiStore()
 const userStore = useUserStore()
+const accountStore = useAccountStore()
 const route = useRoute()
+
+const currentEmail = computed(() => accountStore.currentAccount?.email || userStore.user.email || '')
+const currentDomain = computed(() => {
+  const domain = currentEmail.value.split('@')[1] || settingStore.domainList?.[0]?.replace(/^@/, '')
+  return domain ? `@${domain}` : '@star-mustang.com'
+})
+const currentMailbox = computed(() => currentEmail.value.split('@')[0] ? `${currentEmail.value.split('@')[0]}@` : 'alex.chen@')
+const mailboxInitial = computed(() => (userStore.user.name || currentMailbox.value || 'S').trim().charAt(0).toUpperCase())
 
 const quotaMax = computed(() => Number(userStore.user.role?.sendCount) || 0)
 const quotaUsed = computed(() => Number(userStore.user.sendCount) || 0)
@@ -138,13 +161,21 @@ function openWriter() {
   font-size: 15.5px;
   font-weight: 700;
 
-  > div { max-width: 112px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 }
 
-.brand-mark { width: 32px; height: 32px; flex: none; display: grid; place-items: center; color: #fff; border-radius: 10px; background: linear-gradient(135deg, var(--brand-500), #25d366); }
+.brand-mark { width: 32px; height: 32px; flex: none; display: grid; place-items: center; color: #04121f; border-radius: 10px; background: linear-gradient(135deg, #25d366, #0ea5e9); }
+.brand-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.brand-text strong { overflow: hidden; color: var(--text); font-size: 14px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.brand-text span { margin-top: 2px; overflow: hidden; color: var(--text-3); font-size: 10.5px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 .role-badge { margin-left: auto; max-width: 62px; overflow: hidden; text-overflow: ellipsis; padding: 3px 7px; border-radius: 6px; color: var(--brand-600); background: var(--brand-soft); font-size: 10px; font-weight: 700; }
 .compose-wrap { padding: 0 16px 12px; }
 .compose-btn { width: 100%; height: 40px; display: flex; gap: 7px; }
+.mailbox-card { width: calc(100% - 32px); margin: 3px 16px 8px; padding: 8px 10px; display: flex; align-items: center; gap: 10px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); cursor: pointer; }
+.mailbox-card:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); }
+.mailbox-avatar { width: 28px; height: 28px; flex: none; display: grid; place-items: center; color: #fff; border-radius: 50%; background: linear-gradient(135deg, #0ea5e9, #0284c7); font-size: 11px; font-weight: 750; }
+.mailbox-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; text-align: left; }
+.mailbox-copy strong { overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-copy small { margin-top: 1px; color: var(--text-3); font-size: 10.5px; }
 .scroll { flex: 1; min-height: 0; padding: 0 16px; }
 .group-title, .manage-title { padding: 8px 12px 6px; color: var(--text-3); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
 .manage-title { padding-top: 22px; }
@@ -173,4 +204,5 @@ function openWriter() {
 .quota-foot { justify-content: flex-start; color: var(--success); font-size: 11.5px; }
 .quota-foot svg { margin-left: auto; }
 .quota-foot.warning { color: var(--warning); }
+.compliance-note { margin: 10px -1px -1px; padding-top: 9px; color: var(--text-3); border-top: 1px solid var(--border); font-size: 10.5px; line-height: 1.5; }
 </style>

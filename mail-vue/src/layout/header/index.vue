@@ -8,7 +8,7 @@
       <input
           ref="searchRef"
           v-model="searchQuery"
-          :placeholder="settingStore.lang === 'zh' ? '搜索邮件、发件人、主题、验证码…' : 'Search mail, sender, subject or code…'"
+          :placeholder="settingStore.lang === 'zh' ? '搜索邮件、同事、客户、主题…' : 'Search mail, colleagues, customers or subjects…'"
           aria-label="Global search"
       />
       <kbd>Ctrl K</kbd>
@@ -27,6 +27,10 @@
         <div class="avatar" @click="userInfoHide" >
           <div class="avatar-text">
             <div>{{ formatName(userStore.user.email) }}</div>
+          </div>
+          <div class="avatar-identity">
+            <strong>{{ userDisplayName }}</strong>
+            <span>{{ roleName }}</span>
           </div>
           <Icon class="setting-icon" icon="mingcute:down-small-fill" width="24" height="24"/>
         </div>
@@ -100,6 +104,8 @@ const userInfoShow = ref(false)
 const userinfoRef = ref({})
 const searchRef = ref(null)
 const searchQuery = ref('')
+const userDisplayName = computed(() => userStore.user.name || userStore.user.email?.split('@')[0] || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
+const roleName = computed(() => userStore.user.role?.name || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
 
 function handleGlobalSearchShortcut(event) {
   if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
@@ -530,11 +536,23 @@ function formatName(email) {
       margin-right: 10px;
       bottom: 10px;
     }
+
+    .avatar-identity {
+      min-width: 0;
+      margin-left: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.2;
+    }
+
+    .avatar-identity strong { max-width: 110px; overflow: hidden; color: var(--text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .avatar-identity span { margin-top: 2px; color: var(--text-3); font-size: 10.5px; }
   }
 
   @media (max-width: 767px) {
     .notice { margin-right: 0; }
-    .avatar .setting-icon { display: none; }
+    .avatar .setting-icon, .avatar .avatar-identity { display: none; }
   }
 
 }

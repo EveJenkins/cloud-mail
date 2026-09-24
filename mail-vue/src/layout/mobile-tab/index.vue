@@ -6,14 +6,11 @@
     <button v-perm="'email:send'" @click="compose">
       <Icon icon="material-symbols:edit-outline" /><span>{{ settingStore.lang === 'zh' ? '写信' : 'Compose' }}</span>
     </button>
-    <button :class="{ active: route.meta.name === 'star' }" @click="go('star')">
+    <button v-if="hasPerm('user:query')" :class="{ active: route.meta.name === 'user' }" @click="go('user')">
+      <Icon icon="fluent:people-team-20-regular" /><span>{{ settingStore.lang === 'zh' ? '通讯录' : 'Directory' }}</span>
+    </button>
+    <button v-else :class="{ active: route.meta.name === 'star' }" @click="go('star')">
       <Icon icon="solar:star-line-duotone" /><span>{{ $t('starred') }}</span>
-    </button>
-    <button v-if="hasPerm('analysis:query')" :class="{ active: route.meta.name === 'analysis' }" @click="go('analysis')">
-      <Icon icon="fluent:data-pie-20-regular" /><span>{{ $t('analytics') }}</span>
-    </button>
-    <button v-else v-perm="'email:send'" :class="{ active: route.meta.name === 'send' }" @click="go('send')">
-      <Icon icon="solar:plain-2-linear" /><span>{{ $t('sent') }}</span>
     </button>
     <button :class="{ active: route.meta.name === 'setting' }" @click="go('setting')">
       <Icon icon="fluent:settings-48-regular" /><span>{{ $t('settings') }}</span>

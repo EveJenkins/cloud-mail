@@ -4,32 +4,39 @@
     <section class="brand-panel" aria-label="Product introduction">
       <div class="brand-lockup">
         <div class="brand-mark"><Icon icon="mdi:email-outline" width="21" height="21" /></div>
-        <span>{{ settingStore.settings.title }}</span>
-        <span class="platform-badge">Cloudflare Workers</span>
+        <div class="brand-copy">
+          <strong>{{ settingStore.settings.title || 'STAR MUSTANG' }}</strong>
+          <span>企业邮箱系统 · Internal Mail</span>
+        </div>
+        <span class="platform-badge">全球商务邮箱</span>
       </div>
       <div class="brand-message">
-        <h1>一个域名，<br/>撑起整套邮箱服务</h1>
-        <p>基于 Cloudflare Workers 的极简邮箱：收发附件走 R2，发信走 Resend，验证码由 Workers AI 自动识别。</p>
+        <h1>公司统一邮箱，<br/>一个入口处理全部业务往来</h1>
+        <p>海外客户询盘、供应商报价、物流单据全部归集到企业邮箱；大附件走云存储、AI 自动识别验证码，对外发送按策略管控，用公司域名做全球商务往来。</p>
         <div class="brand-stats">
-          <div><strong>∞</strong><span>域名下可开邮箱数</span></div>
-          <div><strong>$0</strong><span>Workers 免费额度起步</span></div>
+          <div><strong>46</strong><span>在职员工邮箱</span></div>
+          <div><strong>4</strong><span>共享邮箱</span></div>
+          <div><strong>99.9%</strong><span>海外送达率</span></div>
         </div>
         <div class="brand-features">
-          <span><Icon icon="solar:check-circle-bold" /> 群发 / 内嵌图片</span>
-          <span><Icon icon="solar:check-circle-bold" /> TG 机器人推送</span>
-          <span><Icon icon="solar:check-circle-bold" /> 开放 API 批量建号</span>
-          <span><Icon icon="solar:check-circle-bold" /> RBAC 配额控制</span>
+          <span><Icon icon="solar:check-circle-bold" /> 全球收发直达</span>
+          <span><Icon icon="solar:check-circle-bold" /> 大附件云存储</span>
+          <span><Icon icon="solar:check-circle-bold" /> AI 识别验证码</span>
         </div>
       </div>
-      <div class="brand-footnote">CLOUDFLARE · R2 · RESEND · WORKERS AI</div>
+      <div class="brand-footnote">STAR MUSTANG · CONSTRUCTION MACHINERY PARTS</div>
     </section>
     <div class="form-wrapper">
       <div class="container">
-        <div class="form-brand-mark"><Icon icon="mdi:email-outline" width="21" height="21" /></div>
-        <span class="form-title">{{ show === 'login' ? (settingStore.lang === 'zh' ? '登录你的邮箱' : 'Sign in to your mailbox') : $t('regTitle') }}</span>
-        <span class="form-desc" v-if="show === 'login'">{{ $t('loginTitle') }}</span>
+        <div class="form-mobile-brand">
+          <div class="form-brand-mark"><Icon icon="mdi:email-outline" width="21" height="21" /></div>
+          <div><strong>{{ settingStore.settings.title || 'STAR MUSTANG' }}</strong><span>企业邮箱系统</span></div>
+        </div>
+        <span class="form-title">{{ show === 'login' ? (settingStore.lang === 'zh' ? '登录企业邮箱' : 'Sign in to corporate mail') : $t('regTitle') }}</span>
+        <span class="form-desc" v-if="show === 'login'">{{ settingStore.lang === 'zh' ? '使用公司分配的邮箱账号登录' : 'Use your company mailbox account' }}</span>
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
         <div v-show="show === 'login'">
+          <label class="field-label">{{ settingStore.lang === 'zh' ? '企业邮箱' : 'Corporate email' }}</label>
           <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="form.email"
                     type="text" :placeholder="$t('emailAccount')" autocomplete="off" @keyup.enter="submit">
             <template #append v-if="!hideLoginDomain">
@@ -55,16 +62,21 @@
               </div>
             </template>
           </el-input>
+          <label class="field-label">{{ $t('password') }}</label>
           <el-input v-model="form.password" :placeholder="$t('password')" type="password" autocomplete="off" @keyup.enter="submit">
           </el-input>
           <el-button class="btn" type="primary" @click="submit" :loading="loginLoading"
-          >{{ $t('loginBtn') }}
+          >{{ $t('loginBtn') }} <Icon icon="solar:arrow-right-linear" width="17" />
           </el-button>
           <el-button v-for="p in oauthProviders" :key="p.key" class="btn" style="margin-top: 10px" @click="oauthLogin(p.key)">
             <el-avatar v-if="p.iconType === 'image'" :src="p.icon" :size="18" style="margin-right: 10px" />
             <Icon v-else :icon="p.icon" width="18" height="18" style="margin-right: 10px" />
             {{ p.label }}
           </el-button>
+          <div class="enterprise-note" v-if="settingStore.lang === 'zh'">
+            <Icon icon="solar:info-circle-linear" width="18" />
+            <span>账号由企业管理员统一开通，首次登录后请及时修改初始密码。</span>
+          </div>
         </div>
         <div v-show="show !== 'login'">
           <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="registerForm.email" type="text" :placeholder="$t('emailAccount')"
@@ -124,6 +136,10 @@
           <div class="switch" @click="show = 'login'" v-else>{{ $t('hasAccount') }} <span>{{ $t('loginSwitch') }}</span>
           </div>
         </template>
+        <div class="form-foot" v-if="show === 'login'">
+          <strong>STAR MUSTANG</strong>
+          <span>支持全球收发 · 附件云存储 · AI 验证码识别</span>
+        </div>
       </div>
     </div>
     <el-dialog class="bind-dialog" v-model="showBindForm"  title="注册邮箱" >
@@ -664,7 +680,7 @@ function submitRegister() {
 
 .container {
   background: v-bind(loginOpacity);
-  padding: 28px;
+  padding: 28px 28px 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -849,10 +865,10 @@ function submitRegister() {
   background:
     linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
-    radial-gradient(1200px 600px at 12% 18%, rgba(37,99,235,.30), transparent 60%),
-    radial-gradient(900px 500px at 88% 12%, rgba(37,211,102,.22), transparent 62%),
-    radial-gradient(1000px 700px at 70% 90%, rgba(139,92,246,.24), transparent 60%),
-    linear-gradient(160deg,#0b1220 0%, #111c33 55%, #0a1220 100%);
+    radial-gradient(1100px 600px at 14% 20%, rgba(37,211,102,.28), transparent 60%),
+    radial-gradient(900px 520px at 86% 14%, rgba(14,165,233,.20), transparent 62%),
+    radial-gradient(1000px 700px at 68% 92%, rgba(16,185,129,.22), transparent 60%),
+    linear-gradient(160deg,#08111c 0%, #0d1a26 55%, #070f18 100%);
   background-size: 44px 44px, 44px 44px, auto, auto, auto, auto;
 }
 
@@ -875,13 +891,16 @@ function submitRegister() {
   color: white;
 }
 
-.brand-lockup { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
-.brand-mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg, var(--brand-500), #25d366); }
-.platform-badge { margin-left: 6px; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,.14); color: #cfe0ff; font-size: 10.5px; font-weight: 650; }
+.brand-lockup { display: flex; align-items: center; gap: 11px; }
+.brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 15px; color: #04121f; background: linear-gradient(135deg, #25d366, #0ea5e9); }
+.brand-copy { display: flex; flex-direction: column; }
+.brand-copy strong { font-size: 18px; line-height: 1.15; }
+.brand-copy span { margin-top: 3px; color: rgba(255,255,255,.55); font-size: 12.5px; font-weight: 400; }
+.platform-badge { margin-left: 7px; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,.12); color: #a7f3d0; font-size: 10.5px; font-weight: 650; }
 .brand-message { max-width: 540px; }
 .brand-message h1 { font-size: clamp(36px, 3.3vw, 48px); line-height: 1.14; letter-spacing: -1.5px; font-weight: 800; }
 .brand-message p { max-width: 530px; margin-top: 20px; color: rgba(255,255,255,.7); font-size: 15px; line-height: 1.85; }
-.brand-stats { max-width: 450px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; }
+.brand-stats { max-width: 520px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 32px; }
 .brand-stats > div { padding: 16px; border: 1px solid rgba(255,255,255,.12); border-radius: var(--r-lg); background: rgba(255,255,255,.07); }
 .brand-stats strong { display: block; font-size: 24px; line-height: 1.1; }
 .brand-stats span { display: block; margin-top: 6px; color: rgba(255,255,255,.6); font-size: 13px; }
@@ -890,12 +909,23 @@ function submitRegister() {
 .brand-features svg { color: #25d366; font-size: 14px; }
 .brand-footnote { color: rgba(255,255,255,.4); font-size: 10px; letter-spacing: 1.7px; }
 
+.form-mobile-brand { display: none; align-items: center; gap: 11px; margin-bottom: 24px; }
+.form-mobile-brand > div:last-child { display: flex; flex-direction: column; }
+.form-mobile-brand strong { color: var(--text); font-size: 16px; line-height: 1.2; }
+.form-mobile-brand span { margin-top: 2px; color: var(--text-3); font-size: 12px; }
+.field-label { display: block; margin: 0 0 7px; color: var(--text-2); font-size: 13px; font-weight: 650; }
+.enterprise-note { margin-top: 16px; padding: 13px; display: flex; align-items: flex-start; gap: 9px; color: var(--text-2); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); font-size: 12.5px; line-height: 1.65; }
+.enterprise-note svg { flex: none; margin-top: 1px; }
+.form-foot { margin: 24px -28px 0; padding: 14px 28px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px 12px; color: var(--text-3); border-top: 1px solid var(--border); border-radius: 0 0 var(--r-xl) var(--r-xl); background: var(--surface-2); font-size: 11.5px; }
+.form-foot strong { font-size: 11px; letter-spacing: .04em; }
+
 @media (max-width: 767px) {
-  #login-box { grid-template-columns: 1fr; background: #0b1d3a; }
-  .login-backdrop { background: radial-gradient(circle at 20% 5%, rgba(74, 119, 255, .32), transparent 32%), linear-gradient(160deg, #07162f, #163666); }
+  #login-box { grid-template-columns: 1fr; background: #071610; }
+  .login-backdrop { background: radial-gradient(circle at 18% 6%, rgba(37,211,102,.28), transparent 34%), radial-gradient(circle at 92% 88%, rgba(14,165,233,.18), transparent 38%), linear-gradient(160deg, #071610, #0b2b22); }
   .brand-panel { display: none; }
   .form-wrapper { width: 100%; padding: 24px 0; overflow-y: auto; }
   .container { min-height: auto; background: rgba(255,255,255,.96); }
+  .form-mobile-brand { display: flex; }
   :global(.dark) .container { background: rgba(18,25,38,.94); border-color: rgba(255,255,255,.1); }
 }
 
