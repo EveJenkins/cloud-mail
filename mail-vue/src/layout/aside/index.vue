@@ -83,21 +83,23 @@ const route = useRoute();
 <style lang="scss" scoped>
 
 .title {
-  margin: 15px 10px;
-  height: 45px;
-  border-radius: 6px;
+  margin: 22px 16px 26px;
+  height: 48px;
+  border-radius: 14px;
   display: flex;
   position: relative;
   font-size: 16px;
   font-weight: bold;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
+  justify-content: flex-start;
+  gap: 11px;
   color: #ffffff;
-  background: linear-gradient(135deg, #1890ff, #3a80dd);
+  background: rgba(255, 255, 255, .075);
+  border: 1px solid rgba(255, 255, 255, .09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
   transition: all 0.3s ease;
   max-width: 240px;
-  padding: 0 10px;
+  padding: 0 14px;
   > div {
     overflow: hidden;
     white-space: nowrap;
@@ -122,27 +124,36 @@ const route = useRoute();
 
 
 .manage-title {
-  margin-top: 10px;
+  margin: 24px 0 9px;
   padding-left: 20px;
-  color: #fff;
+  color: rgba(207, 220, 245, .48);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
 .el-menu-item {
-  margin: 3px 10px !important;
-  border-radius: 6px;
-  height: 36px;
-  padding: 10px !important;
+  margin: 5px 12px !important;
+  border-radius: 10px;
+  height: 42px;
+  padding: 10px 12px !important;
+  color: rgba(229, 237, 251, .72) !important;
+  transition: color .18s ease, background-color .18s ease, transform .18s ease;
 }
 
 .choose-item {
-  font-weight: 400;
+  font-weight: 600;
+  color: #fff !important;
   background: var(--aside-menu-active-background) !important;
-  backdrop-filter: blur(4px);
+  box-shadow: inset 3px 0 0 #7897ff;
 }
 
 @media (hover: hover) {
   .el-menu-item:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    transform: translateX(2px);
   }
 }
 
@@ -166,6 +177,7 @@ const route = useRoute();
 .el-menu {
   border-right: 0;
   width: 260px;
+  padding-bottom: 24px;
 }
 
 :deep(.el-divider__text) {

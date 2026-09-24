@@ -1,15 +1,27 @@
 <template>
   <div id="login-box" :style=" background ? 'background: var(--el-bg-color)' : ''" v-loading="oauthLoading" element-loading-text="登录中...">
-    <div id="background-wrap" v-if="!settingStore.settings.background">
-      <div class="x1 cloud"></div>
-      <div class="x2 cloud"></div>
-      <div class="x3 cloud"></div>
-      <div class="x4 cloud"></div>
-      <div class="x5 cloud"></div>
-    </div>
-    <div v-else :style="background"></div>
+    <div class="login-backdrop" :class="{ 'custom-backdrop': settingStore.settings.background }" :style="background"></div>
+    <section class="brand-panel" aria-label="Product introduction">
+      <div class="brand-lockup">
+        <div class="brand-mark"><Icon icon="solar:letter-bold-duotone" width="28" height="28" /></div>
+        <span>{{ settingStore.settings.title }}</span>
+      </div>
+      <div class="brand-message">
+        <span class="brand-eyebrow">ENTERPRISE MAIL</span>
+        <h1>让每一次沟通<br><em>专业、可靠、高效。</em></h1>
+        <p>面向现代团队的安全邮件工作台，在清晰、有序的体验中连接每一项重要业务。</p>
+        <div class="brand-features">
+          <span><Icon icon="solar:shield-check-linear" /> 安全连接</span>
+          <span><Icon icon="solar:bolt-linear" /> 高效协作</span>
+          <span><Icon icon="solar:cloud-check-linear" /> 稳定可靠</span>
+        </div>
+      </div>
+      <div class="brand-footnote">SECURE COMMUNICATION · BUILT FOR BUSINESS</div>
+    </section>
     <div class="form-wrapper">
       <div class="container">
+        <div class="form-brand-mark"><Icon icon="solar:letter-bold-duotone" width="24" height="24" /></div>
+        <span class="form-kicker">WELCOME BACK</span>
         <span class="form-title">{{ settingStore.settings.title }}</span>
         <span class="form-desc" v-if="show === 'login'">{{ $t('loginTitle') }}</span>
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
@@ -635,6 +647,7 @@ function submitRegister() {
 .form-wrapper {
   position: fixed;
   right: 0;
+  width: min(46vw, 680px);
   height: 100%;
   z-index: 10;
   display: flex;
@@ -647,24 +660,26 @@ function submitRegister() {
 
 .container {
   background: v-bind(loginOpacity);
-  padding-left: 40px;
-  padding-right: 40px;
+  padding: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 450px;
-  height: 100%;
-  border-left: 1px solid var(--login-border);
-  box-shadow: var(--el-box-shadow-light);
+  width: min(440px, calc(100% - 64px));
+  height: auto;
+  min-height: 540px;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, .16), 0 2px 12px rgba(15, 23, 42, .06);
+  backdrop-filter: blur(24px) saturate(140%);
   @media (max-width: 1024px) {
-    padding: 20px 18px;
-    width: 384px;
-    margin-left: 18px;
+    padding: 36px 28px;
+    width: calc(100% - 48px);
+    margin: 0 24px;
   }
   @media (max-width: 767px) {
-    border: 1px solid var(--login-border);
-    padding: 20px 18px;
-    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, .66);
+    padding: 32px 24px;
+    border-radius: 20px;
     height: fit-content;
     width: 100%;
     margin-right: 18px;
@@ -672,20 +687,44 @@ function submitRegister() {
   }
 
   .btn {
-    height: 36px;
+    height: 44px;
     width: 100%;
-    border-radius: 6px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: .2px;
   }
 
   .form-desc {
-    margin-top: 5px;
-    margin-bottom: 18px;
+    margin-top: 7px;
+    margin-bottom: 28px;
     color: var(--form-desc-color);
   }
 
   .form-title {
-    font-weight: bold;
-    font-size: 22px !important;
+    font-weight: 700;
+    font-size: 28px !important;
+    letter-spacing: -.6px;
+  }
+
+  .form-kicker {
+    margin: 20px 0 4px;
+    color: var(--el-color-primary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+  }
+
+  .form-brand-mark {
+    display: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: var(--enterprise-gradient);
+    box-shadow: 0 10px 24px rgba(46, 91, 255, .25);
+    @media (max-width: 767px) { display: flex; }
   }
 
   .switch {
@@ -699,8 +738,9 @@ function submitRegister() {
   }
 
   :deep(.el-input__wrapper) {
-    border-radius: 6px;
+    border-radius: 10px;
     background: var(--el-bg-color);
+    box-shadow: 0 0 0 1px var(--el-border-color) inset;
   }
 
   .email-input :deep(.el-input__wrapper) {
@@ -709,12 +749,12 @@ function submitRegister() {
   }
 
   .el-input {
-    height: 38px;
+    height: 44px;
     width: 100%;
     margin-bottom: 18px;
 
     :deep(.el-input__inner) {
-      height: 36px;
+      height: 42px;
     }
   }
 }
@@ -796,88 +836,65 @@ function submitRegister() {
 
 
 #login-box {
-  background: linear-gradient(to bottom, #2980b9, #6dd5fa, #fff);
-  font: 100% Arial, sans-serif;
+  position: relative;
+  background: #eef3fb;
+  font: 100% Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
   height: 100%;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) min(46vw, 680px);
 }
 
-
-#background-wrap {
-  height: 100%;
+.login-backdrop {
+  position: absolute;
+  inset: 0;
   z-index: 0;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(89, 126, 247, .28), transparent 28%),
+    radial-gradient(circle at 62% 82%, rgba(47, 196, 182, .14), transparent 24%),
+    linear-gradient(135deg, #07162f 0%, #102b55 46%, #eaf1fb 46.1%, #f6f8fc 100%);
 }
 
-@keyframes animateCloud {
-  0% {
-    margin-left: -500px;
-  }
-
-  100% {
-    margin-left: 100%;
-  }
-}
-
-.x1 {
-  animation: animateCloud 30s linear infinite;
-  transform: scale(0.65);
-}
-
-.x2 {
-  animation: animateCloud 15s linear infinite;
-  transform: scale(0.3);
-}
-
-.x3 {
-  animation: animateCloud 25s linear infinite;
-  transform: scale(0.5);
-}
-
-.x4 {
-  animation: animateCloud 13s linear infinite;
-  transform: scale(0.4);
-}
-
-.x5 {
-  animation: animateCloud 20s linear infinite;
-  transform: scale(0.55);
-}
-
-.cloud {
-  background: linear-gradient(to bottom, #fff 5%, #f1f1f1 100%);
-  border-radius: 100px;
-  box-shadow: 0 8px 5px rgba(0, 0, 0, 0.1);
-  height: 120px;
-  width: 350px;
-  position: relative;
-}
-
-.cloud:after,
-.cloud:before {
+.custom-backdrop::after {
   content: "";
   position: absolute;
-  background: #fff;
-  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(4, 16, 37, .76), rgba(4, 16, 37, .28) 58%, rgba(244, 247, 252, .2));
 }
 
-.cloud:after {
-  border-radius: 100px;
-  height: 100px;
-  left: 50px;
-  top: -50px;
-  width: 100px;
+.brand-panel {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  height: 100%;
+  padding: clamp(32px, 4vw, 68px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: white;
 }
 
-.cloud:before {
-  border-radius: 200px;
-  height: 180px;
-  width: 180px;
-  right: 50px;
-  top: -90px;
+.brand-lockup { display: flex; align-items: center; gap: 13px; font-weight: 650; font-size: 17px; }
+.brand-mark { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.25); border-radius: 14px; background: rgba(255,255,255,.1); backdrop-filter: blur(12px); }
+.brand-message { max-width: 700px; }
+.brand-eyebrow { display: inline-block; margin-bottom: 22px; color: #82a8ff; font-size: 12px; font-weight: 700; letter-spacing: 2.4px; }
+.brand-message h1 { font-size: clamp(42px, 4.3vw, 68px); line-height: 1.14; letter-spacing: -2.4px; font-weight: 650; }
+.brand-message h1 em { color: #8eb4ff; font-style: normal; }
+.brand-message p { max-width: 570px; margin-top: 26px; color: rgba(231, 238, 250, .72); font-size: 16px; line-height: 1.9; }
+.brand-features { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 36px; color: rgba(255,255,255,.82); }
+.brand-features span { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.brand-features svg { color: #8eb4ff; font-size: 18px; }
+.brand-footnote { color: rgba(255,255,255,.4); font-size: 10px; letter-spacing: 1.7px; }
+
+@media (max-width: 767px) {
+  #login-box { grid-template-columns: 1fr; background: #0b1d3a; }
+  .login-backdrop { background: radial-gradient(circle at 20% 5%, rgba(74, 119, 255, .32), transparent 32%), linear-gradient(160deg, #07162f, #163666); }
+  .brand-panel { display: none; }
+  .form-wrapper { width: 100%; padding: 24px 0; overflow-y: auto; }
+  .container { min-height: auto; background: rgba(255,255,255,.96); }
+  :global(.dark) .container { background: rgba(18,25,38,.94); border-color: rgba(255,255,255,.1); }
 }
 
 </style>

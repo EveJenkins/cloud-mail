@@ -91,18 +91,21 @@ onBeforeUnmount(() => {
 
 .main-container {
   min-height: 100%;
-  background: var(--el-bg-color);
+  background: var(--settings-page-background);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .el-main {
   padding: 0;
+  background: var(--settings-page-background);
 }
 
 .el-header {
-  background: var(--el-bg-color);
-  border-bottom: solid 1px var(--el-border-color);
+  height: 64px;
+  background: color-mix(in srgb, var(--el-bg-color) 88%, transparent);
+  backdrop-filter: blur(18px);
+  border-bottom: solid 1px color-mix(in srgb, var(--el-border-color) 68%, transparent);
   padding: 0 0 0 0;
 }
 

@@ -976,7 +976,7 @@ function loadData() {
   cursor: pointer;
   align-items: center;
   position: relative;
-  transition: background 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
   height: 48px;
   @media (max-width: 1366px) {
     height: 83px;
@@ -1222,6 +1222,7 @@ function loadData() {
   &:hover {
     background-color: var(--email-hover-background);
     z-index: 0;
+    box-shadow: inset 3px 0 0 var(--el-color-primary);
   }
 
   &.right-checked,
@@ -1272,7 +1273,9 @@ function loadData() {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 15px;
-  padding: 3px 15px;
+  min-height: 46px;
+  padding: 5px 18px;
+  background: color-mix(in srgb, var(--el-bg-color) 94%, var(--el-color-primary-light-9));
   box-shadow: var(--header-actions-border);
 
   .header-left {

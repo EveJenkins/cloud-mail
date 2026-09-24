@@ -360,8 +360,9 @@ function formatName(email) {
   font-size: 12px;
   display: grid;
   height: 100%;
-  gap: 10px;
+  gap: 14px;
   grid-template-columns: auto auto 1fr;
+  padding: 0 10px;
 }
 
 .header.not-send {
@@ -376,11 +377,12 @@ function formatName(email) {
   margin-left: 5px;
 
   .writer {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
     color: #ffffff;
-    background: linear-gradient(135deg, #1890ff, #3a80dd);
+    background: var(--enterprise-gradient);
+    box-shadow: 0 8px 18px rgba(46, 91, 255, .23);
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
@@ -402,8 +404,8 @@ function formatName(email) {
 }
 
 .breadcrumb-item {
-  font-weight: bold;
-  font-size: 14px;
+  font-weight: 650;
+  font-size: 15px;
   color: var(--el-text-color-primary);
   overflow: hidden;
   white-space: nowrap;
@@ -422,7 +424,7 @@ function formatName(email) {
     align-self: center;
     width: 30px;
     height: 30px;
-    border-radius: 4px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -459,8 +461,11 @@ function formatName(email) {
       display: flex;
       justify-content: center;
       align-items: center;
-      border-radius: 8px;
-      border: 1px solid var(--dark-border);
+      border-radius: 9px;
+      border: 1px solid var(--el-border-color);
+      font-weight: 650;
+      background: var(--el-color-primary-light-9);
+      color: var(--el-color-primary);
     }
 
     .setting-icon {
