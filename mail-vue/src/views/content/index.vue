@@ -1,22 +1,26 @@
 <template>
   <div class="box">
     <div class="header-actions">
-      <Icon v-if="!embedded" class="icon" icon="material-symbols-light:arrow-back-ios-new" width="20" height="20" @click="handleBack"/>
-      <Icon v-perm="'email:delete'" class="icon" icon="uiw:delete" width="16" height="16" @click="handleDelete"/>
-      <span class="star" v-if="emailStore.contentData.showStar">
-        <Icon class="icon" @click="changeStar" v-if="email.isStar" icon="fluent-color:star-16" width="20" height="20"/>
-        <Icon class="icon" @click="changeStar" v-else icon="solar:star-line-duotone" width="18" height="18"/>
-      </span>
-      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReply" icon="la:reply" width="21" height="21" />
-      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openForward" icon="iconoir:arrow-up-right" width="20" height="20" />
+      <div class="action-group">
+        <button v-if="!embedded" class="detail-action icon-only" :title="settingStore.lang === 'zh' ? '返回' : 'Back'" @click="handleBack"><Icon icon="material-symbols-light:arrow-back-ios-new" width="18" /></button>
+        <button v-perm="'email:delete'" class="detail-action icon-only" :title="$t('delete')" @click="handleDelete"><Icon icon="uiw:delete" width="16" /></button>
+        <button class="detail-action icon-only" v-if="emailStore.contentData.showStar" :title="$t('star')" @click="changeStar">
+          <Icon v-if="email.isStar" icon="fluent-color:star-16" width="19" />
+          <Icon v-else icon="solar:star-line-duotone" width="18" />
+        </button>
+      </div>
+      <div class="action-group action-group-right" v-if="emailStore.contentData.showReply" v-perm="'email:send'">
+        <button class="detail-action" @click="openReply"><Icon icon="la:reply" width="18" />{{ $t('reply') }}</button>
+        <button class="detail-action" @click="openForward"><Icon icon="iconoir:arrow-up-right" width="17" />{{ $t('forward') }}</button>
+      </div>
     </div>
     <div></div>
     <el-scrollbar class="scrollbar">
       <div class="container">
+        <div class="message-card">
         <div class="email-title">
           {{ email.subject }}
         </div>
-        <div class="message-card">
         <div class="code-card" v-if="email.code">
           <div class="code-insight">
             <span class="code-icon"><Icon icon="solar:clock-circle-linear" width="19" height="19" /></span>
@@ -30,16 +34,16 @@
         </div>
         <div class="content">
           <div class="email-info">
-            <div>
-              <div class="send"><span class="send-source">{{$t('from')}}</span>
-                <div class="send-name">
-                  <span class="send-name-title">{{ email.name }}</span>
-                  <span><{{ email.sendEmail }}></span>
+            <div class="sender-summary">
+              <span class="sender-avatar" :style="{ background: senderGradient }">{{ senderInitials }}</span>
+              <div class="sender-copy">
+                <div class="sender-primary">
+                  <strong>{{ email.name || email.sendEmail }}</strong>
+                  <span>&lt;{{ email.sendEmail }}&gt;</span>
                 </div>
-              </div>
-              <div class="receive"><span class="source">{{$t('recipient')}}</span><span class="receive-email">{{  formateReceive(email.recipient) }}</span></div>
-              <div class="date">
-                <div>{{ formatDetailDate(email.createTime) }}</div>
+                <div class="sender-secondary">
+                  {{ settingStore.lang === 'zh' ? '发送至' : 'To' }} {{ formateReceive(email.recipient) }} · {{ formatDetailDate(email.createTime) }}
+                </div>
               </div>
             </div>
             <el-alert v-if="email.status === 3" :closable="false" :title="toMessage(email.message)" class="email-msg" type="error" show-icon />
@@ -152,6 +156,19 @@ const email = computed(() => emailStore.contentData.email || {
 const showPreview = ref(false)
 const srcList = reactive([])
 const telegramEnabled = computed(() => settingStore.settings?.tgBotStatus === 0)
+const senderInitials = computed(() => {
+  const value = String(email.value.name || email.value.sendEmail || 'M').replace(/@.*/, '').trim()
+  return value.split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'M'
+})
+const senderGradient = computed(() => {
+  const value = String(email.value.name || email.value.sendEmail || '')
+  const palettes = [
+    ['#25d366', '#0ea5e9'], ['#f59e0b', '#f97316'], ['#8b5cf6', '#ec4899'], ['#0ea5e9', '#0284c7']
+  ]
+  const score = Array.from(value).reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  const [from, to] = palettes[score % palettes.length]
+  return `linear-gradient(135deg, ${from}, ${to})`
+})
 
 const { t } = useI18n()
 watch(() => accountStore.currentAccountId, () => {
@@ -331,20 +348,17 @@ const handleDelete = () => {
   padding: 6px 16px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 12px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  font-size: 18px;
-  .star {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 21px;
-  }
-  .icon {
-    cursor: pointer;
-  }
+  font-size: 14px;
 }
+.action-group { display: flex; align-items: center; gap: 7px; }
+.action-group-right { margin-left: auto; }
+.detail-action { height: 36px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+.detail-action:hover { color: var(--brand-700); border-color: color-mix(in srgb, var(--brand-500) 42%, var(--border)); background: var(--brand-soft); }
+.detail-action.icon-only { width: 36px; padding: 0; }
 
 
 .scrollbar {
@@ -353,10 +367,10 @@ const handleDelete = () => {
 }
 
 .container {
-  max-width: 860px;
+  max-width: 900px;
   margin: 0 auto;
   font-size: 14px;
-  padding: 24px;
+  padding: 26px 30px 38px;
   @media (max-width: 1023px) {
     padding-left: 15px;
     padding-right: 15px;
@@ -367,12 +381,12 @@ const handleDelete = () => {
     font-weight: 750;
     line-height: 1.35;
     letter-spacing: -.3px;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
 
   .message-card {
     overflow: hidden;
-    padding: 20px;
+    padding: 24px;
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     background: var(--surface);
@@ -397,7 +411,7 @@ const handleDelete = () => {
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     color: var(--text-2);
-    background: var(--surface-2);
+    background: linear-gradient(180deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 84%, var(--brand-soft)));
   }
   .trace-heading { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--text); font-size: 13.5px; }
   .trace-item { display: flex; align-items: center; gap: 9px; min-height: 27px; font-size: 12.5px; }
@@ -420,15 +434,15 @@ const handleDelete = () => {
     flex-direction: column;
 
     .att {
-      margin-top: 30px;
-      margin-bottom: 30px;
+      margin-top: 24px;
+      margin-bottom: 24px;
       border: 1px solid var(--light-border-color);
-      padding: 14px;
+      padding: 16px;
       border-radius: var(--r-md);
       width: 100%;
       .att-box {
-        min-width: min(410px,calc(100vw - 60px));
-        max-width: 600px;
+        min-width: 0;
+        max-width: none;
         display: grid;
         gap: 12px;
         grid-template-rows: 1fr;
@@ -449,7 +463,8 @@ const handleDelete = () => {
           align-self: center;
         }
         background: var(--light-ill);
-        padding: 5px 7px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
         border-radius: var(--r-sm);
         align-self: start;
         display: grid;
@@ -501,6 +516,14 @@ const handleDelete = () => {
       @media (max-width: 1024px) {
         margin-bottom: 15px;
       }
+
+      .sender-summary { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; }
+      .sender-avatar { width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center; color: #fff; border-radius: 50%; font-size: 12px; font-weight: 750; letter-spacing: .02em; }
+      .sender-copy { min-width: 0; flex: 1; }
+      .sender-primary { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 8px; }
+      .sender-primary strong { color: var(--text); font-size: 14.5px; }
+      .sender-primary span { overflow: hidden; color: var(--text-3); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+      .sender-secondary { margin-top: 3px; overflow: hidden; color: var(--text-3); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
       .date {
         color: var(--regular-text-color);
         margin-bottom: 6px;
@@ -574,6 +597,16 @@ const handleDelete = () => {
 
 .bottom-distance {
   margin-bottom: 30px;
+}
+
+@media (max-width: 767px) {
+  .header-actions { padding: 6px 10px; }
+  .detail-action { padding: 0 9px; }
+  .container { padding: 16px 12px 28px; }
+  .container .message-card { padding: 17px; border-radius: var(--r-md); }
+  .container .email-title { font-size: 19px; }
+  .container .code-card .el-button { width: 100%; margin-left: 0; }
+  .container .content .email-info .sender-secondary { white-space: normal; }
 }
 
 

@@ -1,5 +1,18 @@
 <template>
   <div class="email-container" :class="{ 'has-summary': props.showInboxSummary }">
+    <div class="inbox-panel-head" v-if="props.showInboxSummary">
+      <div class="inbox-title-row">
+        <div>
+          <strong>{{ settingStore.lang === 'zh' ? '收件箱' : 'Inbox' }}</strong>
+          <span>{{ currentAccountLabel }}</span>
+        </div>
+        <span>{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
+      </div>
+      <label class="inbox-search">
+        <Icon icon="solar:magnifer-linear" width="16" height="16" />
+        <input v-model.trim="searchKeyword" :placeholder="settingStore.lang === 'zh' ? '搜索发件人、主题或正文…' : 'Search sender, subject or message…'" />
+      </label>
+    </div>
     <div class="header-actions">
       <el-checkbox
           v-model="checkAll"
@@ -28,10 +41,10 @@
     </div>
 
     <div class="inbox-summary" v-if="props.showInboxSummary">
-      <span class="summary-chip active">{{ settingStore.lang === 'zh' ? '全部' : 'All' }} {{ total }}</span>
-      <span class="summary-chip">{{ settingStore.lang === 'zh' ? '未读' : 'Unread' }} {{ unreadCount }}</span>
-      <span class="summary-chip">{{ settingStore.lang === 'zh' ? '含附件' : 'Attachments' }} {{ attachmentCount }}</span>
-      <span class="summary-chip">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }} {{ codeCount }}</span>
+      <button class="summary-chip" :class="{ active: activeFilter === 'all' }" @click="activeFilter = 'all'">{{ settingStore.lang === 'zh' ? '全部' : 'All' }} {{ total }}</button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'unread' }" @click="activeFilter = 'unread'">{{ settingStore.lang === 'zh' ? '未读' : 'Unread' }} {{ unreadCount }}</button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'attachment' }" @click="activeFilter = 'attachment'">{{ settingStore.lang === 'zh' ? '含附件' : 'Attachments' }} {{ attachmentCount }}</button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'code' }" @click="activeFilter = 'code'">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }} {{ codeCount }}</button>
     </div>
 
     <div ref="scroll" class="scroll">
@@ -103,6 +116,10 @@
                       </span>
                     </span>
                     <span class="email-content">{{ item.listText || item.text || '\u200B' }}</span>
+                  </div>
+                  <div class="row-tags" v-if="props.showInboxSummary && (item.code || item.attList?.length)">
+                    <span class="mail-badge code" v-if="item.code"><Icon icon="solar:check-circle-bold" width="11" />{{ settingStore.lang === 'zh' ? '验证码已识别' : 'Code detected' }}</span>
+                    <span class="mail-badge" v-if="item.attList?.length"><Icon icon="solar:paperclip-linear" width="12" />{{ item.attList.length }} {{ settingStore.lang === 'zh' ? '附件' : 'attachments' }}</span>
                   </div>
                   <div class="user-info" v-if="showUserInfo">
                     <div class="user">
@@ -253,6 +270,7 @@ import {computed, onActivated, reactive, ref, watch, nextTick, onMounted, onUnmo
 import {useEmailStore} from "@/store/email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useSettingStore} from "@/store/setting.js";
+import {useAccountStore} from "@/store/account.js";
 import {sleep} from "@/utils/time-utils.js"
 import {fromNow} from "@/utils/day.js";
 import {useI18n} from "vue-i18n";
@@ -325,6 +343,7 @@ const props = defineProps({
 const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search'])
 const {t} = useI18n()
 const settingStore = useSettingStore()
+const accountStore = useAccountStore()
 const uiStore = useUiStore();
 const emailStore = useEmailStore();
 const loading = ref(false);
@@ -434,11 +453,27 @@ const { arrivedState } = useScroll(scrollbarRef, {
 
 
 const list = computed(() => {
-  return [...emailList, ...expandList]
+  const source = props.showInboxSummary ? filteredEmails.value : emailList
+  return [...source, ...expandList]
 })
 const unreadCount = computed(() => emailList.filter(item => item.unread === EmailUnreadEnum.UNREAD).length)
 const attachmentCount = computed(() => emailList.filter(item => item.attList?.length > 0).length)
 const codeCount = computed(() => emailList.filter(item => item.code).length)
+const searchKeyword = ref('')
+const activeFilter = ref('all')
+const currentAccountLabel = computed(() => accountStore.currentAccount?.email || '')
+
+const filteredEmails = computed(() => {
+  const keyword = searchKeyword.value.toLocaleLowerCase()
+  return emailList.filter(item => {
+    if (activeFilter.value === 'unread' && item.unread !== EmailUnreadEnum.UNREAD) return false
+    if (activeFilter.value === 'attachment' && !item.attList?.length) return false
+    if (activeFilter.value === 'code' && !item.code) return false
+    if (!keyword) return true
+    return [item.name, item.sendEmail, item.subject, item.listText, item.text, item.code]
+      .some(value => String(value || '').toLocaleLowerCase().includes(keyword))
+  })
+})
 
 const itemHeight = computed(() => {
     if (props.rowHeight > 0) return props.rowHeight;
@@ -1294,7 +1329,21 @@ function loadData() {
     background-color: #c2dbff;
   }*/
 }
-.email-container.has-summary { grid-template-rows: auto auto 1fr; }
+.email-container.has-summary { grid-template-rows: auto auto auto 1fr; }
+
+.inbox-panel-head {
+  padding: 14px 14px 10px;
+  background: var(--surface);
+}
+.inbox-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.inbox-title-row > div { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.inbox-title-row strong { color: var(--text); font-size: 17px; letter-spacing: -.02em; }
+.inbox-title-row > div span { overflow: hidden; color: var(--brand-700); font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.inbox-title-row > span { flex: none; color: var(--text-3); font-size: 12px; }
+.inbox-search { height: 36px; margin-top: 11px; padding: 0 11px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
+.inbox-search:focus-within { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+.inbox-search input { min-width: 0; flex: 1; color: var(--text); background: transparent; font-size: 12.5px; }
+.inbox-search input::placeholder { color: var(--text-3); }
 
 .inbox-summary {
   display: flex;
@@ -1307,6 +1356,7 @@ function loadData() {
 }
 .inbox-summary::-webkit-scrollbar { display: none; }
 .summary-chip {
+  border: 0;
   flex: 0 0 auto;
   min-height: 24px;
   padding: 3px 8px;
@@ -1316,6 +1366,7 @@ function loadData() {
   font-size: 11.5px;
   line-height: 18px;
   white-space: nowrap;
+  cursor: pointer;
 }
 .summary-chip.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 650; }
 
@@ -1332,6 +1383,10 @@ function loadData() {
   font-weight: 750;
   letter-spacing: .02em;
 }
+
+:deep(.row-tags) { min-height: 20px; margin-top: 7px; display: flex; align-items: center; gap: 6px; overflow: hidden; }
+:deep(.mail-badge) { height: 20px; padding: 0 7px; display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); border-radius: 6px; background: var(--surface-3); font-size: 10.5px; font-weight: 650; white-space: nowrap; }
+:deep(.mail-badge.code) { color: var(--brand-700); background: var(--brand-soft); }
 
 
 .phone-star {
