@@ -42,7 +42,14 @@ const aiService = {
 			try {
 				parsed = JSON.parse(match[0]);
 			} catch (e) {
-				parsed = {};
+				const categoryMatch = match[0].match(/"category"\s*:\s*"([\s\S]*?)"\s*,/i);
+				const summaryMatch = match[0].match(/"summary"\s*:\s*"([\s\S]*?)"\s*,/i);
+				const draftMatch = match[0].match(/"draft"\s*:\s*"([\s\S]*?)"\s*\}?\s*$/i);
+				parsed = {
+					category: categoryMatch?.[1] || '',
+					summary: summaryMatch?.[1] || '',
+					draft: draftMatch?.[1]?.replaceAll('\\n', '\n').replaceAll('\\"', '"') || ''
+				};
 			}
 		}
 		const fallbackDraft = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
