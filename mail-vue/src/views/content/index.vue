@@ -936,6 +936,7 @@ const handleDelete = () => {
 .code-card-body .el-button { margin-left: 0; }
 .ai-badge { padding: 3px 7px; color: var(--success); background: var(--surface); border-radius: 6px; font-size: 10.5px; font-weight: 750; }
 .container .htm-scrollbar { min-height: 120px; padding: 20px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
+.container .htm-scrollbar .email-text { padding: 0; color: var(--text); background: transparent; }
 .container .bottom-distance { margin-bottom: 0; }
 .container .content .att { margin: 16px 0 0; background: var(--surface); box-shadow: var(--sh-1); }
 .container .delivery-trace { margin-top: 16px; background: var(--surface); box-shadow: var(--sh-1); }
