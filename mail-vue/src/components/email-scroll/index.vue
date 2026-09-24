@@ -10,10 +10,10 @@
       </div>
       <label class="inbox-search">
         <Icon icon="solar:magnifer-linear" width="16" height="16" />
-        <input v-model.trim="searchKeyword" :placeholder="settingStore.lang === 'zh' ? '搜索发件人、主题或正文…' : 'Search sender, subject or message…'" />
+        <input v-model.trim="searchKeyword" :placeholder="settingStore.lang === 'zh' ? '搜索…' : 'Search…'" />
       </label>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" v-if="!props.showInboxSummary">
       <el-checkbox
           v-model="checkAll"
           :indeterminate="isIndeterminate"
@@ -41,10 +41,10 @@
     </div>
 
     <div class="inbox-summary" v-if="props.showInboxSummary">
-      <button class="summary-chip" :class="{ active: activeFilter === 'all' }" @click="activeFilter = 'all'">{{ settingStore.lang === 'zh' ? '全部' : 'All' }} {{ total }}</button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'unread' }" @click="activeFilter = 'unread'">{{ settingStore.lang === 'zh' ? '未读' : 'Unread' }} {{ unreadCount }}</button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'attachment' }" @click="activeFilter = 'attachment'">{{ settingStore.lang === 'zh' ? '含附件' : 'Attachments' }} {{ attachmentCount }}</button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'code' }" @click="activeFilter = 'code'">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }} {{ codeCount }}</button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'all' }" @click="activeFilter = 'all'">{{ settingStore.lang === 'zh' ? '全部' : 'All' }}</button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'unread' }" @click="activeFilter = 'unread'">{{ settingStore.lang === 'zh' ? '未读' : 'Unread' }}</button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'attachment' }" @click="activeFilter = 'attachment'">{{ settingStore.lang === 'zh' ? '含附件' : 'Attachments' }}</button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'code' }" @click="activeFilter = 'code'">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }}</button>
     </div>
 
     <div ref="scroll" class="scroll">
@@ -100,7 +100,7 @@
                       <Icon v-if="item.isStar" icon="fluent-color:star-16" width="18" height="18"/>
                     </span>
                   </span>
-                  <button v-if="props.showInboxSummary && showStar" class="summary-star" type="button" :title="$t('star')" @click.stop="starChange(item)">
+                  <button v-if="props.showInboxSummary && showStar" class="summary-star" :class="{ active: item.isStar }" type="button" :title="$t('star')" @click.stop="starChange(item)">
                     <Icon :icon="item.isStar ? 'fluent-color:star-16' : 'solar:star-line-duotone'" width="15" height="15"/>
                   </button>
                   <span class="phone-time">{{ item.formatCreateTime }}</span>
@@ -1343,10 +1343,10 @@ function loadData() {
     background-color: #c2dbff;
   }*/
 }
-.email-container.has-summary { grid-template-rows: auto auto auto 1fr; }
+.email-container.has-summary { grid-template-rows: auto auto 1fr; }
 
 .inbox-panel-head {
-  padding: 14px 14px 10px;
+  padding: 14px 16px 10px;
   background: var(--surface);
 }
 .inbox-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -1354,7 +1354,7 @@ function loadData() {
 .inbox-title-row strong { color: var(--text); font-size: 17px; letter-spacing: -.02em; }
 .inbox-title-row > div span { overflow: hidden; color: var(--brand-700); font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .inbox-title-row > span { flex: none; color: var(--text-3); font-size: 12px; }
-.inbox-search { height: 36px; margin-top: 11px; padding: 0 11px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
+.inbox-search { height: 38px; margin-top: 10px; padding: 0 12px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
 .inbox-search:focus-within { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
 .inbox-search input { min-width: 0; flex: 1; color: var(--text); background: transparent; font-size: 12.5px; }
 .inbox-search input::placeholder { color: var(--text-3); }
@@ -1362,7 +1362,7 @@ function loadData() {
 .inbox-summary {
   display: flex;
   gap: 6px;
-  padding: 9px 12px 10px;
+  padding: 8px 16px 10px;
   overflow-x: auto;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
@@ -1377,7 +1377,7 @@ function loadData() {
   border-radius: 999px;
   color: var(--text-3);
   background: var(--surface-3);
-  font-size: 11.5px;
+  font-size: 12.5px;
   line-height: 18px;
   white-space: nowrap;
   cursor: pointer;
@@ -1405,23 +1405,26 @@ function loadData() {
 
 .email-container.has-summary :deep(.email-row) {
   align-items: flex-start;
-  min-height: 104px;
-  padding: 13px 16px;
+  min-height: 118px;
+  padding: 14px 16px;
 }
 .email-container.has-summary :deep(.sender-avatar) { margin-top: 1px; }
 .email-container.has-summary :deep(.title) { min-width: 0; display: block; }
 .email-container.has-summary :deep(.email-sender) { display: flex; align-items: center; gap: 6px; }
 .email-container.has-summary :deep(.email-sender .name) { min-width: 0; flex: 1; display: block; }
-.email-container.has-summary :deep(.email-sender .name > span:first-child) { display: block; color: var(--text); font-size: 12.5px; }
+.email-container.has-summary :deep(.email-sender .name > span:first-child) { display: block; color: var(--text); font-size: 14px; line-height: 20px; }
 .email-container.has-summary :deep(.email-sender .name > span:last-child) { display: none; }
-.email-container.has-summary :deep(.phone-time) { display: block !important; flex: none; color: var(--text-3); font-size: 11px; }
-.email-container.has-summary :deep(.summary-star) { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
+.email-container.has-summary :deep(.phone-time) { display: block !important; flex: none; color: var(--text-3); font-size: 12px; line-height: 20px; }
+.email-container.has-summary :deep(.summary-star) { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: 5px; cursor: pointer; opacity: 0; transition: opacity var(--dur) var(--ease), background var(--dur) var(--ease); }
+.email-container.has-summary :deep(.summary-star.active), .email-container.has-summary :deep(.email-row:hover .summary-star) { opacity: 1; }
 .email-container.has-summary :deep(.summary-star:hover) { background: var(--surface-3); }
 .email-container.has-summary :deep(.email-text) { display: block; min-width: 0; }
-.email-container.has-summary :deep(.email-subject) { display: block; margin-top: 2px; padding: 0; color: var(--text); font-size: 12.5px; line-height: 19px; }
-.email-container.has-summary :deep(.email-content) { display: block; margin-top: 3px; padding: 0; color: var(--text-3); font-size: 11.5px; line-height: 18px; }
-.email-container.has-summary :deep(.row-tags) { margin-top: 6px; }
+.email-container.has-summary :deep(.email-subject) { display: block; margin-top: 1px; padding: 0; color: var(--text); font-size: 14px; line-height: 20px; }
+.email-container.has-summary :deep(.email-content) { display: block; margin-top: 3px; padding: 0; color: var(--text-3); font-size: 12.5px; line-height: 19px; }
+.email-container.has-summary :deep(.row-tags) { margin-top: 7px; }
+.email-container.has-summary :deep(.mail-badge) { height: 22px; padding: 0 8px; font-size: 11.5px; }
 .email-container.has-summary :deep(.email-right) { display: none; }
+.email-container.has-summary :deep(.email-row.mail-selected) { background: color-mix(in srgb, var(--brand-500) 8%, var(--surface)); }
 
 
 .phone-star {

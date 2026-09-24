@@ -13,7 +13,7 @@
                :show-unread="true"
                :show-inbox-summary="true"
                :selected-id="selectedEmailId"
-               :row-height="isDesktop ? 104 : (isPhone ? 118 : 0)"
+               :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
                actionLeft="4px"
                @jump="jumpContent"
   >
