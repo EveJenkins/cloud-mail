@@ -381,18 +381,18 @@ function formatName(email) {
   font-size: 12px;
   display: grid;
   height: 100%;
-  gap: 14px;
-  grid-template-columns: auto minmax(240px, 560px) 1fr;
-  padding: 0 12px;
+  gap: 12px;
+  grid-template-columns: minmax(240px, 560px) 1fr;
+  padding: 0 16px;
 }
 
 .header.not-send {
-  grid-template-columns: auto minmax(240px, 560px) 1fr;
+  grid-template-columns: minmax(240px, 560px) 1fr;
 }
 
 .global-search {
   width: 100%;
-  height: 36px;
+  height: 38px;
   position: relative;
   display: flex;
   align-items: center;
@@ -400,7 +400,7 @@ function formatName(email) {
   .search-icon { position: absolute; left: 11px; color: var(--text-3); pointer-events: none; }
   input {
     width: 100%;
-    height: 36px;
+    height: 38px;
     padding: 0 64px 0 36px;
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
@@ -451,7 +451,7 @@ function formatName(email) {
 }
 
 .header-btn {
-  display: inline-flex;
+  display: none;
   align-items: center;
   height: 100%;
   min-width: 0;
@@ -460,7 +460,8 @@ function formatName(email) {
 @media (max-width: 767px) {
   .header { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 6px; padding: 0 8px; }
   .header.not-send { grid-template-columns: 38px minmax(0, 1fr) auto; }
-  .global-search { height: 36px; }
+  .header-btn { display: inline-flex; }
+  .global-search { height: 38px; }
   .global-search input { padding-right: 10px; font-size: 12.5px; }
   .global-search kbd { display: none; }
 }
@@ -474,19 +475,27 @@ function formatName(email) {
   text-overflow: ellipsis;
 }
 
+@media (min-width: 768px) and (max-width: 1024px) {
+  .header,
+  .header.not-send { grid-template-columns: 38px minmax(240px, 560px) 1fr; }
+  .header-btn { display: inline-flex; }
+}
+
 .toolbar {
   display: flex;
   justify-content: end;
-  gap: 15px;
+  gap: 6px;
   @media (max-width: 767px) {
     gap: 2px;
   }
 
   .icon-item {
     align-self: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -494,7 +503,7 @@ function formatName(email) {
   }
 
   .icon-item:hover {
-    background: var(--base-fill);
+    background: var(--surface-3);
   }
 
   .notice {

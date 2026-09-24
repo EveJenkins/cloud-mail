@@ -192,10 +192,11 @@ function openWriter() {
   transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .el-menu-item:hover { color: var(--text) !important; background: var(--surface-3) !important; }
-.el-menu-item.choose-item { color: var(--brand-600) !important; background: var(--brand-soft) !important; box-shadow: inset 3px 0 0 var(--brand-600); font-weight: 650; }
+.el-menu-item.choose-item { position: relative; color: var(--brand-600) !important; background: var(--brand-soft) !important; font-weight: 650; }
+.el-menu-item.choose-item::before { content: ""; position: absolute; left: -12px; top: 50%; width: 3px; height: 18px; border-radius: 99px; background: var(--brand-600); transform: translateY(-50%); }
 .menu-name { margin-left: 0; user-select: none; }
 
-.quota-card { flex: none; margin: 12px; padding: 12px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--border); }
+.quota-card { flex: none; margin: 12px; padding: 12px; border-radius: var(--r-md); background: var(--surface-2); }
 .quota-head, .quota-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
 .quota-head { color: var(--text-2); font-weight: 600; }
 .quota-head span:last-child { color: var(--text-3); font-variant-numeric: tabular-nums; }

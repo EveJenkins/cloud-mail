@@ -207,23 +207,8 @@ function getEmailList(emailId, size) {
 .preview-empty p { margin-top: 5px; font-size: 12.5px; }
 .preview-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; color: var(--brand-600); background: var(--brand-soft); }
 
-.with-preview .mail-list-pane :deep(.email-row) { min-height: 104px; padding: 12px 16px; align-items: flex-start; }
-.with-preview .mail-list-pane :deep(.email-row .checkbox),
-.with-preview .mail-list-pane :deep(.email-row .pc-star) { display: none; }
-.with-preview .mail-list-pane :deep(.email-row .sender-avatar) { margin-top: 1px; }
-.with-preview .mail-list-pane :deep(.email-row .title) { min-width: 0; grid-template-columns: 1fr; gap: 4px; }
-.with-preview .mail-list-pane :deep(.email-row .email-sender) { grid-template-columns: 1fr auto; }
-.with-preview .mail-list-pane :deep(.email-row .email-text) { grid-template-columns: 1fr; gap: 4px; }
-.with-preview .mail-list-pane :deep(.email-row .email-subject) { padding-left: 0; }
-.with-preview .mail-list-pane :deep(.email-row .email-content) { padding-left: 0; color: var(--text-3); }
-.with-preview .mail-list-pane :deep(.email-row .email-right) { display: none; }
-.with-preview .mail-list-pane :deep(.email-row.right-checked),
-.with-preview .mail-list-pane :deep(.email-row:hover) { box-shadow: inset 3px 0 0 var(--brand-600); }
-
 @media (max-width: 767px) {
-  .mail-list-pane :deep(.email-row) { min-height: 118px; padding: 12px 12px 12px 8px; align-items: flex-start; }
-  .mail-list-pane :deep(.email-row .sender-avatar) { margin-top: 1px; }
-  .mail-list-pane :deep(.email-row .title) { min-width: 0; padding-right: 0; }
+  .mail-list-pane :deep(.email-row) { padding-right: 12px; padding-left: 8px; }
 }
 
 .icon {

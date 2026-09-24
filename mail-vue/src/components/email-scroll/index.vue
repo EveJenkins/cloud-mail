@@ -100,7 +100,7 @@
                       <Icon v-if="item.isStar" icon="fluent-color:star-16" width="18" height="18"/>
                     </span>
                   </span>
-                  <button v-if="props.showInboxSummary && showStar" class="summary-star" :class="{ active: item.isStar }" type="button" :title="$t('star')" @click.stop="starChange(item)">
+                  <button v-if="props.showInboxSummary && showStar && item.isStar" class="summary-star active" type="button" :title="$t('star')" @click.stop="starChange(item)">
                     <Icon :icon="item.isStar ? 'fluent-color:star-16' : 'solar:star-line-duotone'" width="15" height="15"/>
                   </button>
                   <span class="phone-time">{{ item.formatCreateTime }}</span>
@@ -1393,7 +1393,7 @@ function loadData() {
   place-items: center;
   border-radius: 50%;
   color: #fff;
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 750;
   letter-spacing: .02em;
 }
@@ -1406,7 +1406,7 @@ function loadData() {
 .email-container.has-summary :deep(.email-row) {
   align-items: flex-start;
   min-height: 118px;
-  padding: 14px 16px;
+  padding: 12px 16px;
 }
 .email-container.has-summary :deep(.sender-avatar) { margin-top: 1px; }
 .email-container.has-summary :deep(.title) { min-width: 0; display: block; }
@@ -1415,8 +1415,7 @@ function loadData() {
 .email-container.has-summary :deep(.email-sender .name > span:first-child) { display: block; color: var(--text); font-size: 14px; line-height: 20px; }
 .email-container.has-summary :deep(.email-sender .name > span:last-child) { display: none; }
 .email-container.has-summary :deep(.phone-time) { display: block !important; flex: none; color: var(--text-3); font-size: 12px; line-height: 20px; }
-.email-container.has-summary :deep(.summary-star) { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: 5px; cursor: pointer; opacity: 0; transition: opacity var(--dur) var(--ease), background var(--dur) var(--ease); }
-.email-container.has-summary :deep(.summary-star.active), .email-container.has-summary :deep(.email-row:hover .summary-star) { opacity: 1; }
+.email-container.has-summary :deep(.summary-star) { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
 .email-container.has-summary :deep(.summary-star:hover) { background: var(--surface-3); }
 .email-container.has-summary :deep(.email-text) { display: block; min-width: 0; }
 .email-container.has-summary :deep(.email-subject) { display: block; margin-top: 1px; padding: 0; color: var(--text); font-size: 14px; line-height: 20px; }
@@ -1424,7 +1423,7 @@ function loadData() {
 .email-container.has-summary :deep(.row-tags) { margin-top: 7px; }
 .email-container.has-summary :deep(.mail-badge) { height: 22px; padding: 0 8px; font-size: 11.5px; }
 .email-container.has-summary :deep(.email-right) { display: none; }
-.email-container.has-summary :deep(.email-row.mail-selected) { background: color-mix(in srgb, var(--brand-500) 8%, var(--surface)); }
+.email-container.has-summary :deep(.email-row.mail-selected) { background: var(--brand-soft); }
 
 
 .phone-star {
