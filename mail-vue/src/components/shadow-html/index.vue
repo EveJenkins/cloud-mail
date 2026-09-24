@@ -11,6 +11,10 @@ const props = defineProps({
   html: {
     type: String,
     required: true
+  },
+  comfortable: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -38,8 +42,8 @@ function updateContent() {
         height: 100%;
         font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
                     'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
-        font-size: 14px;
-        line-height: 1.5;
+        font-size: ${props.comfortable ? '14.5px' : '14px'};
+        line-height: ${props.comfortable ? '1.85' : '1.5'};
         color: #13181D;
         word-break: break-word;
       }
@@ -50,8 +54,10 @@ function updateContent() {
       }
 
       p {
-        margin: 0;
+        margin: ${props.comfortable ? '0 0 12px' : '0'};
       }
+
+      p:last-child { margin-bottom: 0; }
 
       a {
         text-decoration: none;
