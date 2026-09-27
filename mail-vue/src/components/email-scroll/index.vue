@@ -3,7 +3,7 @@
     <div class="inbox-panel-head" v-if="props.showInboxSummary">
       <div class="inbox-title-row">
         <div>
-          <strong>{{ settingStore.lang === 'zh' ? '收件箱' : 'Inbox' }}</strong>
+          <strong>{{ props.summaryTitle || (settingStore.lang === 'zh' ? '收件箱' : 'Inbox') }}</strong>
           <span>{{ currentAccountLabel }}</span>
         </div>
         <span>{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
@@ -341,6 +341,10 @@ const props = defineProps({
   showInboxSummary: {
     type: Boolean,
     default: false
+  },
+  summaryTitle: {
+    type: String,
+    default: ''
   }
 })
 
@@ -1362,14 +1366,14 @@ function loadData() {
 .email-container.has-summary { grid-template-rows: auto auto 1fr; }
 
 .inbox-panel-head {
-  padding: 14px 16px 10px;
+  padding: 12px 16px 10px;
   background: var(--surface);
 }
 .inbox-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .inbox-title-row > div { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
-.inbox-title-row strong { color: var(--text); font-size: 17px; letter-spacing: -.02em; }
-.inbox-title-row > div span { overflow: hidden; color: var(--brand-700); font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-.inbox-title-row > span { flex: none; color: var(--text-3); font-size: 12px; }
+.inbox-title-row strong { color: var(--text); font-size: 13px; font-weight: 650; }
+.inbox-title-row > div span { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; overflow: hidden; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.inbox-title-row > span { flex: none; color: var(--text-3); font-size: 12.5px; }
 .inbox-search { height: 38px; margin-top: 10px; padding: 0 12px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
 .inbox-search:focus-within { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
 .inbox-search input { min-width: 0; flex: 1; color: var(--text); background: transparent; font-size: 12.5px; }
@@ -1388,13 +1392,13 @@ function loadData() {
 .summary-chip {
   border: 0;
   flex: 0 0 auto;
-  min-height: 24px;
-  padding: 3px 8px;
+  height: 26px;
+  padding: 0 9px;
   border-radius: 999px;
   color: var(--text-3);
   background: var(--surface-3);
   font-size: 12.5px;
-  line-height: 18px;
+  line-height: 26px;
   white-space: nowrap;
   cursor: pointer;
 }
