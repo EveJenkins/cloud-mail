@@ -58,11 +58,11 @@
                         :key="keyCount"
         >
           <template #default="{ data: item, index }" >
-            <div :class="['email-row', props.type, { 'right-checked': item.rightChecked, 'mail-selected': item.emailId === props.selectedId }]"
+            <div :class="['email-row', props.type, { 'right-checked': item.rightChecked, 'mail-selected': (item.emailId ?? item.draftId) === props.selectedId }]"
                  :data-checked="item.checked"
                  @click="jumpDetails(item)"
                  v-if="!item.expand"
-                 :key="item.emailId"
+                 :key="item.emailId || `draft-${item.draftId}`"
                  @contextmenu="handleContextmenu($event, item)"
             >
               <el-checkbox v-if="!props.showInboxSummary" :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
@@ -502,7 +502,7 @@ const filteredEmails = computed(() => {
   return emailList.filter(item => {
     if (activeFilter.value === 'unread' && item.unread !== EmailUnreadEnum.UNREAD) return false
     if (activeFilter.value === 'attachment' && !item.attList?.length) return false
-    if (activeFilter.value === 'code' && !item.code) return false
+    if (activeFilter.value === 'code' && !extractVerificationCode(item)) return false
     if (!keyword) return true
     return [item.name, item.sendEmail, item.subject, item.listText, item.text, item.code]
       .some(value => String(value || '').toLocaleLowerCase().includes(keyword))
