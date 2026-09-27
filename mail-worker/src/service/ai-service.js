@@ -40,7 +40,13 @@ const aiService = {
 			brief: 'brief, direct and helpful',
 			friendly: 'warm, friendly and professional'
 		};
-		const languageMap = { zh: 'Simplified Chinese', en: 'English' };
+		const languageMap = {
+			zh: 'Simplified Chinese', 'zh-TW': 'Traditional Chinese', en: 'English',
+			de: 'German', fr: 'French', it: 'Italian', es: 'Spanish', nl: 'Dutch',
+			pl: 'Polish', tr: 'Turkish', ru: 'Russian', ar: 'Arabic', hi: 'Hindi',
+			ja: 'Japanese', ko: 'Korean', th: 'Thai', vi: 'Vietnamese', id: 'Indonesian',
+			ms: 'Malay', pt: 'Portuguese'
+		};
 		const tone = toneMap[options.tone] || toneMap.formal;
 		const requestedLanguage = languageMap[options.language] || 'the same language as the original email';
 		const subject = String(email.subject || '').slice(0, 500);

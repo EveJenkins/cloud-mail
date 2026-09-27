@@ -173,15 +173,18 @@
             <label class="language-control">
               <span>{{ settingStore.lang === 'zh' ? '语言' : 'Language' }}</span>
               <select v-model="aiLanguage">
-                <option value="auto">{{ settingStore.lang === 'zh' ? '自动识别' : 'Auto' }}</option>
-                <option value="zh">简体中文</option>
-                <option value="en">English</option>
+                <option value="auto">{{ settingStore.lang === 'zh' ? '根据通讯录自动选择' : 'Auto from contact' }}</option>
+                <option v-for="language in replyLanguages" :key="language.value" :value="language.value">{{ language.label }}</option>
               </select>
             </label>
             <button class="ai-generate" type="button" :disabled="aiGenerating" @click="generateAiReply(false)">
               <Icon :icon="aiGenerating ? 'svg-spinners:ring-resize' : 'solar:stars-minimalistic-bold'" width="16" height="16"/>
               {{ aiGenerating ? (settingStore.lang === 'zh' ? '正在起草…' : 'Drafting…') : (quickReply ? (settingStore.lang === 'zh' ? '重新起草' : 'Regenerate') : (settingStore.lang === 'zh' ? '起草回复' : 'Draft reply')) }}
             </button>
+          </div>
+          <div v-if="aiLanguage === 'auto'" class="reply-language-hint" :class="{ matched: replyAutoLanguage.contact }">
+            <Icon :icon="replyAutoLanguage.contact ? 'solar:map-point-wave-linear' : 'solar:info-circle-linear'" width="14" />
+            <span>{{ replyLanguageHint }}</span>
           </div>
           <div class="ai-insight" v-if="aiCategory || aiSummary">
             <span v-if="aiCategory">{{ aiCategory }}</span>
@@ -244,6 +247,7 @@ import {useUiStore} from "@/store/ui.js";
 import {useI18n} from "vue-i18n";
 import {EmailUnreadEnum} from "@/enums/email-enum.js";
 import {useUserStore} from "@/store/user.js";
+import {useWriterStore} from "@/store/writer.js";
 
 const props = defineProps({
   embedded: {
@@ -259,6 +263,7 @@ const settingStore = useSettingStore();
 const accountStore = useAccountStore();
 const emailStore = useEmailStore();
 const userStore = useUserStore();
+const writerStore = useWriterStore();
 const router = useRouter()
 const email = computed(() => emailStore.contentData.email || {
   emailId: 0,
@@ -284,6 +289,53 @@ const translatedText = ref('')
 const toneOptions = computed(() => settingStore.lang === 'zh'
     ? [{value: 'formal', label: '正式'}, {value: 'brief', label: '简洁'}, {value: 'friendly', label: '友好'}]
     : [{value: 'formal', label: 'Formal'}, {value: 'brief', label: 'Brief'}, {value: 'friendly', label: 'Friendly'}])
+const replyLanguages = [
+  {value: 'en', label: 'English'}, {value: 'zh', label: '简体中文'}, {value: 'zh-TW', label: '繁體中文'},
+  {value: 'de', label: 'Deutsch'}, {value: 'fr', label: 'Français'}, {value: 'es', label: 'Español'},
+  {value: 'pt', label: 'Português'}, {value: 'it', label: 'Italiano'}, {value: 'nl', label: 'Nederlands'},
+  {value: 'pl', label: 'Polski'}, {value: 'tr', label: 'Türkçe'}, {value: 'ru', label: 'Русский'},
+  {value: 'ar', label: 'العربية'}, {value: 'hi', label: 'हिन्दी'}, {value: 'ja', label: '日本語'},
+  {value: 'ko', label: '한국어'}, {value: 'th', label: 'ไทย'}, {value: 'vi', label: 'Tiếng Việt'},
+  {value: 'id', label: 'Bahasa Indonesia'}, {value: 'ms', label: 'Bahasa Melayu'},
+]
+const replyCountryLanguageMap = {
+  China: 'zh', 'Hong Kong': 'zh-TW', Taiwan: 'zh-TW', 'United States': 'en', Canada: 'en', Mexico: 'es',
+  'United Kingdom': 'en', Germany: 'de', France: 'fr', Italy: 'it', Spain: 'es', Netherlands: 'nl',
+  Poland: 'pl', Turkey: 'tr', Russia: 'ru', 'United Arab Emirates': 'ar', 'Saudi Arabia': 'ar', India: 'hi',
+  Japan: 'ja', 'South Korea': 'ko', Singapore: 'en', Thailand: 'th', Vietnam: 'vi', Indonesia: 'id',
+  Malaysia: 'ms', Philippines: 'en', Australia: 'en', 'New Zealand': 'en', Brazil: 'pt', Argentina: 'es', 'South Africa': 'en',
+  中国: 'zh', 中国大陆: 'zh', 中国香港: 'zh-TW', 中国台湾: 'zh-TW', 美国: 'en', 加拿大: 'en', 墨西哥: 'es',
+  英国: 'en', 德国: 'de', 法国: 'fr', 意大利: 'it', 西班牙: 'es', 荷兰: 'nl', 波兰: 'pl', 土耳其: 'tr',
+  俄罗斯: 'ru', 阿联酋: 'ar', 沙特阿拉伯: 'ar', 印度: 'hi', 日本: 'ja', 韩国: 'ko', 新加坡: 'en',
+  泰国: 'th', 越南: 'vi', 印度尼西亚: 'id', 马来西亚: 'ms', 菲律宾: 'en', 澳大利亚: 'en', 新西兰: 'en',
+  巴西: 'pt', 阿根廷: 'es', 南非: 'en',
+}
+const conversationEmails = computed(() => {
+  const ownAddresses = [accountStore.currentAccount?.email, userStore.user?.email].filter(Boolean).map(value => String(value).toLowerCase())
+  const sender = String(email.value.sendEmail || '').toLowerCase()
+  if (!ownAddresses.includes(sender)) return sender ? [sender] : []
+  try {
+    const rawRecipients = email.value.recipient || email.value.receiveEmail || []
+    const recipients = Array.isArray(rawRecipients) ? rawRecipients : JSON.parse(rawRecipients || '[]')
+    return recipients.map(item => String(item.address || item.email || item).toLowerCase()).filter(Boolean)
+  } catch {
+    return []
+  }
+})
+const replyAutoLanguage = computed(() => {
+  const contacts = Array.isArray(writerStore.contacts) ? writerStore.contacts : []
+  const contact = conversationEmails.value.map(address => contacts.find(item => String(item.email).toLowerCase() === address)).find(Boolean)
+  const code = replyCountryLanguageMap[contact?.country] || 'en'
+  const language = replyLanguages.find(item => item.value === code) || replyLanguages[0]
+  return {contact, code, language}
+})
+const replyLanguageHint = computed(() => {
+  const result = replyAutoLanguage.value
+  if (!result.contact) return settingStore.lang === 'zh' ? '通讯录未找到该联系人，智能回复将使用 English' : 'Contact not found; smart reply will use English'
+  return settingStore.lang === 'zh'
+      ? `已根据 ${result.contact.name || result.contact.email}（${result.contact.country}）选择 ${result.language.label}`
+      : `${result.language.label} selected from ${result.contact.name || result.contact.email} (${result.contact.country})`
+})
 const telegramEnabled = computed(() => settingStore.settings?.tgBotStatus === 0)
 const detectedCode = computed(() => {
   const serverCode = String(email.value.code || '').trim()
@@ -441,7 +493,8 @@ async function generateAiReply(variant = false) {
   if (aiGenerating.value) return
   aiGenerating.value = true
   try {
-    const data = await emailAiReply(email.value.emailId, aiTone.value, aiLanguage.value, variant)
+    const replyLanguage = aiLanguage.value === 'auto' ? replyAutoLanguage.value.code : aiLanguage.value
+    const data = await emailAiReply(email.value.emailId, aiTone.value, replyLanguage, variant)
     quickReply.value = data?.draft || ''
     aiCategory.value = data?.category || ''
     aiSummary.value = data?.summary || ''
@@ -752,6 +805,9 @@ const handleDelete = () => {
   .tone-options button.active { color: var(--brand-700); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 44%, var(--border)); font-weight: 700; }
   .language-control { display: flex; align-items: center; gap: 6px; }
   .language-control select { height: 30px; padding: 0 27px 0 9px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; outline: 0; font: inherit; font-size: 11.5px; }
+  .reply-language-hint { margin: -2px 0 10px; display: flex; align-items: flex-start; gap: 5px; color: var(--text-3); font-size: 10.5px; line-height: 1.45; }
+  .reply-language-hint svg { flex: 0 0 auto; margin-top: 1px; }
+  .reply-language-hint.matched { color: var(--brand-600); }
   .ai-generate { min-height: 32px; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; color: #fff; background: linear-gradient(135deg, var(--brand-600), #0b8f79); border-radius: 8px; font-size: 12px; font-weight: 700; box-shadow: 0 6px 14px color-mix(in srgb, var(--brand-600) 20%, transparent); }
   .ai-generate:disabled { cursor: wait; opacity: .65; }
   .ai-insight { display: flex; align-items: center; gap: 8px; margin: -1px 0 10px; color: var(--text-2); }
