@@ -81,8 +81,18 @@
           </section>
 
           <section class="side-card">
-            <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '快捷插入' : 'Quick insert' }}</span><small>{{ settingStore.lang === 'zh' ? '点击写入正文' : 'Insert into body' }}</small></div>
-            <div class="phrase-list"><button v-for="phrase in quickPhrases" :key="phrase.label" type="button" @click="insertPhrase(phrase.text)">{{ phrase.label }}</button></div>
+            <div class="side-title phrase-title">
+              <span>{{ settingStore.lang === 'zh' ? '快捷插入' : 'Quick insert' }}</span>
+              <button class="phrase-add" type="button" @click="openPhraseCreate"><Icon icon="solar:add-circle-linear" width="15" />{{ settingStore.lang === 'zh' ? '自定义' : 'Custom' }}</button>
+            </div>
+            <p class="phrase-hint">{{ settingStore.lang === 'zh' ? '点击短语写入正文，可随时编辑' : 'Insert a phrase or edit your own' }}</p>
+            <div class="phrase-list" v-if="quickPhrases.length">
+              <div class="phrase-item" v-for="(phrase, index) in quickPhrases" :key="phrase.id || `${phrase.label}-${index}`">
+                <button class="phrase-insert" type="button" :title="phrase.text" @click="insertPhrase(phrase.text)">{{ phrase.label }}</button>
+                <button class="phrase-edit" type="button" :title="settingStore.lang === 'zh' ? '编辑短语' : 'Edit phrase'" @click="openPhraseEdit(index)"><Icon icon="solar:pen-new-square-linear" width="13" /></button>
+              </div>
+            </div>
+            <button v-else class="phrase-empty" type="button" @click="openPhraseCreate">{{ settingStore.lang === 'zh' ? '还没有快捷短语，点击添加' : 'No phrases yet — add one' }}</button>
           </section>
 
           <section class="side-card">
@@ -96,6 +106,17 @@
 
     <el-dialog v-model="showMailPreview" class="mail-preview-dialog" :title="settingStore.lang === 'zh' ? '邮件预览' : 'Email preview'" width="min(760px, calc(100vw - 28px))">
       <div class="preview-message"><div class="preview-meta"><span><b>{{ $t('sender') }}</b> {{ form.name }} &lt;{{ form.sendEmail }}&gt;</span><span><b>{{ $t('recipient') }}</b> {{ form.receiveEmail.join(', ') || '—' }}</span></div><h2>{{ form.subject || (settingStore.lang === 'zh' ? '（未填写主题）' : '(No subject)') }}</h2><ShadowHtml class="preview-body" :html="previewContent" /></div>
+    </el-dialog>
+    <el-dialog v-model="phraseDialogOpen" :title="phraseEditIndex >= 0 ? (settingStore.lang === 'zh' ? '编辑快捷短语' : 'Edit quick phrase') : (settingStore.lang === 'zh' ? '新建快捷短语' : 'New quick phrase')" width="min(480px, calc(100vw - 28px))">
+      <div class="phrase-form">
+        <label><span>{{ settingStore.lang === 'zh' ? '短语名称' : 'Label' }}</span><el-input v-model.trim="phraseForm.label" maxlength="20" show-word-limit :placeholder="settingStore.lang === 'zh' ? '例如：报价有效期' : 'e.g. Quote validity'" /></label>
+        <label><span>{{ settingStore.lang === 'zh' ? '插入内容' : 'Content' }}</span><el-input v-model="phraseForm.text" type="textarea" :rows="5" maxlength="500" show-word-limit :placeholder="settingStore.lang === 'zh' ? '输入点击后插入正文的完整内容' : 'Enter the full text to insert'" /></label>
+      </div>
+      <template #footer>
+        <button v-if="phraseEditIndex >= 0" class="dialog-delete" type="button" @click="removePhrase">{{ settingStore.lang === 'zh' ? '删除' : 'Delete' }}</button>
+        <el-button @click="phraseDialogOpen = false">{{ settingStore.lang === 'zh' ? '取消' : 'Cancel' }}</el-button>
+        <el-button type="primary" @click="savePhrase">{{ settingStore.lang === 'zh' ? '保存' : 'Save' }}</el-button>
+      </template>
     </el-dialog>
     <el-dialog top="10vh" v-model="showContacts" @closed="clearSelectContact" :title="t('recentContacts')">
       <el-table ref="contactsTabRef" row-key="email" :data="contacts" style="height: 445px">
@@ -143,7 +164,7 @@ import db from "@/db/db.js";
 import dayjs from "dayjs";
 import {useI18n} from "vue-i18n";
 import router from "@/router/index.js";
-import {ElMessageBox} from "element-plus";
+import {ElMessage, ElMessageBox} from "element-plus";
 
 defineExpose({
   open,
@@ -174,6 +195,9 @@ const showMailPreview = ref(false)
 const previewContent = ref('')
 const translating = ref(false)
 const translateLanguage = ref('en')
+const phraseDialogOpen = ref(false)
+const phraseEditIndex = ref(-1)
+const phraseForm = reactive({label: '', text: ''})
 const mySelect = ref()
 let selectStatus = false
 const backReply = reactive({
@@ -241,7 +265,7 @@ const composeChecks = computed(() => [
   { label: settingStore.lang === 'zh' ? '正文内容' : 'Message body', detail: form.text.trim() ? `${contentStats.value.characters} ${settingStore.lang === 'zh' ? '字' : 'characters'}` : (settingStore.lang === 'zh' ? '正文为空' : 'Empty'), ok: Boolean(form.text.trim()) },
   { label: settingStore.lang === 'zh' ? '附件大小' : 'Attachment size', detail: attachmentBytes.value ? attachmentTotal.value : (settingStore.lang === 'zh' ? '无附件' : 'No attachments'), ok: attachmentBytes.value <= 25 * 1024 * 1024 },
 ])
-const quickPhrases = computed(() => settingStore.lang === 'zh' ? [
+const defaultQuickPhrases = computed(() => settingStore.lang === 'zh' ? [
   {label:'报价有效期', text:'本报价自发出之日起 30 天内有效。'},
   {label:'交期说明', text:'具体交付时间将在订单确认后另行通知。'},
   {label:'付款条款', text:'付款条款请以双方最终确认的订单为准。'},
@@ -254,6 +278,52 @@ const quickPhrases = computed(() => settingStore.lang === 'zh' ? [
   {label:'Warranty', text:'Warranty coverage and duration are subject to the final contract.'},
   {label:'Request drawing', text:'Please provide the model, OE number, or technical drawing for further confirmation.'},
 ])
+const quickPhrases = computed(() => Array.isArray(writerStore.quickPhrases) ? writerStore.quickPhrases : defaultQuickPhrases.value)
+
+function materializeQuickPhrases() {
+  if (!Array.isArray(writerStore.quickPhrases)) {
+    writerStore.quickPhrases = defaultQuickPhrases.value.map((item, index) => ({...item, id: `default-${index}-${Date.now()}`}))
+  }
+}
+
+function openPhraseCreate() {
+  phraseEditIndex.value = -1
+  phraseForm.label = ''
+  phraseForm.text = ''
+  phraseDialogOpen.value = true
+}
+
+function openPhraseEdit(index) {
+  materializeQuickPhrases()
+  const phrase = writerStore.quickPhrases[index]
+  if (!phrase) return
+  phraseEditIndex.value = index
+  phraseForm.label = phrase.label
+  phraseForm.text = phrase.text
+  phraseDialogOpen.value = true
+}
+
+function savePhrase() {
+  const label = phraseForm.label.trim()
+  const text = phraseForm.text.trim()
+  if (!label || !text) {
+    ElMessage({message: settingStore.lang === 'zh' ? '请填写短语名称和插入内容' : 'Please enter a label and content', type: 'warning', plain: true})
+    return
+  }
+  materializeQuickPhrases()
+  const item = {id: phraseEditIndex.value >= 0 ? writerStore.quickPhrases[phraseEditIndex.value].id : `custom-${Date.now()}`, label, text}
+  if (phraseEditIndex.value >= 0) writerStore.quickPhrases.splice(phraseEditIndex.value, 1, item)
+  else writerStore.quickPhrases.push(item)
+  phraseDialogOpen.value = false
+  ElMessage({message: settingStore.lang === 'zh' ? '快捷短语已保存' : 'Quick phrase saved', type: 'success', plain: true})
+}
+
+function removePhrase() {
+  if (phraseEditIndex.value < 0) return
+  writerStore.quickPhrases.splice(phraseEditIndex.value, 1)
+  phraseDialogOpen.value = false
+  ElMessage({message: settingStore.lang === 'zh' ? '快捷短语已删除' : 'Quick phrase deleted', type: 'success', plain: true})
+}
 
 function openContacts() {
   showContacts.value = true
@@ -1132,7 +1202,7 @@ async function saveDraftNow() {
 .compose-topbar { height: 42px; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .compose-topbar h1 { margin: 0; color: var(--text); font-size: 17px; font-weight: 800; letter-spacing: -.25px; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.back-button, .secondary-button, .inline-link, .add-attachment, .contact-book-button, .phrase-list button, .translate-row button { border: 0; font: inherit; cursor: pointer; }
+.back-button, .secondary-button, .inline-link, .add-attachment, .contact-book-button, .phrase-list button, .phrase-add, .phrase-empty, .dialog-delete, .translate-row button { border: 0; font: inherit; cursor: pointer; }
 .back-button, .secondary-button { height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 11px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 9px; font-size: 12.5px; font-weight: 650; }
 .back-button:hover, .secondary-button:hover { color: var(--brand-700); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); background: var(--brand-soft); }
 .topbar-actions .send-button { height: 38px; min-width: 80px; padding: 0 14px; border-radius: 9px; font-size: 12.5px; }
@@ -1186,9 +1256,19 @@ async function saveDraftNow() {
 .check-item > div { display: grid; gap: 2px; }
 .check-item strong { font-size: 11.5px; }
 .check-item small { color: var(--text-3); font-size: 10.5px; }
+.phrase-title { align-items: center; }
+.phrase-add { padding: 3px 6px; display: inline-flex; align-items: center; gap: 3px; color: var(--brand-700); border-radius: 6px; background: var(--brand-soft); font-size: 10px; font-weight: 700; }
+.phrase-hint { margin: 5px 0 9px !important; }
 .phrase-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.phrase-list button { padding: 5px 8px; color: var(--text-2); background: var(--surface-2); border: 1px solid transparent; border-radius: 999px; font-size: 10.5px; }
-.phrase-list button:hover { color: var(--brand-700); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 25%, var(--border)); }
+.phrase-item { display: inline-flex; overflow: hidden; border: 1px solid transparent; border-radius: 999px; background: var(--surface-2); }
+.phrase-item:hover { border-color: color-mix(in srgb, var(--brand-500) 25%, var(--border)); background: var(--brand-soft); }
+.phrase-list .phrase-insert { max-width: 120px; padding: 5px 3px 5px 9px; overflow: hidden; color: var(--text-2); background: transparent; font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.phrase-list .phrase-edit { width: 25px; padding: 0 6px 0 3px; display: grid; place-items: center; color: var(--text-3); background: transparent; }
+.phrase-item:hover button { color: var(--brand-700); }
+.phrase-empty { width: 100%; padding: 10px; color: var(--text-3); border: 1px dashed var(--border); border-radius: 8px; background: var(--surface-2); font-size: 10.5px; }
+.phrase-form { display: grid; gap: 16px; }
+.phrase-form label { display: grid; gap: 7px; color: var(--text-2); font-size: 12px; font-weight: 700; }
+.dialog-delete { float: left; padding: 8px 12px; color: var(--danger, #ef4444); border-radius: 7px; background: color-mix(in srgb, #ef4444 8%, var(--surface)); }
 .translate-row { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
 .translate-row select { min-width: 0; height: 34px; padding: 0 8px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; outline: 0; font: inherit; font-size: 11.5px; }
 .translate-row button { height: 34px; display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; color: #fff; background: var(--brand-600); border-radius: 8px; font-size: 11.5px; font-weight: 700; }
