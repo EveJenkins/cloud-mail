@@ -53,6 +53,11 @@
           <Icon icon="fluent:people-team-20-regular" width="19" height="19" />
           <span class="menu-name">{{ settingStore.lang === 'zh' ? '通讯录' : 'Contacts' }}</span>
         </el-menu-item>
+        <el-menu-item @click="router.push({name: 'quickPhrases'})" index="quickPhrases" v-perm="'email:send'"
+                      :class="route.meta.name === 'quickPhrases' ? 'choose-item' : ''">
+          <Icon icon="solar:notes-minimalistic-linear" width="19" height="19" />
+          <span class="menu-name">{{ settingStore.lang === 'zh' ? '快捷短语' : 'Quick phrases' }}</span>
+        </el-menu-item>
         <el-menu-item @click="router.push({name: 'setting'})" index="setting"
                       :class="route.meta.name === 'setting' ? 'choose-item' : ''">
           <Icon icon="fluent:settings-48-regular" width="19" height="19" />

@@ -83,7 +83,7 @@
           <section class="side-card">
             <div class="side-title phrase-title">
               <span>{{ settingStore.lang === 'zh' ? '快捷插入' : 'Quick insert' }}</span>
-              <button class="phrase-add" type="button" @click="openPhraseCreate"><Icon icon="solar:add-circle-linear" width="15" />{{ settingStore.lang === 'zh' ? '自定义' : 'Custom' }}</button>
+              <button class="phrase-add" type="button" @click="openPhraseManager"><Icon icon="solar:settings-minimalistic-linear" width="15" />{{ settingStore.lang === 'zh' ? '管理' : 'Manage' }}</button>
             </div>
             <p class="phrase-hint">{{ settingStore.lang === 'zh' ? '点击短语写入正文，可随时编辑' : 'Insert a phrase or edit your own' }}</p>
             <div class="phrase-list" v-if="quickPhrases.length">
@@ -291,6 +291,11 @@ function openPhraseCreate() {
   phraseForm.label = ''
   phraseForm.text = ''
   phraseDialogOpen.value = true
+}
+
+function openPhraseManager() {
+  show.value = false
+  router.push({name: 'quickPhrases'})
 }
 
 function openPhraseEdit(index) {

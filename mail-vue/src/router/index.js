@@ -42,6 +42,16 @@ const routes = [
                 }
             },
             {
+                path: '/quick-phrases',
+                name: 'quickPhrases',
+                component: () => import('@/views/quick-phrases/index.vue'),
+                meta: {
+                    title: 'quickPhrases',
+                    name: 'quickPhrases',
+                    menu: true
+                }
+            },
+            {
                 path: '/settings',
                 name: 'setting',
                 component: () => import('@/views/setting/index.vue'),
