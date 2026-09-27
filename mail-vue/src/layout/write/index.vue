@@ -107,9 +107,9 @@
             <select v-model="signatureLanguage" class="signature-select">
               <option value="auto">{{ settingStore.lang === 'zh' ? '根据通讯录自动选择' : 'Auto from contact' }}</option>
               <option value="off">{{ settingStore.lang === 'zh' ? '本封邮件不使用签名' : 'No signature for this message' }}</option>
-              <option v-for="signature in configuredSignatures" :key="signature.id" :value="signature.language">{{ signatureLanguageName(signature.language) }} · {{ signature.name }}</option>
+              <option v-for="language in availableSignatureLanguages" :key="language" :value="language">{{ signatureLanguageName(language) }}</option>
             </select>
-            <div v-if="activeSignature" class="signature-mini-preview"><strong>{{ activeSignature.name }}</strong><pre>{{ activeSignature.content }}</pre></div>
+            <div v-if="activeSignature" class="signature-mini-preview"><strong>{{ activeSignature.name }} · {{ signatureLanguageName(activeSignature.language) }}</strong><pre>{{ activeSignature.content }}</pre></div>
             <div v-else class="signature-empty">{{ configuredSignatures.length ? (settingStore.lang === 'zh' ? '当前语言没有签名，将使用英语或首个可用签名' : 'No exact match; the fallback signature will be used') : (settingStore.lang === 'zh' ? '尚未配置签名' : 'No signature configured') }}</div>
             <button class="signature-apply" type="button" :disabled="!activeSignature" @click="applySignatureToEditor"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '插入 / 更新签名' : 'Insert / update signature' }}</button>
           </section>
@@ -309,13 +309,18 @@ const autoTranslationHint = computed(() => {
       ? `已根据 ${result.contact.name || result.contact.email}（${result.contact.country}）选择 ${result.language.label}`
       : `${result.language.label} selected from ${result.contact.name || result.contact.email} (${result.contact.country})`
 })
-const configuredSignatures = computed(() => Array.isArray(writerStore.signatures) ? writerStore.signatures : [])
+const configuredSignatures = computed(() => (Array.isArray(writerStore.signatures) ? writerStore.signatures : []).map(signature => signature.translations
+    ? signature
+    : {...signature, translations: {[signature.language || 'en']: signature.content || ''}}))
+const availableSignatureLanguages = computed(() => [...new Set(configuredSignatures.value.flatMap(signature => Object.keys(signature.translations || {})))])
 const activeSignature = computed(() => {
   if (signatureLanguage.value === 'off' || !configuredSignatures.value.length) return null
   const target = signatureLanguage.value === 'auto' ? autoTranslation.value.code : signatureLanguage.value
-  return configuredSignatures.value.find(item => item.language === target)
-      || configuredSignatures.value.find(item => item.language === 'en')
-      || configuredSignatures.value[0]
+  const exact = configuredSignatures.value.find(item => item.translations?.[target])
+  const english = configuredSignatures.value.find(item => item.translations?.en)
+  const signature = exact || english || configuredSignatures.value[0]
+  const language = exact ? target : (signature.translations?.en ? 'en' : Object.keys(signature.translations || {})[0])
+  return signature ? {...signature, language, content: signature.translations?.[language] || ''} : null
 })
 const signatureLanguageName = code => translationLanguages.find(item => item.value === code)?.label || code
 const composeChecks = computed(() => [
