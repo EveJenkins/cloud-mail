@@ -68,7 +68,7 @@
         <label><span>{{ zh ? '公司' : 'Company' }}</span><el-input v-model.trim="form.company" /></label>
         <div class="form-grid">
           <label><span>{{ zh ? '类型' : 'Type' }}</span><div class="native-select-wrap"><select v-model="form.type"><option value="客户">{{ zh ? '客户' : 'Customer' }}</option><option value="供应商">{{ zh ? '供应商' : 'Supplier' }}</option><option value="物流">{{ zh ? '物流' : 'Logistics' }}</option><option value="合作伙伴">{{ zh ? '合作伙伴' : 'Partner' }}</option></select><Icon icon="solar:alt-arrow-down-linear" width="15" /></div></label>
-          <label><span>{{ zh ? '国家 / 地区' : 'Country / region' }}</span><div class="native-select-wrap"><select v-model="form.country"><option value="">{{ zh ? '请选择' : 'Select' }}</option><option v-for="country in countryOptions" :key="country.value" :value="country.value">{{ zh ? country.zh : country.en }}</option></select><Icon icon="solar:alt-arrow-down-linear" width="15" /></div></label>
+          <label><span>{{ zh ? '国家 / 地区' : 'Country / region' }}</span><el-select v-model="form.country" class="country-select" filterable clearable :placeholder="zh ? '搜索或选择国家 / 地区' : 'Search or select a country'"><el-option v-for="country in countryOptions" :key="country.value" :value="country.value" :label="zh ? country.zh : country.en"><span class="country-option"><strong>{{ zh ? country.zh : country.en }}</strong><small>{{ zh ? country.en : country.zh }}</small></span></el-option></el-select></label>
         </div>
       </div>
       <template #footer><el-button @click="dialogOpen = false">{{ zh ? '取消' : 'Cancel' }}</el-button><el-button type="primary" @click="saveContact">{{ zh ? '保存' : 'Save' }}</el-button></template>
@@ -230,6 +230,10 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .native-select-wrap select:hover { border-color: var(--text-3); }
 .native-select-wrap select:focus { border-color: var(--brand-500); box-shadow: 0 0 0 3px var(--brand-soft); }
 .native-select-wrap > svg { position: absolute; top: 50%; right: 11px; color: var(--text-3); pointer-events: none; transform: translateY(-50%); }
+.country-select { width: 100%; }
+.country-option { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.country-option strong { color: var(--text); font-size: 13px; font-weight: 600; }
+.country-option small { color: var(--text-3); font-size: 11px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 900px) {
   .contacts-shell { padding: 16px; }
