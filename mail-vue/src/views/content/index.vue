@@ -338,10 +338,16 @@ const displayBody = computed(() => {
   if (!html) return {html: '', text}
   try {
     const documentNode = new DOMParser().parseFromString(html, 'text/html')
-    documentNode.querySelectorAll('style, script, title, meta').forEach(node => node.remove())
+    const hasDocumentStyles = Boolean(documentNode.querySelector('style, link[rel="stylesheet"]'))
+    documentNode.querySelectorAll('script, title, meta').forEach(node => node.remove())
     const htmlText = String(documentNode.body?.textContent || '').replace(/\s+/g, ' ').trim()
     const hasVisualContent = Boolean(documentNode.body?.querySelector('img, svg, table, video, audio, canvas'))
     if (!htmlText && !hasVisualContent) return {html: '', text}
+    const hasComplexLayout = hasDocumentStyles || hasVisualContent || Boolean(documentNode.body?.querySelector('[class], [id]'))
+    if (!hasComplexLayout) {
+      const plainBody = text || String(documentNode.body?.innerText || documentNode.body?.textContent || '').trim()
+      return {html: '', text: plainBody}
+    }
   } catch {
     if (!html.replace(/<[^>]+>/g, '').trim()) return {html: '', text}
   }
