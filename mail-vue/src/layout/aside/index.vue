@@ -48,6 +48,7 @@
           <Icon icon="ep:document" width="18" height="18" />
           <span class="menu-name">{{ $t('drafts') }}</span>
         </el-menu-item>
+        <div class="other-title">{{ settingStore.lang === 'zh' ? '其他' : 'OTHER' }}</div>
         <el-menu-item @click="router.push({name: 'contacts'})" index="contacts"
                       :class="route.meta.name === 'contacts' ? 'choose-item' : ''">
           <Icon icon="fluent:people-team-20-regular" width="19" height="19" />
@@ -187,8 +188,8 @@ function openWriter() {
 .mailbox-copy strong { overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
 .mailbox-copy small { margin-top: 1px; color: var(--text-3); font-size: 10.5px; }
 .scroll { flex: 1; min-height: 0; padding: 0 16px; }
-.group-title, .manage-title { padding: 8px 12px 6px; color: var(--text-3); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
-.manage-title { padding-top: 22px; }
+.group-title, .other-title, .manage-title { padding: 8px 12px 6px; color: var(--text-3); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.other-title, .manage-title { padding-top: 22px; }
 
 .el-menu { width: 100%; padding-bottom: 24px; border-right: 0; background: transparent; }
 .el-menu-item {
