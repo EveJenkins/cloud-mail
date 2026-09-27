@@ -12,6 +12,8 @@
                :email-read="emailRead"
                :show-unread="true"
                :show-inbox-summary="true"
+               :empty-title="settingStore.lang === 'zh' ? '收件箱是空的' : 'Your inbox is empty'"
+               :empty-description="settingStore.lang === 'zh' ? '新邮件同步后会出现在这里' : 'New messages will appear here after syncing'"
                :selected-id="selectedEmailId"
                :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
                actionLeft="4px"
@@ -29,9 +31,18 @@
     <section class="mail-preview-pane" v-if="isDesktop">
       <Content v-if="selectedEmailId" embedded @close="selectedEmailId = null" />
       <div v-else class="preview-empty">
-        <span class="preview-icon"><Icon icon="solar:letter-opened-linear" width="34" height="34" /></span>
-        <strong>{{ settingStore.lang === 'zh' ? '选择一封邮件查看详情' : 'Select a message to read' }}</strong>
-        <p>{{ settingStore.lang === 'zh' ? '邮件内容、验证码和附件将在这里显示' : 'Message content, codes and attachments appear here' }}</p>
+        <div class="empty-main">
+          <span class="preview-icon"><Icon icon="solar:letter-opened-linear" width="32" height="32" /></span>
+          <strong>{{ settingStore.lang === 'zh' ? '选择一封邮件开始阅读' : 'Select a message to start reading' }}</strong>
+          <p>{{ settingStore.lang === 'zh' ? '正文与附件将显示在这里' : 'The message and its attachments will appear here' }}</p>
+        </div>
+        <div class="empty-guide">
+          <div class="empty-actions">
+            <button class="primary-action" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="16" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
+            <button type="button" @click="syncInbox"><Icon icon="solar:refresh-linear" width="16" />{{ settingStore.lang === 'zh' ? '同步邮件' : 'Sync mail' }}</button>
+          </div>
+          <div class="empty-meta"><span><i></i>{{ syncedTimeLabel }}</span><span><kbd>Ctrl K</kbd>{{ settingStore.lang === 'zh' ? '搜索' : 'Search' }}</span></div>
+        </div>
       </div>
     </section>
   </div>
@@ -41,10 +52,11 @@
 import {useAccountStore} from "@/store/account.js";
 import {useEmailStore} from "@/store/email.js";
 import {useSettingStore} from "@/store/setting.js";
+import {useUiStore} from "@/store/ui.js";
 import emailScroll from "@/components/email-scroll/index.vue"
 import {emailList, emailDelete, emailLatest, emailRead} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {defineOptions, h, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
+import {computed, defineOptions, h, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
@@ -59,6 +71,7 @@ const route = useRoute();
 const emailStore = useEmailStore();
 const accountStore = useAccountStore();
 const settingStore = useSettingStore();
+const uiStore = useUiStore();
 const scroll = ref({})
 const params = reactive({
   timeSort: 0,
@@ -66,6 +79,11 @@ const params = reactive({
 const isDesktop = ref(window.innerWidth >= 1280)
 const isPhone = ref(window.innerWidth < 768)
 const selectedEmailId = ref(null)
+const syncedAt = ref(new Date())
+const syncedTimeLabel = computed(() => {
+  const time = new Intl.DateTimeFormat(settingStore.lang === 'zh' ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit', hour12: false}).format(syncedAt.value)
+  return settingStore.lang === 'zh' ? `已同步 · ${time}` : `Synced · ${time}`
+})
 
 const handleViewport = () => {
   isDesktop.value = window.innerWidth >= 1280
@@ -94,6 +112,11 @@ watch(() => accountStore.currentAccountId, () => {
 function changeTimeSort() {
   params.timeSort = params.timeSort ? 0 : 1
   scroll.value.refreshList();
+}
+
+function syncInbox() {
+  scroll.value.refreshList?.()
+  syncedAt.value = new Date()
 }
 
 function jumpContent(email) {
@@ -198,14 +221,25 @@ function getEmailList(emailId, size) {
 
 </script>
 <style lang="scss" scoped>
-.inbox-workspace { height: 100%; min-width: 0; background: var(--bg); }
+.inbox-workspace { height: 100%; min-width: 0; background: var(--reading-surface); }
 .inbox-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
-.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--surface); border-right: 1px solid var(--border); }
-.mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--bg); }
+.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
+.mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
 .preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
-.preview-empty strong { margin-top: 14px; color: var(--text-2); font-size: 15px; }
-.preview-empty p { margin-top: 5px; font-size: 12.5px; }
-.preview-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; color: var(--brand-600); background: var(--brand-soft); }
+.empty-main { display: flex; flex-direction: column; align-items: center; }
+.preview-empty strong { margin-top: 15px; color: var(--text); font-size: 15px; font-weight: 600; }
+.preview-empty p { margin-top: 6px; font-size: 12.5px; line-height: 1.7; opacity: .8; }
+.preview-icon { width: 60px; height: 60px; display: grid; place-items: center; color: var(--brand-500); border: 1px solid var(--border); border-radius: 18px; background: var(--surface-2); }
+.empty-guide { width: min(390px, calc(100% - 48px)); margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border); }
+.empty-actions { display: flex; justify-content: center; gap: 9px; }
+.empty-actions button { height: 36px; padding: 0 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border-strong); border-radius: 9px; background: var(--surface-2); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease); }
+.empty-actions button:hover { color: var(--text); border-color: var(--brand-500); }
+.empty-actions .primary-action { color: #fff; border-color: color-mix(in srgb, var(--brand-500) 55%, transparent); background: var(--brand-600); }
+.empty-actions .primary-action:hover { border-color: var(--brand-500); background: var(--brand-700); }
+.empty-meta { margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 22px; font-size: 10.5px; }
+.empty-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.empty-meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-600); box-shadow: 0 0 0 3px var(--brand-soft); }
+.empty-meta kbd { padding: 2px 5px; color: var(--text-3); border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); font: inherit; }
 
 @media (max-width: 767px) {
   .mail-list-pane :deep(.email-row) { padding-right: 12px; padding-left: 8px; }

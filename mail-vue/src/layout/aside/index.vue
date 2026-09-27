@@ -162,7 +162,7 @@ function openWriter() {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: var(--sidebar-surface);
   border-right: 1px solid var(--border);
 }
 
@@ -186,6 +186,7 @@ function openWriter() {
 .role-badge { margin-left: auto; max-width: 62px; overflow: hidden; text-overflow: ellipsis; padding: 3px 7px; border-radius: 6px; color: var(--brand-600); background: var(--brand-soft); font-size: 10px; font-weight: 700; }
 .compose-wrap { padding: 0 16px 12px; }
 .compose-btn { width: 100%; height: 40px; display: flex; gap: 7px; }
+:global(html.dark) .compose-btn { border: 1px solid rgba(255, 255, 255, .10); box-shadow: none; }
 .mailbox-card { width: calc(100% - 32px); margin: 3px 16px 8px; padding: 8px 10px; display: flex; align-items: center; gap: 10px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); cursor: pointer; }
 .mailbox-card:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); }
 .mailbox-avatar { width: 28px; height: 28px; flex: none; display: grid; place-items: center; color: #fff; border-radius: 50%; background: linear-gradient(135deg, #0ea5e9, #0284c7); font-size: 11px; font-weight: 750; }

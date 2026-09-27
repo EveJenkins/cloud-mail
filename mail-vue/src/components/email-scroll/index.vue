@@ -6,7 +6,8 @@
           <strong>{{ props.summaryTitle || (settingStore.lang === 'zh' ? '收件箱' : 'Inbox') }}</strong>
           <span>{{ currentAccountLabel }}</span>
         </div>
-        <span>{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
+        <span v-if="total">{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
+        <span v-else class="sync-status"><i></i>{{ lastSyncedLabel }}</span>
       </div>
       <label class="inbox-search">
         <Icon icon="solar:magnifer-linear" width="16" height="16" />
@@ -172,7 +173,12 @@
                        :showUserInfo="showUserInfo"
                        :type="type"/>
       <div class="empty" v-if="noLoading && emailList.length === 0 && !loading">
-        <el-empty :image-size="isMobile ? 120 : null" :description="$t('noMessagesFound')"/>
+        <div v-if="props.emptyTitle" class="compact-empty">
+          <span><Icon icon="solar:inbox-line-linear" width="24" height="24" /></span>
+          <strong>{{ props.emptyTitle }}</strong>
+          <p>{{ props.emptyDescription }}</p>
+        </div>
+        <el-empty v-else :image-size="isMobile ? 96 : 120" :description="$t('noMessagesFound')"/>
       </div>
     </div>
     <el-dropdown
@@ -345,6 +351,14 @@ const props = defineProps({
   summaryTitle: {
     type: String,
     default: ''
+  },
+  emptyTitle: {
+    type: String,
+    default: ''
+  },
+  emptyDescription: {
+    type: String,
+    default: ''
   }
 })
 
@@ -360,6 +374,7 @@ const noLoading = ref(false);
 const emailList = reactive([])
 const expandList = reactive([])
 const total = ref(0);
+const lastSyncedAt = ref(null);
 const checkAll = ref(false);
 const isIndeterminate = ref(false);
 const scroll = ref(null)
@@ -496,6 +511,11 @@ const codeCount = computed(() => emailList.filter(item => item.code).length)
 const searchKeyword = ref('')
 const activeFilter = ref('all')
 const currentAccountLabel = computed(() => accountStore.currentAccount?.email || '')
+const lastSyncedLabel = computed(() => {
+  if (!lastSyncedAt.value) return settingStore.lang === 'zh' ? '正在同步' : 'Syncing'
+  const time = new Intl.DateTimeFormat(settingStore.lang === 'zh' ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit', hour12: false}).format(lastSyncedAt.value)
+  return settingStore.lang === 'zh' ? `已同步 · ${time}` : `Synced · ${time}`
+})
 
 const filteredEmails = computed(() => {
   const keyword = searchKeyword.value.toLocaleLowerCase()
@@ -966,6 +986,7 @@ function getEmailList(refresh = false) {
     followLoading.value = data.list.length >= queryParam.size;
 
     total.value = data.total;
+    lastSyncedAt.value = new Date();
   }).finally(() => {
     loading.value = false
     reqLock = false
@@ -1040,6 +1061,29 @@ function loadData() {
     align-items: center;
     height: 100%;
     width: 100%;
+  }
+
+  .compact-empty {
+    width: min(250px, calc(100% - 40px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-3);
+    text-align: center;
+
+    > span {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      color: var(--brand-500);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: var(--surface-2);
+    }
+
+    strong { margin-top: 12px; color: var(--text-2); font-size: 14px; font-weight: 600; }
+    p { margin-top: 5px; font-size: 12px; line-height: 1.7; opacity: .72; }
   }
 
   .noLoading {
@@ -1371,9 +1415,11 @@ function loadData() {
 }
 .inbox-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .inbox-title-row > div { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
-.inbox-title-row strong { color: var(--text); font-size: 13px; font-weight: 650; }
-.inbox-title-row > div span { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; overflow: hidden; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.inbox-title-row strong { color: var(--text); font-size: 13px; font-weight: 600; }
+.inbox-title-row > div span { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; overflow: hidden; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .inbox-title-row > span { flex: none; color: var(--text-3); font-size: 12.5px; }
+.inbox-title-row > .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; }
+.sync-status i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-600); box-shadow: 0 0 0 3px var(--brand-soft); }
 .inbox-search { height: 38px; margin-top: 10px; padding: 0 12px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
 .inbox-search:focus-within { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
 .inbox-search input { min-width: 0; flex: 1; color: var(--text); background: transparent; font-size: 12.5px; }
@@ -1402,7 +1448,7 @@ function loadData() {
   white-space: nowrap;
   cursor: pointer;
 }
-.summary-chip.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 650; }
+.summary-chip.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 600; }
 
 :deep(.sender-avatar) {
   width: 36px;
@@ -1419,7 +1465,7 @@ function loadData() {
 }
 
 :deep(.row-tags) { min-height: 20px; margin-top: 7px; display: flex; align-items: center; gap: 6px; overflow: hidden; }
-:deep(.mail-badge) { height: 20px; padding: 0 7px; display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); border-radius: 6px; background: var(--surface-3); font-size: 10.5px; font-weight: 650; white-space: nowrap; }
+:deep(.mail-badge) { height: 20px; padding: 0 7px; display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); border-radius: 6px; background: var(--surface-3); font-size: 10.5px; font-weight: 600; white-space: nowrap; }
 :deep(.mail-badge.code) { color: var(--brand-700); background: var(--brand-soft); }
 :deep(.mail-badge.category) { color: var(--success); background: color-mix(in srgb, var(--success) 11%, var(--surface)); }
 
