@@ -16,6 +16,8 @@
                :type="'draft'"
                :show-inbox-summary="true"
                :summary-title="settingStore.lang === 'zh' ? '草稿箱' : 'Drafts'"
+               :empty-title="settingStore.lang === 'zh' ? '还没有草稿' : 'No drafts yet'"
+               :empty-description="settingStore.lang === 'zh' ? '未完成的邮件会保存在这里' : 'Unfinished messages will be saved here'"
                :selected-id="selectedDraft?.draftId"
                :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
   >
@@ -164,10 +166,10 @@ function editSelectedDraft() {
 
 </script>
 <style lang="scss" scoped>
-.draft-workspace { height: 100%; min-width: 0; background: var(--bg); }
+.draft-workspace { height: 100%; min-width: 0; background: var(--reading-surface); }
 .draft-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
-.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--surface); border-right: 1px solid var(--border); }
-.draft-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--bg); }
+.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
+.draft-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
 .draft-preview-scroll { height: 100%; overflow-y: auto; }
 .draft-preview { max-width: 860px; margin: 0 auto; padding: 24px; }
 .draft-toolbar { min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }

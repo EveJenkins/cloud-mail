@@ -13,6 +13,8 @@
                :show-account-icon="false"
                :show-inbox-summary="true"
                :summary-title="settingStore.lang === 'zh' ? '星标邮件' : 'Starred'"
+               :empty-title="settingStore.lang === 'zh' ? '还没有星标邮件' : 'No starred messages yet'"
+               :empty-description="settingStore.lang === 'zh' ? '加星的邮件会集中显示在这里' : 'Starred messages will appear here'"
                :selected-id="selectedEmailId"
                :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
       />
@@ -95,10 +97,10 @@ watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
 </script>
 
 <style lang="scss" scoped>
-.star-workspace { height: 100%; min-width: 0; background: var(--bg); }
+.star-workspace { height: 100%; min-width: 0; background: var(--reading-surface); }
 .star-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
-.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--surface); border-right: 1px solid var(--border); }
-.mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--bg); }
+.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
+.mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
 .preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
 .preview-empty strong { margin-top: 14px; color: var(--text-2); font-size: 15px; }
 .preview-empty p { margin-top: 5px; font-size: 12.5px; }

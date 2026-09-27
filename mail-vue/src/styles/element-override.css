@@ -21,9 +21,32 @@
   --el-box-shadow-light: var(--sh-2);
 }
 
+/* Element Plus' dark variable sheet targets `html.dark`, which is more
+   specific than `:root`. Keep the product accent authoritative in both
+   themes so primary actions never fall back to Element Plus blue. */
+html.dark {
+  --el-color-primary: var(--brand-600);
+  --el-color-primary-dark-2: var(--brand-700);
+  --el-color-primary-light-3: #62c98d;
+  --el-color-primary-light-5: #72d49b;
+  --el-color-primary-light-7: rgba(98, 201, 141, .42);
+  --el-color-primary-light-9: var(--brand-soft);
+}
+
 .el-button { height: 38px; font-weight: 600; }
-.el-button--primary { background: var(--brand-600); box-shadow: 0 2px 10px var(--brand-soft); }
-.el-button--primary:hover { background: var(--brand-700); }
+.el-button.el-button--primary {
+  color: #fff;
+  background-color: var(--brand-600);
+  border-color: var(--brand-600);
+  box-shadow: 0 2px 10px var(--brand-soft);
+}
+.el-button.el-button--primary:hover,
+.el-button.el-button--primary:focus {
+  color: #fff;
+  background-color: var(--brand-700);
+  border-color: var(--brand-700);
+}
+html.dark .el-button.el-button--primary { box-shadow: none; }
 .el-card { border-color: var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .el-table { --el-table-header-bg-color: var(--surface-2); --el-table-row-hover-bg-color: var(--surface-2); }
 .el-dialog { border: 1px solid var(--border); }

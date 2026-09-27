@@ -15,6 +15,8 @@
                :type="'send'"
                :show-inbox-summary="true"
                :summary-title="settingStore.lang === 'zh' ? '已发送' : 'Sent'"
+               :empty-title="settingStore.lang === 'zh' ? '还没有已发送邮件' : 'No sent messages yet'"
+               :empty-description="settingStore.lang === 'zh' ? '发送成功的邮件会出现在这里' : 'Successfully sent messages will appear here'"
                :selected-id="selectedEmailId"
                :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
   >
@@ -131,10 +133,10 @@ function getEmailList(emailId, size) {
 </script>
 
 <style lang="scss" scoped>
-.sent-workspace { height: 100%; min-width: 0; background: var(--bg); }
+.sent-workspace { height: 100%; min-width: 0; background: var(--reading-surface); }
 .sent-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
-.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--surface); border-right: 1px solid var(--border); }
-.mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--bg); }
+.mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
+.mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
 .preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
 .preview-empty strong { margin-top: 14px; color: var(--text-2); font-size: 15px; }
 .preview-empty p { margin-top: 5px; font-size: 12.5px; }
