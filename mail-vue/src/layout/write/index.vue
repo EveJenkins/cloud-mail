@@ -109,7 +109,7 @@
               <option value="off">{{ settingStore.lang === 'zh' ? '本封邮件不使用签名' : 'No signature for this message' }}</option>
               <option v-for="language in availableSignatureLanguages" :key="language" :value="language">{{ signatureLanguageName(language) }}</option>
             </select>
-            <div v-if="activeSignature" class="signature-mini-preview"><strong>{{ activeSignature.name }} · {{ signatureLanguageName(activeSignature.language) }}</strong><pre>{{ activeSignature.content }}</pre></div>
+            <div v-if="activeSignature" class="signature-mini-preview"><strong>{{ activeSignature.name }} · {{ signatureLanguageName(activeSignature.language) }}</strong><div class="signature-rich-preview" v-html="signatureContentHtml(activeSignature.content)"></div></div>
             <div v-else class="signature-empty">{{ configuredSignatures.length ? (settingStore.lang === 'zh' ? '当前语言没有签名，将使用英语或首个可用签名' : 'No exact match; the fallback signature will be used') : (settingStore.lang === 'zh' ? '尚未配置签名' : 'No signature configured') }}</div>
             <button class="signature-apply" type="button" :disabled="!activeSignature" @click="applySignatureToEditor"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '插入 / 更新签名' : 'Insert / update signature' }}</button>
           </section>
@@ -164,6 +164,7 @@ import {emailAiCompose, emailSend} from "@/request/email.js";
 import {isEmail} from "@/utils/verify-utils.js";
 import {useAccountStore} from "@/store/account.js";
 import {useEmailStore} from "@/store/email.js";
+import {signatureContentHtml} from '@/utils/signature.js'
 import {fileToBase64, formatBytes} from "@/utils/file-utils.js";
 import {getIconByName} from "@/utils/icon-utils.js";
 import sendPercent from "@/components/send-percent/index.vue"
@@ -693,8 +694,9 @@ function resetForm() {
 
 function signatureHtml(signature) {
   if (!signature) return ''
-  const content = String(signature.content || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')
-  return `<div data-mail-signature="${signature.id}" class="mceNonEditable" style="margin-top:20px;padding-top:12px;border-top:1px solid #d9dee7;font-family:Arial,sans-serif;font-size:13px;line-height:1.65;color:#526174;">${content}</div>`
+  const signatureId = String(signature.id || '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  const content = signatureContentHtml(signature.content)
+  return `<div data-mail-signature="${signatureId}" class="mceNonEditable" style="margin-top:20px;padding-top:12px;border-top:1px solid #d9dee7;font-family:Arial,sans-serif;font-size:13px;line-height:1.65;color:#526174;">${content}</div>`
 }
 
 function removeSignatureFromHtml(content) {
@@ -1396,7 +1398,9 @@ async function saveDraftNow() {
 .signature-select { width: 100%; height: 34px; padding: 0 28px 0 9px; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: inherit; font-size: 11px; outline: none; }
 .signature-mini-preview { margin-top: 9px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); }
 .signature-mini-preview strong { display: block; margin-bottom: 4px; color: var(--text); font-size: 11px; }
-.signature-mini-preview pre { max-height: 70px; margin: 0; overflow: hidden; color: var(--text-3); font: inherit; font-size: 10px; line-height: 1.5; white-space: pre-wrap; }
+.signature-rich-preview { max-height: 110px; overflow: auto; color: var(--text-3); font-size: 10px; line-height: 1.5; }
+.signature-rich-preview :deep(img) { max-width: 100%; height: auto; }
+.signature-rich-preview :deep(table) { max-width: 100%; }
 .signature-empty { margin-top: 9px; padding: 9px; color: var(--text-3); border: 1px dashed var(--border); border-radius: 8px; font-size: 10.5px; }
 .signature-apply { width: 100%; height: 32px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--brand-700); border: 1px solid color-mix(in srgb, var(--brand-500) 25%, var(--border)); border-radius: 8px; background: var(--brand-soft); font-size: 10.5px; font-weight: 700; cursor: pointer; }
 .signature-apply:disabled { opacity: .48; cursor: not-allowed; }

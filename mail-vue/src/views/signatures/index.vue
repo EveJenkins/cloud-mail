@@ -15,7 +15,7 @@
         <article v-for="signature in signatures" :key="signature.id" class="signature-card">
           <header><div class="language-list"><span v-for="code in Object.keys(signature.translations)" :key="code" class="language-badge">{{ languageName(code) }}</span><span v-if="signature.translations.en" class="fallback-badge">{{ zh ? '含英语回退' : 'English fallback' }}</span></div><div class="card-actions"><button type="button" @click="openEdit(signature)"><Icon icon="solar:pen-new-square-linear" width="16" /></button><button class="danger" type="button" @click="removeSignature(signature)"><Icon icon="solar:trash-bin-trash-linear" width="16" /></button></div></header>
           <h2>{{ signature.name }}</h2>
-          <div class="signature-preview"><pre>{{ previewContent(signature) }}</pre></div>
+          <div class="signature-preview" v-html="signatureContentHtml(previewContent(signature))"></div>
         </article>
       </section>
       <section v-else class="empty-state"><span><Icon icon="solar:pen-new-square-linear" width="32" /></span><strong>{{ zh ? '还没有邮件签名' : 'No signatures yet' }}</strong><p>{{ zh ? '建议先创建一份签名，并在其中添加英语及常用客户语言版本。' : 'Create one signature, then add English and your customers’ language versions to it.' }}</p><button type="button" @click="openCreate">{{ zh ? '创建第一份签名' : 'Create first signature' }}</button></section>
@@ -28,7 +28,7 @@
           <div class="translation-head"><span>{{ zh ? '语言版本' : 'Language versions' }}</span><button type="button" @click="addTranslation"><Icon icon="solar:add-circle-linear" width="15" />{{ zh ? '添加语言' : 'Add language' }}</button></div>
           <div v-for="(translation, index) in form.translations" :key="translation.key" class="translation-row">
             <div class="translation-row-head"><el-select v-model="translation.language" filterable><el-option v-for="language in availableLanguages(index)" :key="language.value" :label="language.label" :value="language.value" /></el-select><button v-if="form.translations.length > 1" type="button" @click="form.translations.splice(index, 1)"><Icon icon="solar:trash-bin-trash-linear" width="16" /></button></div>
-            <el-input v-model="translation.content" type="textarea" :rows="5" maxlength="1000" show-word-limit :placeholder="signaturePlaceholder" />
+            <el-input v-model="translation.content" type="textarea" :rows="7" maxlength="12000" show-word-limit :placeholder="signaturePlaceholder" />
           </div>
         </div>
       </div>
@@ -43,6 +43,7 @@ import {Icon} from '@iconify/vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {useWriterStore} from '@/store/writer.js'
 import {useSettingStore} from '@/store/setting.js'
+import {signatureContentHtml} from '@/utils/signature.js'
 
 defineOptions({name: 'signatures'})
 const writerStore = useWriterStore()
@@ -63,7 +64,7 @@ const languages = [
 const signatures = computed(() => (Array.isArray(writerStore.signatures) ? writerStore.signatures : []).map(signature => signature.translations
     ? signature
     : {...signature, translations: {[signature.language || 'en']: signature.content || ''}}))
-const signaturePlaceholder = computed(() => zh.value ? '顺颂商祺\n姓名\n职位 · 公司名称\n电话 / 网站' : 'Best regards,\nName\nTitle · Company\nPhone / Website')
+const signaturePlaceholder = computed(() => zh.value ? '可输入普通文本，也可粘贴完整 HTML 签名代码' : 'Enter plain text or paste complete HTML signature code')
 const languageName = code => languages.find(item => item.value === code)?.label || code
 const newTranslation = (language = 'en', content = '') => ({key: `${Date.now()}-${Math.random()}`, language, content})
 function resetForm() {editingId.value = ''; form.name = ''; form.translations = [newTranslation()]}
@@ -106,7 +107,7 @@ function removeSignature(signature) {
 .signature-card header { gap: 6px; }.signature-card h2 { margin: 13px 0 9px; color: var(--text); font-size: 14px; }.language-list { min-width: 0; display: flex; flex-wrap: wrap; gap: 5px; }
 .language-badge, .fallback-badge { padding: 4px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700; }.language-badge { color: var(--brand-700); background: var(--brand-soft); }.fallback-badge { color: var(--text-3); background: var(--surface-3); }
 .card-actions { margin-left: auto; gap: 5px; }.card-actions button { width: 30px; height: 30px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; }.card-actions button:hover { color: var(--brand-600); background: var(--brand-soft); }.card-actions .danger:hover { color: var(--danger); }
-.signature-preview { min-height: 118px; padding: 14px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); }.signature-preview pre { margin: 0; color: var(--text-2); font: inherit; font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+.signature-preview { min-height: 118px; padding: 14px; overflow: auto; color: var(--text-2); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); font-size: 12px; line-height: 1.7; word-break: break-word; }.signature-preview :deep(img) { max-width: 100%; height: auto; }.signature-preview :deep(table) { max-width: 100%; }
 .empty-state { min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); border: 1px dashed var(--border); border-radius: var(--r-lg); background: var(--surface); }.empty-state > span { width: 56px; height: 56px; display: grid; place-items: center; color: var(--brand-600); border-radius: 16px; background: var(--brand-soft); }.empty-state strong { margin-top: 14px; color: var(--text); }.empty-state p { margin: 5px 0 0; font-size: 12px; }.empty-state button { margin-top: 14px; padding: 8px 12px; color: #fff; border: 0; border-radius: 8px; background: var(--brand-600); cursor: pointer; }
 .signature-form { display: grid; gap: 15px; }.signature-form label > span { display: block; margin-bottom: 6px; color: var(--text-2); font-size: 12px; font-weight: 700; }.signature-form .el-select { width: 100%; }
 .translation-editor { display: grid; gap: 10px; }.translation-head, .translation-row-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }.translation-head > span { color: var(--text-2); font-size: 12px; font-weight: 700; }.translation-head button { padding: 5px 8px; display: inline-flex; align-items: center; gap: 4px; color: var(--brand-700); border: 0; border-radius: 7px; background: var(--brand-soft); font-size: 11px; cursor: pointer; }.translation-row { padding: 11px; display: grid; gap: 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); }.translation-row-head .el-select { flex: 1; }.translation-row-head > button { width: 32px; height: 32px; display: grid; place-items: center; color: var(--danger); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; }
