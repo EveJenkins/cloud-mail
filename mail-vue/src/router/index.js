@@ -52,6 +52,16 @@ const routes = [
                 }
             },
             {
+                path: '/signatures',
+                name: 'signatures',
+                component: () => import('@/views/signatures/index.vue'),
+                meta: {
+                    title: 'signatures',
+                    name: 'signatures',
+                    menu: true
+                }
+            },
+            {
                 path: '/settings',
                 name: 'setting',
                 component: () => import('@/views/setting/index.vue'),

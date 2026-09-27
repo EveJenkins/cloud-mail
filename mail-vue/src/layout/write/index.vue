@@ -101,6 +101,18 @@
             <p v-if="translateLanguage === 'auto'" class="auto-language-hint" :class="{matched: autoTranslation.contact}"><Icon :icon="autoTranslation.contact ? 'solar:map-point-wave-linear' : 'solar:info-circle-linear'" width="14"/><span>{{ autoTranslationHint }}</span></p>
             <p v-else>{{ settingStore.lang === 'zh' ? '翻译会替换当前正文，发送前仍可继续编辑。' : 'Translation replaces the current body and remains editable.' }}</p>
           </section>
+
+          <section class="side-card signature-side-card">
+            <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '邮件签名' : 'Signature' }}</span><button class="signature-manage" type="button" @click="openSignatureManager">{{ settingStore.lang === 'zh' ? '管理' : 'Manage' }}</button></div>
+            <select v-model="signatureLanguage" class="signature-select">
+              <option value="auto">{{ settingStore.lang === 'zh' ? '根据通讯录自动选择' : 'Auto from contact' }}</option>
+              <option value="off">{{ settingStore.lang === 'zh' ? '本封邮件不使用签名' : 'No signature for this message' }}</option>
+              <option v-for="signature in configuredSignatures" :key="signature.id" :value="signature.language">{{ signatureLanguageName(signature.language) }} · {{ signature.name }}</option>
+            </select>
+            <div v-if="activeSignature" class="signature-mini-preview"><strong>{{ activeSignature.name }}</strong><pre>{{ activeSignature.content }}</pre></div>
+            <div v-else class="signature-empty">{{ configuredSignatures.length ? (settingStore.lang === 'zh' ? '当前语言没有签名，将使用英语或首个可用签名' : 'No exact match; the fallback signature will be used') : (settingStore.lang === 'zh' ? '尚未配置签名' : 'No signature configured') }}</div>
+            <button class="signature-apply" type="button" :disabled="!activeSignature" @click="applySignatureToEditor"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '插入 / 更新签名' : 'Insert / update signature' }}</button>
+          </section>
         </aside>
       </div>
     </div>
@@ -145,7 +157,7 @@
 <script setup>
 import tinyEditor from '@/components/tiny-editor/index.vue'
 import ShadowHtml from '@/components/shadow-html/index.vue'
-import {h, nextTick, onMounted, onUnmounted, reactive, ref, toRaw, computed} from "vue";
+import {h, nextTick, onMounted, onUnmounted, reactive, ref, toRaw, computed, watch} from "vue";
 import {Icon} from "@iconify/vue";
 import {useUserStore} from "@/store/user.js";
 import {emailAiCompose, emailSend} from "@/request/email.js";
@@ -196,6 +208,7 @@ const showMailPreview = ref(false)
 const previewContent = ref('')
 const translating = ref(false)
 const translateLanguage = ref('auto')
+const signatureLanguage = ref('auto')
 const phraseDialogOpen = ref(false)
 const phraseEditIndex = ref(-1)
 const phraseForm = reactive({label: '', text: ''})
@@ -296,6 +309,15 @@ const autoTranslationHint = computed(() => {
       ? `已根据 ${result.contact.name || result.contact.email}（${result.contact.country}）选择 ${result.language.label}`
       : `${result.language.label} selected from ${result.contact.name || result.contact.email} (${result.contact.country})`
 })
+const configuredSignatures = computed(() => Array.isArray(writerStore.signatures) ? writerStore.signatures : [])
+const activeSignature = computed(() => {
+  if (signatureLanguage.value === 'off' || !configuredSignatures.value.length) return null
+  const target = signatureLanguage.value === 'auto' ? autoTranslation.value.code : signatureLanguage.value
+  return configuredSignatures.value.find(item => item.language === target)
+      || configuredSignatures.value.find(item => item.language === 'en')
+      || configuredSignatures.value[0]
+})
+const signatureLanguageName = code => translationLanguages.find(item => item.value === code)?.label || code
 const composeChecks = computed(() => [
   { label: settingStore.lang === 'zh' ? '收件人' : 'Recipients', detail: form.receiveEmail.length ? `${form.receiveEmail.length} ${settingStore.lang === 'zh' ? '位' : 'people'}` : (settingStore.lang === 'zh' ? '尚未添加' : 'Not added'), ok: form.receiveEmail.length > 0 },
   { label: settingStore.lang === 'zh' ? '邮件主题' : 'Subject', detail: form.subject.trim() ? (settingStore.lang === 'zh' ? '已填写' : 'Complete') : (settingStore.lang === 'zh' ? '尚未填写' : 'Missing'), ok: Boolean(form.subject.trim()) },
@@ -492,6 +514,7 @@ function handleDrop(event) {
 }
 
 function previewMail() {
+  applySignatureToEditor()
   form.content = editor.value.getContent?.() || form.content
   previewContent.value = formatImage(form.content) || `<p>${settingStore.lang === 'zh' ? '（正文为空）' : '(Empty message)'}</p>`
   showMailPreview.value = true
@@ -504,7 +527,7 @@ function insertPhrase(text) {
 
 async function translateBody() {
   if (translating.value) return
-  const content = editor.value.getContent?.() || form.content
+  const content = removeSignatureFromHtml(editor.value.getContent?.() || form.content)
   if (!String(form.text || '').trim()) return
   translating.value = true
   try {
@@ -514,6 +537,8 @@ async function translateBody() {
     if (!translated) throw new Error(settingStore.lang === 'zh' ? '未生成译文' : 'No translation returned')
     const html = translated.split(/\n{2,}/).map(part => `<p>${part.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>`).join('')
     editor.value.setContent?.(html)
+    await nextTick()
+    applySignatureToEditor()
     ElMessage({message: settingStore.lang === 'zh' ? '正文翻译完成' : 'Message translated', type: 'success', plain: true})
   } catch (error) {
     ElMessage({message: error?.response?.data?.message || error?.message || (settingStore.lang === 'zh' ? '翻译失败' : 'Translation failed'), type: 'warning', plain: true})
@@ -542,9 +567,8 @@ async function sendEmail() {
     return
   }
 
-  if (!form.content) {
-    form.content = editor.value.getContent();
-  }
+  applySignatureToEditor()
+  form.content = editor.value.getContent();
 
   if (!form.content) {
     ElMessage({
@@ -658,7 +682,45 @@ function resetForm() {
   backReply.sendType = ''
   showMailPreview.value = false
   previewContent.value = ''
+  signatureLanguage.value = 'auto'
   editor.value.clearEditor()
+}
+
+function signatureHtml(signature) {
+  if (!signature) return ''
+  const content = String(signature.content || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')
+  return `<div data-mail-signature="${signature.id}" class="mceNonEditable" style="margin-top:20px;padding-top:12px;border-top:1px solid #d9dee7;font-family:Arial,sans-serif;font-size:13px;line-height:1.65;color:#526174;">${content}</div>`
+}
+
+function removeSignatureFromHtml(content) {
+  const source = String(content || '')
+  if (!source.includes('data-mail-signature')) return source
+  const documentNode = new DOMParser().parseFromString(`<body>${source}</body>`, 'text/html')
+  documentNode.querySelectorAll('[data-mail-signature]').forEach(node => node.remove())
+  return documentNode.body.innerHTML
+}
+
+function applySignatureToEditor() {
+  const current = editor.value.getContent?.()
+  if (typeof current !== 'string') return
+  const documentNode = new DOMParser().parseFromString(`<body>${current}</body>`, 'text/html')
+  documentNode.querySelectorAll('[data-mail-signature]').forEach(node => node.remove())
+  const signature = signatureHtml(activeSignature.value)
+  if (signature) {
+    const wrapper = documentNode.createElement('div')
+    wrapper.innerHTML = signature
+    const signatureNode = wrapper.firstElementChild
+    const quotedMessage = documentNode.body.querySelector('blockquote')
+    if (quotedMessage) quotedMessage.before(signatureNode)
+    else documentNode.body.append(signatureNode)
+  }
+  const nextContent = documentNode.body.innerHTML
+  if (nextContent !== current) editor.value.setContent?.(nextContent)
+}
+
+function openSignatureManager() {
+  show.value = false
+  router.push({name: 'signatures'})
 }
 
 function change(content, text) {
@@ -755,6 +817,7 @@ async function open() {
   }
   show.value = true;
   await nextTick()
+  setTimeout(() => applySignatureToEditor())
   editor.value?.focus?.()
 }
 
@@ -787,6 +850,11 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
 });
+
+watch(() => [form.receiveEmail.join('|'), signatureLanguage.value, configuredSignatures.value.length], () => {
+  if (!show.value) return
+  nextTick(() => setTimeout(() => applySignatureToEditor()))
+})
 
 function close() {
 
@@ -1319,6 +1387,14 @@ async function saveDraftNow() {
 .side-card > .auto-language-hint { display: flex; align-items: flex-start; gap: 5px; }
 .auto-language-hint svg { flex: 0 0 auto; margin-top: 1px; }
 .auto-language-hint.matched { color: var(--brand-600); }
+.signature-manage { padding: 3px 7px; color: var(--brand-700); border: 0; border-radius: 6px; background: var(--brand-soft); font-size: 10px; font-weight: 700; cursor: pointer; }
+.signature-select { width: 100%; height: 34px; padding: 0 28px 0 9px; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: inherit; font-size: 11px; outline: none; }
+.signature-mini-preview { margin-top: 9px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); }
+.signature-mini-preview strong { display: block; margin-bottom: 4px; color: var(--text); font-size: 11px; }
+.signature-mini-preview pre { max-height: 70px; margin: 0; overflow: hidden; color: var(--text-3); font: inherit; font-size: 10px; line-height: 1.5; white-space: pre-wrap; }
+.signature-empty { margin-top: 9px; padding: 9px; color: var(--text-3); border: 1px dashed var(--border); border-radius: 8px; font-size: 10.5px; }
+.signature-apply { width: 100%; height: 32px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--brand-700); border: 1px solid color-mix(in srgb, var(--brand-500) 25%, var(--border)); border-radius: 8px; background: var(--brand-soft); font-size: 10.5px; font-weight: 700; cursor: pointer; }
+.signature-apply:disabled { opacity: .48; cursor: not-allowed; }
 .side-card > p { margin: 8px 0 0; color: var(--text-3); font-size: 10.5px; line-height: 1.55; }
 :global(.mail-preview-dialog) { width: min(760px, calc(100vw - 28px)) !important; border-radius: 14px !important; }
 :global(.mail-preview-dialog .el-dialog__body) { padding-top: 8px; }

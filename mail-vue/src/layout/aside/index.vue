@@ -59,6 +59,11 @@
           <Icon icon="solar:notes-minimalistic-linear" width="19" height="19" />
           <span class="menu-name">{{ settingStore.lang === 'zh' ? '快捷短语' : 'Quick phrases' }}</span>
         </el-menu-item>
+        <el-menu-item @click="router.push({name: 'signatures'})" index="signatures" v-perm="'email:send'"
+                      :class="route.meta.name === 'signatures' ? 'choose-item' : ''">
+          <Icon icon="solar:pen-new-square-linear" width="19" height="19" />
+          <span class="menu-name">{{ settingStore.lang === 'zh' ? '邮件签名' : 'Signatures' }}</span>
+        </el-menu-item>
         <el-menu-item @click="router.push({name: 'setting'})" index="setting"
                       :class="route.meta.name === 'setting' ? 'choose-item' : ''">
           <Icon icon="fluent:settings-48-regular" width="19" height="19" />
