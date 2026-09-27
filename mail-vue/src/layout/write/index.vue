@@ -97,8 +97,9 @@
 
           <section class="side-card">
             <div class="side-title"><span>AI {{ settingStore.lang === 'zh' ? '翻译' : 'Translate' }}</span><small>Workers AI</small></div>
-            <div class="translate-row"><select v-model="translateLanguage"><option value="en">English</option><option value="zh">简体中文</option></select><button type="button" :disabled="translating || !form.text.trim()" @click="translateBody"><Icon :icon="translating ? 'svg-spinners:ring-resize' : 'solar:translation-2-linear'" width="16"/>{{ translating ? (settingStore.lang === 'zh' ? '翻译中' : 'Translating') : (settingStore.lang === 'zh' ? '翻译正文' : 'Translate') }}</button></div>
-            <p>{{ settingStore.lang === 'zh' ? '翻译会替换当前正文，发送前仍可继续编辑。' : 'Translation replaces the current body and remains editable.' }}</p>
+            <div class="translate-row"><select v-model="translateLanguage"><option value="auto">{{ settingStore.lang === 'zh' ? '根据通讯录自动识别' : 'Auto from contact country' }}</option><option v-for="language in translationLanguages" :key="language.value" :value="language.value">{{ language.label }}</option></select><button type="button" :disabled="translating || !form.text.trim()" @click="translateBody"><Icon :icon="translating ? 'svg-spinners:ring-resize' : 'solar:translation-2-linear'" width="16"/>{{ translating ? (settingStore.lang === 'zh' ? '翻译中' : 'Translating') : (settingStore.lang === 'zh' ? '翻译正文' : 'Translate') }}</button></div>
+            <p v-if="translateLanguage === 'auto'" class="auto-language-hint" :class="{matched: autoTranslation.contact}"><Icon :icon="autoTranslation.contact ? 'solar:map-point-wave-linear' : 'solar:info-circle-linear'" width="14"/><span>{{ autoTranslationHint }}</span></p>
+            <p v-else>{{ settingStore.lang === 'zh' ? '翻译会替换当前正文，发送前仍可继续编辑。' : 'Translation replaces the current body and remains editable.' }}</p>
           </section>
         </aside>
       </div>
@@ -194,7 +195,7 @@ const showContacts = ref(false)
 const showMailPreview = ref(false)
 const previewContent = ref('')
 const translating = ref(false)
-const translateLanguage = ref('en')
+const translateLanguage = ref('auto')
 const phraseDialogOpen = ref(false)
 const phraseEditIndex = ref(-1)
 const phraseForm = reactive({label: '', text: ''})
@@ -258,6 +259,42 @@ const recipientInsights = computed(() => {
     const domain = String(email).split('@')[1]?.toLowerCase() || ''
     return { email, domain: domain || '—', initial: String(email).charAt(0).toUpperCase(), internal: internalDomains.includes(domain) }
   })
+})
+const translationLanguages = [
+  {value: 'en', label: 'English'}, {value: 'zh', label: '简体中文'}, {value: 'zh-TW', label: '繁體中文'},
+  {value: 'de', label: 'Deutsch'}, {value: 'fr', label: 'Français'}, {value: 'es', label: 'Español'},
+  {value: 'pt', label: 'Português'}, {value: 'it', label: 'Italiano'}, {value: 'nl', label: 'Nederlands'},
+  {value: 'pl', label: 'Polski'}, {value: 'tr', label: 'Türkçe'}, {value: 'ru', label: 'Русский'},
+  {value: 'ar', label: 'العربية'}, {value: 'hi', label: 'हिन्दी'}, {value: 'ja', label: '日本語'},
+  {value: 'ko', label: '한국어'}, {value: 'th', label: 'ไทย'}, {value: 'vi', label: 'Tiếng Việt'},
+  {value: 'id', label: 'Bahasa Indonesia'}, {value: 'ms', label: 'Bahasa Melayu'},
+]
+const countryLanguageMap = {
+  China: 'zh', 'Hong Kong': 'zh-TW', Taiwan: 'zh-TW', 'United States': 'en', Canada: 'en',
+  Mexico: 'es', 'United Kingdom': 'en', Germany: 'de', France: 'fr', Italy: 'it', Spain: 'es',
+  Netherlands: 'nl', Poland: 'pl', Turkey: 'tr', Russia: 'ru', 'United Arab Emirates': 'ar',
+  'Saudi Arabia': 'ar', India: 'hi', Japan: 'ja', 'South Korea': 'ko', Singapore: 'en',
+  Thailand: 'th', Vietnam: 'vi', Indonesia: 'id', Malaysia: 'ms', Philippines: 'en',
+  Australia: 'en', 'New Zealand': 'en', Brazil: 'pt', Argentina: 'es', 'South Africa': 'en',
+  中国: 'zh', 中国大陆: 'zh', 中国香港: 'zh-TW', 中国台湾: 'zh-TW', 美国: 'en', 加拿大: 'en',
+  墨西哥: 'es', 英国: 'en', 德国: 'de', 法国: 'fr', 意大利: 'it', 西班牙: 'es', 荷兰: 'nl',
+  波兰: 'pl', 土耳其: 'tr', 俄罗斯: 'ru', 阿联酋: 'ar', 沙特阿拉伯: 'ar', 印度: 'hi',
+  日本: 'ja', 韩国: 'ko', 新加坡: 'en', 泰国: 'th', 越南: 'vi', 印度尼西亚: 'id',
+  马来西亚: 'ms', 菲律宾: 'en', 澳大利亚: 'en', 新西兰: 'en', 巴西: 'pt', 阿根廷: 'es', 南非: 'en',
+}
+const autoTranslation = computed(() => {
+  const contacts = Array.isArray(writerStore.contacts) ? writerStore.contacts : []
+  const contact = form.receiveEmail.map(email => contacts.find(item => String(item.email).toLowerCase() === String(email).toLowerCase())).find(Boolean)
+  const code = countryLanguageMap[contact?.country] || 'en'
+  const language = translationLanguages.find(item => item.value === code) || translationLanguages[0]
+  return {contact, code, language}
+})
+const autoTranslationHint = computed(() => {
+  const result = autoTranslation.value
+  if (!result.contact) return settingStore.lang === 'zh' ? '未匹配通讯录国家，将默认翻译为 English' : 'No contact country found; English will be used'
+  return settingStore.lang === 'zh'
+      ? `已根据 ${result.contact.name || result.contact.email}（${result.contact.country}）选择 ${result.language.label}`
+      : `${result.language.label} selected from ${result.contact.name || result.contact.email} (${result.contact.country})`
 })
 const composeChecks = computed(() => [
   { label: settingStore.lang === 'zh' ? '收件人' : 'Recipients', detail: form.receiveEmail.length ? `${form.receiveEmail.length} ${settingStore.lang === 'zh' ? '位' : 'people'}` : (settingStore.lang === 'zh' ? '尚未添加' : 'Not added'), ok: form.receiveEmail.length > 0 },
@@ -471,7 +508,8 @@ async function translateBody() {
   if (!String(form.text || '').trim()) return
   translating.value = true
   try {
-    const data = await emailAiCompose(content, 'translate', translateLanguage.value)
+    const targetLanguage = translateLanguage.value === 'auto' ? autoTranslation.value.code : translateLanguage.value
+    const data = await emailAiCompose(content, 'translate', targetLanguage)
     const translated = String(data?.text || '')
     if (!translated) throw new Error(settingStore.lang === 'zh' ? '未生成译文' : 'No translation returned')
     const html = translated.split(/\n{2,}/).map(part => `<p>${part.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>`).join('')
@@ -1278,6 +1316,9 @@ async function saveDraftNow() {
 .translate-row select { min-width: 0; height: 34px; padding: 0 8px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; outline: 0; font: inherit; font-size: 11.5px; }
 .translate-row button { height: 34px; display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; color: #fff; background: var(--brand-600); border-radius: 8px; font-size: 11.5px; font-weight: 700; }
 .translate-row button:disabled { cursor: not-allowed; opacity: .5; }
+.side-card > .auto-language-hint { display: flex; align-items: flex-start; gap: 5px; }
+.auto-language-hint svg { flex: 0 0 auto; margin-top: 1px; }
+.auto-language-hint.matched { color: var(--brand-600); }
 .side-card > p { margin: 8px 0 0; color: var(--text-3); font-size: 10.5px; line-height: 1.55; }
 :global(.mail-preview-dialog) { width: min(760px, calc(100vw - 28px)) !important; border-radius: 14px !important; }
 :global(.mail-preview-dialog .el-dialog__body) { padding-top: 8px; }

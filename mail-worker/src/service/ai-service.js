@@ -6,7 +6,13 @@ const aiService = {
 		if (!c.env.ai) throw new Error('Workers AI is not configured');
 		const source = emailUtils.htmlToText(String(content || '')).slice(0, 8000);
 		if (!source.trim()) throw new Error('Email body is empty');
-		const languages = { zh: 'Simplified Chinese', en: 'English' };
+		const languages = {
+			zh: 'Simplified Chinese', 'zh-TW': 'Traditional Chinese', en: 'English',
+			de: 'German', fr: 'French', it: 'Italian', es: 'Spanish', nl: 'Dutch',
+			pl: 'Polish', tr: 'Turkish', ru: 'Russian', ar: 'Arabic', hi: 'Hindi',
+			ja: 'Japanese', ko: 'Korean', th: 'Thai', vi: 'Vietnamese', id: 'Indonesian',
+			ms: 'Malay', pt: 'Portuguese'
+		};
 		const target = languages[options.language] || 'English';
 		const task = options.task === 'translate'
 			? `Translate the email body into ${target}. Preserve meaning, product codes, quantities, names, paragraphs and business tone.`
