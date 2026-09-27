@@ -67,8 +67,8 @@
         <label><span>{{ zh ? '邮箱' : 'Email' }}</span><el-input v-model.trim="form.email" type="email" /></label>
         <label><span>{{ zh ? '公司' : 'Company' }}</span><el-input v-model.trim="form.company" /></label>
         <div class="form-grid">
-          <label><span>{{ zh ? '类型' : 'Type' }}</span><el-select v-model="form.type"><el-option :label="zh ? '客户' : 'Customer'" value="客户" /><el-option :label="zh ? '供应商' : 'Supplier'" value="供应商" /><el-option :label="zh ? '物流' : 'Logistics'" value="物流" /></el-select></label>
-          <label><span>{{ zh ? '国家 / 地区' : 'Country / region' }}</span><el-input v-model.trim="form.country" /></label>
+          <label><span>{{ zh ? '类型' : 'Type' }}</span><div class="native-select-wrap"><select v-model="form.type"><option value="客户">{{ zh ? '客户' : 'Customer' }}</option><option value="供应商">{{ zh ? '供应商' : 'Supplier' }}</option><option value="物流">{{ zh ? '物流' : 'Logistics' }}</option><option value="合作伙伴">{{ zh ? '合作伙伴' : 'Partner' }}</option></select><Icon icon="solar:alt-arrow-down-linear" width="15" /></div></label>
+          <label><span>{{ zh ? '国家 / 地区' : 'Country / region' }}</span><div class="native-select-wrap"><select v-model="form.country"><option value="">{{ zh ? '请选择' : 'Select' }}</option><option v-for="country in countryOptions" :key="country.value" :value="country.value">{{ zh ? country.zh : country.en }}</option></select><Icon icon="solar:alt-arrow-down-linear" width="15" /></div></label>
         </div>
       </div>
       <template #footer><el-button @click="dialogOpen = false">{{ zh ? '取消' : 'Cancel' }}</el-button><el-button type="primary" @click="saveContact">{{ zh ? '保存' : 'Save' }}</el-button></template>
@@ -100,6 +100,24 @@ const dialogOpen = ref(false)
 const editingId = ref('')
 const zh = computed(() => settingStore.lang === 'zh')
 const form = reactive({ name: '', email: '', company: '', type: '客户', country: '' })
+const countryOptions = [
+  {value: 'China', zh: '中国大陆', en: 'China'}, {value: 'Hong Kong', zh: '中国香港', en: 'Hong Kong'},
+  {value: 'Taiwan', zh: '中国台湾', en: 'Taiwan'}, {value: 'United States', zh: '美国', en: 'United States'},
+  {value: 'Canada', zh: '加拿大', en: 'Canada'}, {value: 'Mexico', zh: '墨西哥', en: 'Mexico'},
+  {value: 'United Kingdom', zh: '英国', en: 'United Kingdom'}, {value: 'Germany', zh: '德国', en: 'Germany'},
+  {value: 'France', zh: '法国', en: 'France'}, {value: 'Italy', zh: '意大利', en: 'Italy'},
+  {value: 'Spain', zh: '西班牙', en: 'Spain'}, {value: 'Netherlands', zh: '荷兰', en: 'Netherlands'},
+  {value: 'Poland', zh: '波兰', en: 'Poland'}, {value: 'Turkey', zh: '土耳其', en: 'Turkey'},
+  {value: 'Russia', zh: '俄罗斯', en: 'Russia'}, {value: 'United Arab Emirates', zh: '阿联酋', en: 'United Arab Emirates'},
+  {value: 'Saudi Arabia', zh: '沙特阿拉伯', en: 'Saudi Arabia'}, {value: 'India', zh: '印度', en: 'India'},
+  {value: 'Japan', zh: '日本', en: 'Japan'}, {value: 'South Korea', zh: '韩国', en: 'South Korea'},
+  {value: 'Singapore', zh: '新加坡', en: 'Singapore'}, {value: 'Thailand', zh: '泰国', en: 'Thailand'},
+  {value: 'Vietnam', zh: '越南', en: 'Vietnam'}, {value: 'Indonesia', zh: '印度尼西亚', en: 'Indonesia'},
+  {value: 'Malaysia', zh: '马来西亚', en: 'Malaysia'}, {value: 'Philippines', zh: '菲律宾', en: 'Philippines'},
+  {value: 'Australia', zh: '澳大利亚', en: 'Australia'}, {value: 'New Zealand', zh: '新西兰', en: 'New Zealand'},
+  {value: 'Brazil', zh: '巴西', en: 'Brazil'}, {value: 'Argentina', zh: '阿根廷', en: 'Argentina'},
+  {value: 'South Africa', zh: '南非', en: 'South Africa'}, {value: 'Other', zh: '其他', en: 'Other'},
+]
 
 const companyDomains = computed(() => {
   const values = [...(settingStore.domainList || [])]
@@ -207,7 +225,11 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .team-note p { margin: 7px 0 0; line-height: 1.7; }
 .contact-form { display: grid; gap: 14px; }
 .contact-form label > span { display: block; margin-bottom: 6px; color: var(--text-2); font-size: 12.5px; font-weight: 650; }
-.contact-form .el-select { width: 100%; }
+.native-select-wrap { position: relative; }
+.native-select-wrap select { width: 100%; height: 40px; padding: 0 36px 0 12px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); font: inherit; font-size: 13px; outline: none; appearance: none; cursor: pointer; }
+.native-select-wrap select:hover { border-color: var(--text-3); }
+.native-select-wrap select:focus { border-color: var(--brand-500); box-shadow: 0 0 0 3px var(--brand-soft); }
+.native-select-wrap > svg { position: absolute; top: 50%; right: 11px; color: var(--text-3); pointer-events: none; transform: translateY(-50%); }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 900px) {
   .contacts-shell { padding: 16px; }
