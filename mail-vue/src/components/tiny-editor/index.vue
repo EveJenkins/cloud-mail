@@ -55,9 +55,14 @@ watch(() => props.defValue, (newValue) => {
   }
 });
 
-watch(() => [uiStore.dark, settingStore.lang], () => {
+watch(() => [uiStore.dark, settingStore.lang], async () => {
+  // TinyMCE must be recreated to swap its skin/language. Capture the live
+  // document first: props.defValue is only the initial value and may still be
+  // empty after the user has typed, so rebuilding from it would erase work.
+  const currentContent = editor.value?.getContent?.() ?? props.defValue
   destroyEditor();
-  initEditor();
+  await nextTick()
+  initEditor(currentContent);
 });
 
 const language = computed(() => {
@@ -87,7 +92,7 @@ function initTinyMCE() {
   }
 }
 
-function initEditor() {
+function initEditor(initialContent = props.defValue) {
   window.tinymce.init({
     selector: `#${props.editorId}`,
     statusbar: false,
@@ -115,7 +120,7 @@ function initEditor() {
     setup: (ed) => {
       editor.value = ed;
       ed.on('init', () => {
-        ed.setContent(props.defValue);
+        ed.setContent(initialContent);
         isInitialized.value = true;
       });
       ed.on('input change', () => {
