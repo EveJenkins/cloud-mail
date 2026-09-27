@@ -32,6 +32,16 @@ const routes = [
                 }
             },
             {
+                path: '/contacts',
+                name: 'contacts',
+                component: () => import('@/views/contacts/index.vue'),
+                meta: {
+                    title: 'contacts',
+                    name: 'contacts',
+                    menu: true
+                }
+            },
+            {
                 path: '/settings',
                 name: 'setting',
                 component: () => import('@/views/setting/index.vue'),

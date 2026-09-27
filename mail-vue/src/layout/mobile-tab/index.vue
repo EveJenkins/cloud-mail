@@ -6,11 +6,8 @@
     <button v-perm="'email:send'" @click="compose">
       <Icon icon="material-symbols:edit-outline" /><span>{{ settingStore.lang === 'zh' ? '写信' : 'Compose' }}</span>
     </button>
-    <button v-if="hasPerm('user:query')" :class="{ active: route.meta.name === 'user' }" @click="go('user')">
+    <button :class="{ active: route.meta.name === 'contacts' }" @click="go('contacts')">
       <Icon icon="fluent:people-team-20-regular" /><span>{{ settingStore.lang === 'zh' ? '通讯录' : 'Directory' }}</span>
-    </button>
-    <button v-else :class="{ active: route.meta.name === 'star' }" @click="go('star')">
-      <Icon icon="solar:star-line-duotone" /><span>{{ $t('starred') }}</span>
     </button>
     <button :class="{ active: route.meta.name === 'setting' }" @click="go('setting')">
       <Icon icon="fluent:settings-48-regular" /><span>{{ $t('settings') }}</span>
@@ -24,7 +21,6 @@ import { useRoute } from 'vue-router'
 import router from '@/router/index.js'
 import { useUiStore } from '@/store/ui.js'
 import { useSettingStore } from '@/store/setting.js'
-import { hasPerm } from '@/perm/perm.js'
 
 const route = useRoute()
 const uiStore = useUiStore()

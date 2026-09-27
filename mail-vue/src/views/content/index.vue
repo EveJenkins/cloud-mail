@@ -9,9 +9,13 @@
           <Icon v-else icon="solar:star-line-duotone" width="18" />
         </button>
       </div>
-      <div class="action-group action-group-right" v-if="emailStore.contentData.showReply" v-perm="'email:send'">
-        <button class="detail-action" @click="openReply"><Icon icon="la:reply" width="18" />{{ $t('reply') }}</button>
-        <button class="detail-action" @click="openForward"><Icon icon="iconoir:arrow-up-right" width="17" />{{ $t('forward') }}</button>
+      <div class="action-group action-group-right" v-perm="'email:send'">
+        <button class="detail-action ai-translate-action" :class="{ active: translationOpen }" @click="translationOpen = !translationOpen">
+          <Icon icon="solar:translation-2-linear" width="18" />
+          <span>Workers AI {{ settingStore.lang === 'zh' ? '翻译' : 'Translate' }}</span>
+        </button>
+        <button v-if="emailStore.contentData.showReply" class="detail-action" @click="openReply"><Icon icon="la:reply" width="18" />{{ $t('reply') }}</button>
+        <button v-if="emailStore.contentData.showReply" class="detail-action" @click="openForward"><Icon icon="iconoir:arrow-up-right" width="17" />{{ $t('forward') }}</button>
       </div>
     </div>
     <div></div>
@@ -59,6 +63,40 @@
               <el-button type="primary" @click="copyCode"><Icon icon="solar:copy-linear" width="15" />{{ settingStore.lang === 'zh' ? '复制验证码' : 'Copy code' }}</el-button>
             </div>
           </div>
+          <section class="translation-card" v-if="translationOpen">
+            <div class="translation-heading">
+              <div class="translation-title">
+                <span class="translation-mark"><Icon icon="solar:translation-2-linear" width="19" height="19" /></span>
+                <div>
+                  <strong>Workers AI {{ settingStore.lang === 'zh' ? '邮件翻译' : 'Email translation' }}</strong>
+                  <small>{{ settingStore.lang === 'zh' ? '原文保持不变，译文仅在当前邮件中展示' : 'The original message remains unchanged' }}</small>
+                </div>
+              </div>
+              <button class="translation-close" type="button" :title="settingStore.lang === 'zh' ? '关闭' : 'Close'" @click="translationOpen = false">
+                <Icon icon="solar:close-circle-linear" width="19" />
+              </button>
+            </div>
+            <div class="translation-controls">
+              <label>
+                <span>{{ settingStore.lang === 'zh' ? '翻译为' : 'Translate to' }}</span>
+                <select v-model="translationLanguage">
+                  <option value="zh">简体中文</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+              <button class="translation-run" type="button" :disabled="translating" @click="translateEmail">
+                <Icon :icon="translating ? 'svg-spinners:ring-resize' : 'solar:stars-minimalistic-bold'" width="16" />
+                {{ translating ? (settingStore.lang === 'zh' ? '翻译中…' : 'Translating…') : (translatedText ? (settingStore.lang === 'zh' ? '重新翻译' : 'Translate again') : (settingStore.lang === 'zh' ? '开始翻译' : 'Translate')) }}
+              </button>
+            </div>
+            <div class="translation-result" v-if="translatedText">
+              <div class="translation-result-label">{{ translationLanguage === 'zh' ? '简体中文' : 'English' }}</div>
+              <pre>{{ translatedText }}</pre>
+            </div>
+            <div class="translation-empty" v-else>
+              {{ settingStore.lang === 'zh' ? '选择目标语言后，点击“开始翻译”即可生成译文。' : 'Choose a language and select Translate to generate a translation.' }}
+            </div>
+          </section>
           <el-scrollbar class="htm-scrollbar" :class="!email.attList?.length ? 'bottom-distance' : ''">
             <ShadowHtml class="shadow-html" :html="formatImage(email.content)" comfortable v-if="email.content" />
             <pre v-else class="email-text" >{{email.text}}</pre>
@@ -190,7 +228,7 @@ import ShadowHtml from '@/components/shadow-html/index.vue'
 import {computed, reactive, ref, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox, ElNotification} from 'element-plus'
-import {emailAiReply, emailDelete, emailRead, emailSend} from "@/request/email.js";
+import {emailAiCompose, emailAiReply, emailDelete, emailRead, emailSend} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
@@ -238,6 +276,10 @@ const aiTone = ref('formal')
 const aiLanguage = ref('auto')
 const aiCategory = ref('')
 const aiSummary = ref('')
+const translationOpen = ref(false)
+const translationLanguage = ref('zh')
+const translating = ref(false)
+const translatedText = ref('')
 const toneOptions = computed(() => settingStore.lang === 'zh'
     ? [{value: 'formal', label: '正式'}, {value: 'brief', label: '简洁'}, {value: 'friendly', label: '友好'}]
     : [{value: 'formal', label: 'Formal'}, {value: 'brief', label: 'Brief'}, {value: 'friendly', label: 'Friendly'}])
@@ -302,6 +344,8 @@ watch(() => email.value?.emailId, () => {
   aiSummary.value = ''
   aiTone.value = 'formal'
   aiLanguage.value = 'auto'
+  translationOpen.value = false
+  translatedText.value = ''
 })
 
 let readRequesting = false
@@ -395,6 +439,43 @@ async function generateAiReply(variant = false) {
 
 function openForward() {
   uiStore.writerRef.openForward(email.value)
+}
+
+function getEmailSourceText() {
+  const plain = String(email.value.text || '').trim()
+  if (plain) return plain
+  const html = String(email.value.content || '').trim()
+  if (!html) return ''
+  const documentNode = new DOMParser().parseFromString(html, 'text/html')
+  return String(documentNode.body?.textContent || '').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+async function translateEmail() {
+  if (translating.value) return
+  const source = getEmailSourceText()
+  if (!source) {
+    ElMessage({
+      message: settingStore.lang === 'zh' ? '当前邮件没有可翻译的正文' : 'This message has no translatable content',
+      type: 'warning',
+      plain: true,
+    })
+    return
+  }
+
+  translating.value = true
+  try {
+    const data = await emailAiCompose(source, 'translate', translationLanguage.value)
+    translatedText.value = String(data?.text || '').trim()
+    if (!translatedText.value) throw new Error(settingStore.lang === 'zh' ? '未生成有效译文' : 'No translation was returned')
+  } catch (error) {
+    ElMessage({
+      message: error?.response?.data?.message || error?.message || (settingStore.lang === 'zh' ? '翻译暂不可用' : 'Translation is unavailable'),
+      type: 'warning',
+      plain: true,
+    })
+  } finally {
+    translating.value = false
+  }
 }
 
 function escapeHtml(value) {
@@ -953,6 +1034,26 @@ const handleDelete = () => {
 .code-card-body { margin-top: 10px; flex-wrap: wrap; }
 .code-card-body .el-button { margin-left: 0; }
 .ai-badge { padding: 3px 7px; color: var(--success); background: var(--surface); border-radius: 6px; font-size: 10.5px; font-weight: 750; }
+.ai-translate-action.active { color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, var(--border)); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.translation-card { margin-bottom: 16px; padding: 16px; border: 1px solid color-mix(in srgb, var(--success) 34%, var(--border)); border-radius: var(--r-lg); background: linear-gradient(135deg, color-mix(in srgb, var(--success) 8%, var(--surface)), color-mix(in srgb, #38bdf8 5%, var(--surface))); box-shadow: var(--sh-1); }
+.translation-heading, .translation-title, .translation-controls, .translation-controls label { display: flex; align-items: center; }
+.translation-heading { justify-content: space-between; gap: 14px; }
+.translation-title { min-width: 0; gap: 10px; }
+.translation-title > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.translation-title strong { color: var(--text); font-size: 13.5px; }
+.translation-title small { color: var(--text-3); font-size: 11px; }
+.translation-mark { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; color: #fff; border-radius: 10px; background: linear-gradient(135deg, #10b981, #0ea5e9); box-shadow: 0 7px 16px color-mix(in srgb, var(--success) 22%, transparent); }
+.translation-close { width: 30px; height: 30px; display: grid; place-items: center; color: var(--text-3); border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+.translation-close:hover { color: var(--text); background: var(--surface-3); }
+.translation-controls { margin-top: 14px; flex-wrap: wrap; gap: 10px; }
+.translation-controls label { gap: 7px; color: var(--text-3); font-size: 11.5px; }
+.translation-controls select { height: 34px; min-width: 126px; padding: 0 30px 0 11px; color: var(--text); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); outline: none; }
+.translation-run { height: 34px; padding: 0 13px; display: inline-flex; align-items: center; gap: 6px; color: #fff; border: 0; border-radius: 8px; background: var(--success); font-weight: 700; cursor: pointer; box-shadow: 0 6px 14px color-mix(in srgb, var(--success) 18%, transparent); }
+.translation-run:disabled { opacity: .65; cursor: wait; }
+.translation-result { margin-top: 14px; padding: 14px 15px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.translation-result-label { margin-bottom: 8px; color: var(--success); font-size: 10.5px; font-weight: 750; letter-spacing: .02em; }
+.translation-result pre { margin: 0; color: var(--text); font-family: inherit; font-size: 13px; line-height: 1.75; white-space: pre-wrap; word-break: break-word; }
+.translation-empty { margin-top: 13px; padding: 12px 14px; color: var(--text-3); border: 1px dashed var(--border); border-radius: 9px; background: color-mix(in srgb, var(--surface) 82%, transparent); font-size: 11.5px; }
 .container .htm-scrollbar { min-height: 120px; padding: 20px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
 .container .htm-scrollbar .email-text { padding: 0; color: var(--text); background: transparent; }
 .container .bottom-distance { margin-bottom: 0; }
@@ -966,10 +1067,13 @@ const handleDelete = () => {
 @media (max-width: 767px) {
   .header-actions { padding: 6px 10px; }
   .detail-action { padding: 0 9px; }
+  .ai-translate-action span { display: none; }
   .container { padding: 16px 12px 28px; }
   .container .message-card { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .container .email-title { font-size: 19px; }
   .container .code-card .el-button { width: 100%; margin-left: 0; }
+  .container .translation-card { padding: 13px; }
+  .container .translation-title small { display: none; }
   .container .content .email-info .sender-secondary { white-space: normal; }
   .container .quick-reply { padding: 10px; border-radius: var(--r-md); }
   .container .quick-reply-heading > span,

@@ -147,6 +147,7 @@ import {ElMessageBox} from "element-plus";
 
 defineExpose({
   open,
+  openWithRecipient,
   openReply,
   openReplyWithContent,
   openForward,
@@ -642,6 +643,13 @@ async function open() {
   show.value = true;
   await nextTick()
   editor.value?.focus?.()
+}
+
+async function openWithRecipient(email) {
+  await open()
+  const value = String(email || '').trim()
+  if (value && !form.receiveEmail.includes(value)) form.receiveEmail.push(value)
+  if (value && !writerStore.sendRecipientRecord.includes(value)) writerStore.sendRecipientRecord.unshift(value)
 }
 
 async function openDraft(draft) {

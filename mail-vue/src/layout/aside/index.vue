@@ -48,6 +48,11 @@
           <Icon icon="ep:document" width="18" height="18" />
           <span class="menu-name">{{ $t('drafts') }}</span>
         </el-menu-item>
+        <el-menu-item @click="router.push({name: 'contacts'})" index="contacts"
+                      :class="route.meta.name === 'contacts' ? 'choose-item' : ''">
+          <Icon icon="fluent:people-team-20-regular" width="19" height="19" />
+          <span class="menu-name">{{ settingStore.lang === 'zh' ? '通讯录' : 'Contacts' }}</span>
+        </el-menu-item>
         <el-menu-item @click="router.push({name: 'setting'})" index="setting"
                       :class="route.meta.name === 'setting' ? 'choose-item' : ''">
           <Icon icon="fluent:settings-48-regular" width="19" height="19" />
