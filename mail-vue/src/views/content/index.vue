@@ -98,8 +98,9 @@
             </div>
           </section>
           <el-scrollbar class="htm-scrollbar" :class="!email.attList?.length ? 'bottom-distance' : ''">
-            <ShadowHtml class="shadow-html" :html="formatImage(email.content)" comfortable v-if="email.content" />
-            <pre v-else class="email-text" >{{email.text}}</pre>
+            <ShadowHtml class="shadow-html" :html="displayBody.html" :fallback-text="displayBody.text" comfortable v-if="displayBody.html" />
+            <pre v-else-if="displayBody.text" class="email-text">{{ displayBody.text }}</pre>
+            <div v-else class="empty-email-body">{{ settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'This message has no displayable body content' }}</div>
           </el-scrollbar>
           <div class="att" v-if="email.attList?.length > 0">
             <div class="att-title">
@@ -330,6 +331,21 @@ const senderGradient = computed(() => {
   const score = Array.from(value).reduce((sum, char) => sum + char.charCodeAt(0), 0)
   const [from, to] = palettes[score % palettes.length]
   return `linear-gradient(135deg, ${from}, ${to})`
+})
+const displayBody = computed(() => {
+  const html = formatImage(String(email.value.content || '').trim())
+  const text = String(email.value.text || '').trim()
+  if (!html) return {html: '', text}
+  try {
+    const documentNode = new DOMParser().parseFromString(html, 'text/html')
+    documentNode.querySelectorAll('style, script, title, meta').forEach(node => node.remove())
+    const htmlText = String(documentNode.body?.textContent || '').replace(/\s+/g, ' ').trim()
+    const hasVisualContent = Boolean(documentNode.body?.querySelector('img, svg, table, video, audio, canvas'))
+    if (!htmlText && !hasVisualContent) return {html: '', text}
+  } catch {
+    if (!html.replace(/<[^>]+>/g, '').trim()) return {html: '', text}
+  }
+  return {html, text}
 })
 
 const { t } = useI18n()
@@ -1056,6 +1072,7 @@ const handleDelete = () => {
 .translation-empty { margin-top: 13px; padding: 12px 14px; color: var(--text-3); border: 1px dashed var(--border); border-radius: 9px; background: color-mix(in srgb, var(--surface) 82%, transparent); font-size: 11.5px; }
 .container .htm-scrollbar { min-height: 120px; padding: 20px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
 .container .htm-scrollbar .email-text { padding: 0; color: var(--text); background: transparent; }
+.empty-email-body { min-height: 76px; display: grid; place-items: center; color: var(--text-3); font-size: 12px; }
 .container .bottom-distance { margin-bottom: 0; }
 .container .content .att { margin: 16px 0 0; background: var(--surface); box-shadow: var(--sh-1); }
 .container .delivery-trace { margin-top: 16px; background: var(--surface); box-shadow: var(--sh-1); }

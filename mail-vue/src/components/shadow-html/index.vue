@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
   html: {
@@ -15,25 +15,48 @@ const props = defineProps({
   comfortable: {
     type: Boolean,
     default: false
+  },
+  fallbackText: {
+    type: String,
+    default: ''
   }
 })
 
 const container = ref(null)
 const contentBox = ref(null)
 let shadowRoot = null
+let resizeObserver = null
+
+function escapeHtml(value) {
+  return String(value || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+}
+
+function getSafeBody() {
+  const source = String(props.html || '')
+  try {
+    const documentNode = new DOMParser().parseFromString(source, 'text/html')
+    documentNode.querySelectorAll('script, iframe, object, embed, base, meta[http-equiv="refresh"]').forEach(node => node.remove())
+    const body = documentNode.body
+    const bodyStyle = body?.getAttribute('style') || ''
+    const documentStyles = Array.from(documentNode.head?.querySelectorAll('style') || []).map(node => node.outerHTML).join('')
+    const html = `${documentStyles}${body?.innerHTML || ''}`
+    const text = String(body?.textContent || '').replace(/\s+/g, ' ').trim()
+    const hasVisualContent = Boolean(body?.querySelector('img, svg, table, video, audio, canvas'))
+    if (!text && !hasVisualContent && props.fallbackText.trim()) {
+      return {bodyStyle: '', html: `<pre class="plain-fallback">${escapeHtml(props.fallbackText)}</pre>`}
+    }
+    return {bodyStyle, html: html || source}
+  } catch {
+    return {bodyStyle: '', html: source || `<pre class="plain-fallback">${escapeHtml(props.fallbackText)}</pre>`}
+  }
+}
 
 function updateContent() {
   if (!shadowRoot) return;
-
-  // 1. 提取 <body> 的 style 属性（如果存在）
-  const bodyStyleRegex = /<body[^>]*style="([^"]*)"[^>]*>/i;
-  const bodyStyleMatch = props.html.match(bodyStyleRegex);
-  const bodyStyle = bodyStyleMatch ? bodyStyleMatch[1] : '';
-
-  // 2. 移除 <body> 标签（保留内容）
-  const cleanedHtml = props.html.replace(/<\/?body[^>]*>/gi, '');
-
-  // 3. 将 body 的 style 应用到 .shadow-content
+  const {bodyStyle, html} = getSafeBody()
   shadowRoot.innerHTML = `
     <style>
       :host {
@@ -66,10 +89,21 @@ function updateContent() {
 
       .shadow-content {
         background: #FFFFFF;
+        color: #13181D;
         width: fit-content;
         height: fit-content;
         min-width: 100%;
         ${bodyStyle ? bodyStyle : ''} /* 注入 body 的 style */
+      }
+
+      .plain-fallback {
+        margin: 0;
+        color: #13181D;
+        background: #FFFFFF;
+        font: inherit;
+        line-height: inherit;
+        white-space: pre-wrap;
+        word-break: break-word;
       }
 
       img:not(table img) {
@@ -79,7 +113,7 @@ function updateContent() {
 
     </style>
     <div class="shadow-content">
-      ${cleanedHtml}
+      ${html}
     </div>
   `;
 }
@@ -95,9 +129,9 @@ function autoScale() {
   const parentWidth = parent.offsetWidth
   const childWidth = shadowContent.scrollWidth
 
-  if (childWidth === 0) return
+  if (parentWidth <= 0 || childWidth <= 0) return
 
-  const scale = parentWidth / childWidth
+  const scale = Math.min(1, parentWidth / childWidth)
 
   const hostElement = shadowRoot.host
   hostElement.style.zoom = scale
@@ -107,12 +141,18 @@ onMounted(() => {
   shadowRoot = container.value.attachShadow({ mode: 'open' })
   updateContent()
   autoScale()
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => autoScale())
+    resizeObserver.observe(contentBox.value)
+  }
 })
 
-watch(() => props.html, () => {
+watch(() => [props.html, props.fallbackText], () => {
   updateContent()
   autoScale()
 })
+
+onUnmounted(() => resizeObserver?.disconnect())
 </script>
 
 <style scoped>
