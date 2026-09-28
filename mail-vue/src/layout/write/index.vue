@@ -1316,7 +1316,7 @@ async function saveDraftNow() {
   background: var(--surface-2);
   backdrop-filter: none;
 }
-.compose-workspace { width: min(1080px, calc(100% - 32px)); min-height: 100%; margin: 0 auto; padding: 24px 0 36px; }
+.compose-workspace { width: min(1320px, calc(100% - 40px)); min-height: 100%; margin: 0 auto; padding: 24px 0 36px; }
 .compose-topbar { height: 42px; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .compose-topbar h1 { margin: 0; color: var(--text); font-size: 17px; font-weight: 800; letter-spacing: -.25px; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
