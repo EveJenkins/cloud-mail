@@ -27,6 +27,16 @@
     <template #subject="props">
       {{ props.email.subject || '(' + $t('noSubject') + ')' }}
     </template>
+    <template #row-actions="props">
+      <button
+          type="button"
+          class="draft-row-delete"
+          :title="settingStore.lang === 'zh' ? '删除草稿' : 'Delete draft'"
+          @click.stop="confirmDeleteDraft([props.email.draftId])"
+      >
+        <Icon icon="solar:trash-bin-trash-linear" width="16" />
+      </button>
+    </template>
       </emailScroll>
     </section>
     <section class="draft-preview-pane" v-if="isDesktop">
@@ -34,10 +44,16 @@
         <div class="draft-preview">
           <div class="draft-toolbar">
             <span class="draft-badge">{{ settingStore.lang === 'zh' ? '草稿' : 'Draft' }}</span>
-            <button type="button" class="edit-draft" @click="editSelectedDraft">
-              <Icon icon="solar:pen-new-square-linear" width="16" />
-              {{ settingStore.lang === 'zh' ? '继续编辑' : 'Continue editing' }}
-            </button>
+            <div class="draft-toolbar-actions">
+              <button type="button" class="delete-draft" @click="confirmDeleteDraft([selectedDraft.draftId])">
+                <Icon icon="solar:trash-bin-trash-linear" width="16" />
+                {{ settingStore.lang === 'zh' ? '删除' : 'Delete' }}
+              </button>
+              <button type="button" class="edit-draft" @click="editSelectedDraft">
+                <Icon icon="solar:pen-new-square-linear" width="16" />
+                {{ settingStore.lang === 'zh' ? '继续编辑' : 'Continue editing' }}
+              </button>
+            </div>
           </div>
           <h1>{{ selectedDraft.subject || (settingStore.lang === 'zh' ? '（无主题）' : '(No subject)') }}</h1>
           <div class="draft-meta">
@@ -74,6 +90,7 @@ import db from "@/db/db.js"
 import {useSettingStore} from "@/store/setting.js";
 import {Icon} from "@iconify/vue";
 import ShadowHtml from '@/components/shadow-html/index.vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 
 defineOptions({
   name: 'draft'
@@ -144,9 +161,30 @@ function getEmailList() {
 }
 
 async function deleteDraft(draftIds) {
+  if (!draftIds?.length) return
   await db.value.draft.bulkDelete(draftIds);
+  await db.value.att.bulkDelete(draftIds);
   if (draftIds.includes(selectedDraft.value?.draftId)) selectedDraft.value = null
   draftStore.refreshList++
+}
+
+function confirmDeleteDraft(draftIds) {
+  ElMessageBox.confirm(
+      settingStore.lang === 'zh' ? '确认删除这封草稿吗？' : 'Delete this draft?',
+      settingStore.lang === 'zh' ? '删除草稿' : 'Delete draft',
+      {
+        confirmButtonText: settingStore.lang === 'zh' ? '删除' : 'Delete',
+        cancelButtonText: settingStore.lang === 'zh' ? '取消' : 'Cancel',
+        type: 'warning',
+      }
+  ).then(async () => {
+    await deleteDraft(draftIds)
+    ElMessage({
+      message: settingStore.lang === 'zh' ? '草稿已删除' : 'Draft deleted',
+      type: 'success',
+      plain: true,
+    })
+  }).catch(() => {})
 }
 
 async function jumpContent(email) {
@@ -173,9 +211,15 @@ function editSelectedDraft() {
 .draft-preview-scroll { height: 100%; overflow-y: auto; }
 .draft-preview { max-width: 860px; margin: 0 auto; padding: 24px; }
 .draft-toolbar { min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.draft-toolbar-actions { display: flex; align-items: center; gap: 8px; }
 .draft-badge { height: 24px; padding: 0 9px; display: inline-flex; align-items: center; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 12px; font-weight: 700; }
 .edit-draft { height: 38px; padding: 0 13px; display: inline-flex; align-items: center; gap: 6px; color: #fff; background: var(--brand-600); border-radius: var(--r-sm); font-size: 13px; font-weight: 700; cursor: pointer; }
 .edit-draft:hover { background: var(--brand-700); }
+.delete-draft { height: 38px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: var(--r-sm); background: var(--surface); font-size: 13px; font-weight: 700; cursor: pointer; }
+.delete-draft:hover { background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
+.draft-row-delete { width: 32px; height: 32px; margin-left: auto; display: grid; flex: 0 0 auto; place-items: center; color: var(--text-3); border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; opacity: 0; transition: opacity var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+:deep(.email-row:hover) .draft-row-delete, .draft-row-delete:focus-visible { opacity: 1; }
+.draft-row-delete:hover { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 30%, var(--border)); background: color-mix(in srgb, var(--danger) 8%, transparent); }
 .draft-preview h1 { margin: 16px 0 14px; color: var(--text); font-size: 21px; line-height: 1.35; }
 .draft-meta { padding: 13px 16px; display: flex; align-items: flex-start; gap: 12px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md) var(--r-md) 0 0; background: var(--surface-2); font-size: 12.5px; }
 .draft-meta strong { min-width: 0; color: var(--text-2); overflow-wrap: anywhere; }
@@ -191,5 +235,6 @@ function editSelectedDraft() {
 }
 @media (max-width: 767px) {
   .mail-list-pane :deep(.email-row) { padding-right: 12px; padding-left: 8px; }
+  .draft-row-delete { opacity: 1; }
 }
 </style>

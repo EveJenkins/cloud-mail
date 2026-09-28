@@ -142,6 +142,7 @@
                   </div>
                 </div>
               </div>
+              <slot name="row-actions" :email="item"></slot>
               <div class="email-right" :style="showUserInfo ? 'align-self: start;':''">
                 <span class="email-time" :style="(item.unread === EmailUnreadEnum.UNREAD && showUnread) ? 'font-weight: bold' : ''">{{ item.formatCreateTime }}</span>
               </div>
