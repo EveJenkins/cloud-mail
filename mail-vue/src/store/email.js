@@ -55,13 +55,19 @@ export const useEmailStore = defineStore('email', {
         toContentEmail(email) {
             const id = email?.emailId
             if (id && this.detailMap[id]) {
-                return this.detailMap[id]
+                const detail = this.detailMap[id]
+                if (detail.content || detail.text || !email?.listText) return detail
+                return {
+                    ...detail,
+                    text: email.listText,
+                }
             }
             return {
                 ...email,
                 emailId: id || 0,
-                content: '',
-                text: '',
+                content: email?.content || '',
+                // 完整正文异步加载期间先显示列表摘要，避免详情区短暂误报“正文为空”。
+                text: email?.text || email?.listText || '',
                 attList: [],
                 recipient: email?.recipient || '[]',
             }

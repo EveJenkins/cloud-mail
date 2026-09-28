@@ -163,7 +163,7 @@
                 <small>{{ settingStore.lang === 'zh' ? '根据邮件上下文生成，可在发送前自由修改' : 'Context-aware draft, fully editable before sending' }}</small>
               </div>
             </div>
-            <span class="reply-recipient">{{ settingStore.lang === 'zh' ? `回复给 ${email.name || email.sendEmail}` : `Reply to ${email.name || email.sendEmail}` }}</span>
+            <span class="reply-recipient">{{ settingStore.lang === 'zh' ? `回复给 ${replyTargetLabel}` : `Reply to ${replyTargetLabel}` }}</span>
           </div>
           <div class="ai-controls">
             <div class="tone-options">
@@ -328,6 +328,13 @@ const replyAutoLanguage = computed(() => {
   const code = replyCountryLanguageMap[contact?.country] || 'en'
   const language = replyLanguages.find(item => item.value === code) || replyLanguages[0]
   return {contact, code, language}
+})
+const replyTargetLabel = computed(() => {
+  const address = conversationEmails.value[0]
+  if (!address) return email.value.name || email.value.sendEmail || ''
+  const contacts = Array.isArray(writerStore.contacts) ? writerStore.contacts : []
+  const contact = contacts.find(item => String(item.email || '').toLowerCase() === address)
+  return contact?.name || address
 })
 const replyLanguageHint = computed(() => {
   const result = replyAutoLanguage.value
