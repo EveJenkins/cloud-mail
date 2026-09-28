@@ -40,21 +40,23 @@
       </emailScroll>
     </section>
     <section class="draft-preview-pane" v-if="isDesktop">
+      <div class="draft-header-actions" v-if="selectedDraft">
+        <button
+            type="button"
+            class="draft-detail-action icon-only"
+            :title="settingStore.lang === 'zh' ? '删除草稿' : 'Delete draft'"
+            @click="confirmDeleteDraft([selectedDraft.draftId])"
+        >
+          <Icon icon="uiw:delete" width="16" />
+        </button>
+        <button type="button" class="draft-detail-action" @click="editSelectedDraft">
+          <Icon icon="solar:pen-new-square-linear" width="17" />
+          {{ settingStore.lang === 'zh' ? '继续编辑' : 'Continue editing' }}
+        </button>
+      </div>
       <div class="draft-preview-scroll" v-if="selectedDraft">
         <div class="draft-preview">
-          <div class="draft-toolbar">
-            <span class="draft-badge">{{ settingStore.lang === 'zh' ? '草稿' : 'Draft' }}</span>
-            <div class="draft-toolbar-actions">
-              <button type="button" class="delete-draft" @click="confirmDeleteDraft([selectedDraft.draftId])">
-                <Icon icon="solar:trash-bin-trash-linear" width="16" />
-                {{ settingStore.lang === 'zh' ? '删除' : 'Delete' }}
-              </button>
-              <button type="button" class="edit-draft" @click="editSelectedDraft">
-                <Icon icon="solar:pen-new-square-linear" width="16" />
-                {{ settingStore.lang === 'zh' ? '继续编辑' : 'Continue editing' }}
-              </button>
-            </div>
-          </div>
+          <span class="draft-badge">{{ settingStore.lang === 'zh' ? '草稿' : 'Draft' }}</span>
           <h1>{{ selectedDraft.subject || (settingStore.lang === 'zh' ? '（无主题）' : '(No subject)') }}</h1>
           <div class="draft-meta">
             <span>{{ settingStore.lang === 'zh' ? '收件人' : 'To' }}</span>
@@ -208,15 +210,13 @@ function editSelectedDraft() {
 .draft-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
 .mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
 .draft-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
-.draft-preview-scroll { height: 100%; overflow-y: auto; }
+.draft-header-actions { min-height: 50px; padding: 6px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.draft-detail-action { height: 36px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+.draft-detail-action:hover { color: var(--brand-700); border-color: color-mix(in srgb, var(--brand-500) 42%, var(--border)); background: var(--brand-soft); }
+.draft-detail-action.icon-only { width: 36px; padding: 0; }
+.draft-preview-scroll { height: calc(100% - 50px); overflow-y: auto; }
 .draft-preview { max-width: 860px; margin: 0 auto; padding: 24px; }
-.draft-toolbar { min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.draft-toolbar-actions { display: flex; align-items: center; gap: 8px; }
 .draft-badge { height: 24px; padding: 0 9px; display: inline-flex; align-items: center; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 12px; font-weight: 700; }
-.edit-draft { height: 38px; padding: 0 13px; display: inline-flex; align-items: center; gap: 6px; color: #fff; background: var(--brand-600); border-radius: var(--r-sm); font-size: 13px; font-weight: 700; cursor: pointer; }
-.edit-draft:hover { background: var(--brand-700); }
-.delete-draft { height: 38px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: var(--r-sm); background: var(--surface); font-size: 13px; font-weight: 700; cursor: pointer; }
-.delete-draft:hover { background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
 .draft-row-delete { width: 32px; height: 32px; margin-left: auto; display: grid; flex: 0 0 auto; place-items: center; color: var(--text-3); border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; opacity: 0; transition: opacity var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
 :deep(.email-row:hover) .draft-row-delete, .draft-row-delete:focus-visible { opacity: 1; }
 .draft-row-delete:hover { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 30%, var(--border)); background: color-mix(in srgb, var(--danger) 8%, transparent); }
