@@ -93,6 +93,10 @@ const handleViewport = () => {
 onMounted(() => {
   emailStore.emailScroll = scroll;
   window.addEventListener('resize', handleViewport)
+  const persisted = emailStore.contentData.email
+  if (isDesktop.value && persisted?.emailId && (!persisted.accountId || Number(persisted.accountId) === Number(accountStore.currentAccountId))) {
+    selectedEmailId.value = persisted.emailId
+  }
   latest()
 })
 
@@ -100,12 +104,19 @@ onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
 
 watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
   if (isDesktop.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
-    openContent(scroll.value.emailList[0])
+    const persistedId = emailStore.contentData.email?.emailId
+    const persisted = scroll.value.emailList.find(item => Number(item.emailId) === Number(persistedId))
+    openContent(persisted || scroll.value.emailList[0])
   }
 })
 
 
 watch(() => accountStore.currentAccountId, () => {
+  const persisted = emailStore.contentData.email
+  if (persisted?.accountId && Number(persisted.accountId) !== Number(accountStore.currentAccountId)) {
+    selectedEmailId.value = null
+    emailStore.contentData.email = null
+  }
   scroll.value.refreshList();
 })
 

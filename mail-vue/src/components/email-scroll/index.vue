@@ -121,7 +121,8 @@
                     </span>
                     <span class="email-content">{{ item.listText || item.text || '\u200B' }}</span>
                   </div>
-                  <div class="row-tags" v-if="props.showInboxSummary && (mailCategory(item) || extractVerificationCode(item) || item.attList?.length)">
+                  <div class="row-tags" v-if="props.showInboxSummary && (item.hasReply || mailCategory(item) || extractVerificationCode(item) || item.attList?.length)">
+                    <span class="mail-badge replied" v-if="item.hasReply"><Icon icon="solar:reply-2-linear" width="12" />{{ settingStore.lang === 'zh' ? '已回复' : 'Replied' }}</span>
                     <span class="mail-badge category" v-if="mailCategory(item)">{{ mailCategory(item) }}</span>
                     <span class="mail-badge code" v-if="extractVerificationCode(item)"><Icon icon="solar:check-circle-bold" width="11" />{{ settingStore.lang === 'zh' ? '含验证码' : 'Code detected' }}</span>
                     <span class="mail-badge" v-if="item.attList?.length"><Icon icon="solar:paperclip-linear" width="12" />{{ item.attList.length }} {{ settingStore.lang === 'zh' ? '附件' : 'attachments' }}</span>
@@ -1469,6 +1470,7 @@ function loadData() {
 :deep(.mail-badge) { height: 20px; padding: 0 7px; display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); border-radius: 6px; background: var(--surface-3); font-size: 10.5px; font-weight: 600; white-space: nowrap; }
 :deep(.mail-badge.code) { color: var(--brand-700); background: var(--brand-soft); }
 :deep(.mail-badge.category) { color: var(--success); background: color-mix(in srgb, var(--success) 11%, var(--surface)); }
+:deep(.mail-badge.replied) { color: var(--brand-700); background: var(--brand-soft); }
 
 .email-container.has-summary :deep(.email-row) {
   align-items: flex-start;

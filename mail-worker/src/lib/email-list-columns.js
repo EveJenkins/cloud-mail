@@ -21,12 +21,16 @@ export const emailListColumns = getTableColumns(email);
 /** 摘要查询：列表 + 详情头部；有 text 则不读 content，没有才查 content（去空白），响应里不返回 content */
 export const emailBriefColumns = {
 	emailId: email.emailId,
+	accountId: email.accountId,
 	sendEmail: email.sendEmail,
 	name: email.name,
 	subject: email.subject,
 	code: email.code,
 	recipient: email.recipient,
 	toEmail: email.toEmail,
+	inReplyTo: email.inReplyTo,
+	relation: email.relation,
+	messageId: email.messageId,
 	type: email.type,
 	status: email.status,
 	message: email.message,

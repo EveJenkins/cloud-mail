@@ -158,18 +158,29 @@
             </div>
             <span>{{ relatedThreadMessages.length }} {{ settingStore.lang === 'zh' ? '封关联邮件' : 'related messages' }}</span>
           </div>
-          <article class="thread-message" v-for="item in relatedThreadMessages" :key="item.emailId" :class="{ sent: item.type === 1 }">
+          <article class="thread-message" v-for="item in relatedThreadMessages" :key="item.emailId" :class="{ sent: item.type === 1, failed: threadStatus(item).failed }">
             <header class="thread-message-head">
               <span class="thread-avatar" :class="{ sent: item.type === 1 }">{{ threadInitial(item) }}</span>
               <div class="thread-sender">
                 <div><strong>{{ item.type === 1 ? (settingStore.lang === 'zh' ? '我的回复' : 'My reply') : (item.name || item.sendEmail) }}</strong><span>{{ threadAddress(item) }}</span></div>
                 <small>{{ item.type === 1 ? (settingStore.lang === 'zh' ? '发送给客户' : 'Sent to customer') : (settingStore.lang === 'zh' ? '客户回复' : 'Customer reply') }} · {{ formatDetailDate(item.createTime) }}</small>
               </div>
-              <span class="thread-direction"><Icon :icon="item.type === 1 ? 'solar:plain-2-linear' : 'solar:inbox-in-linear'" width="15" />{{ item.type === 1 ? (settingStore.lang === 'zh' ? '已发送' : 'Sent') : (settingStore.lang === 'zh' ? '已接收' : 'Received') }}</span>
+              <div class="thread-actions">
+                <span class="thread-direction" :class="threadStatus(item).className"><Icon :icon="threadStatus(item).icon" width="15" />{{ threadStatus(item).label }}</span>
+                <button v-if="canRetryThreadMessage(item)" class="thread-retry" type="button" :disabled="isRetrying(item)" @click="retryThreadMessage(item)">
+                  <Icon :icon="isRetrying(item) ? 'svg-spinners:ring-resize' : 'solar:refresh-linear'" width="14" />
+                  {{ isRetrying(item) ? (settingStore.lang === 'zh' ? '重试中' : 'Retrying') : (settingStore.lang === 'zh' ? '重新发送' : 'Retry') }}
+                </button>
+              </div>
             </header>
             <div class="thread-subject" v-if="item.subject && item.subject !== email.subject">{{ item.subject }}</div>
-            <ShadowHtml v-if="messageDisplayBody(item).html" class="thread-body" :html="messageDisplayBody(item).html" comfortable />
-            <pre v-else class="thread-body thread-text">{{ messageDisplayBody(item).text || (settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'No displayable message body') }}</pre>
+            <ShadowHtml v-if="threadDisplayParts(item).primary.html" class="thread-body" :html="threadDisplayParts(item).primary.html" comfortable />
+            <pre v-else class="thread-body thread-text">{{ threadDisplayParts(item).primary.text || (settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'No displayable message body') }}</pre>
+            <details class="quoted-content" v-if="threadDisplayParts(item).quoted.html || threadDisplayParts(item).quoted.text">
+              <summary><Icon icon="solar:history-linear" width="15" />{{ settingStore.lang === 'zh' ? '展开引用内容' : 'Show quoted message' }}</summary>
+              <ShadowHtml v-if="threadDisplayParts(item).quoted.html" class="thread-body quoted-body" :html="threadDisplayParts(item).quoted.html" comfortable />
+              <pre v-else class="thread-body thread-text quoted-body">{{ threadDisplayParts(item).quoted.text }}</pre>
+            </details>
           </article>
         </section>
         <section class="system-notice" v-if="detectedCode">
@@ -309,6 +320,7 @@ const translationLanguage = ref('zh')
 const translating = ref(false)
 const translatedText = ref('')
 const threadMessages = ref([])
+const retryingMessageIds = ref([])
 const toneOptions = computed(() => settingStore.lang === 'zh'
     ? [{value: 'formal', label: '正式'}, {value: 'brief', label: '简洁'}, {value: 'friendly', label: '友好'}]
     : [{value: 'formal', label: 'Formal'}, {value: 'brief', label: 'Brief'}, {value: 'friendly', label: 'Friendly'}])
@@ -438,6 +450,76 @@ function messageDisplayBody(message) {
 const displayBody = computed(() => messageDisplayBody(email.value))
 const relatedThreadMessages = computed(() => threadMessages.value.filter(item => item.emailId !== email.value.emailId))
 
+function threadDisplayParts(message) {
+  const body = messageDisplayBody(message)
+  const empty = {html: '', text: ''}
+  if (body.html) {
+    try {
+      const documentNode = new DOMParser().parseFromString(body.html, 'text/html')
+      const quoteContainer = documentNode.createElement('div')
+      const quoteSelectors = [
+        'blockquote', '.gmail_quote', '.yahoo_quoted', '.moz-cite-prefix',
+        '.protonmail_quote', '[data-skiff-mail]', '[data-original-message]'
+      ]
+      const quoteNodes = [...documentNode.body.querySelectorAll(quoteSelectors.join(','))]
+          .filter(node => !quoteNodesContainAncestor(node, quoteSelectors, documentNode.body))
+      quoteNodes.forEach(node => {
+        quoteContainer.append(node.cloneNode(true))
+        node.remove()
+      })
+      const primaryHtml = String(documentNode.body.innerHTML || '').trim()
+      const quotedHtml = String(quoteContainer.innerHTML || '').trim()
+      if (quotedHtml) return {primary: {html: primaryHtml, text: ''}, quoted: {html: quotedHtml, text: ''}}
+    } catch {
+      // Fall through to the plain-text splitter when malformed email HTML cannot be parsed.
+    }
+  }
+
+  const text = body.text || String(message?.text || '').trim()
+  const quoteMatch = text.match(/\n(?=(?:On .+ wrote:|在.+写道[：:]|[-_]{2,}\s*(?:Original Message|原始邮件)\s*[-_]{2,}|From:\s*.+\n(?:Sent|Date):))/i)
+  if (!quoteMatch || quoteMatch.index == null) return {primary: body, quoted: empty}
+  return {
+    primary: {html: '', text: text.slice(0, quoteMatch.index).trim()},
+    quoted: {html: '', text: text.slice(quoteMatch.index).trim()},
+  }
+}
+
+function quoteNodesContainAncestor(node, selectors, root) {
+  let parent = node.parentElement
+  while (parent && parent !== root) {
+    if (selectors.some(selector => parent.matches?.(selector))) return true
+    parent = parent.parentElement
+  }
+  return false
+}
+
+function threadStatus(item) {
+  if (Number(item?.type) !== 1) {
+    return {label: settingStore.lang === 'zh' ? '已接收' : 'Received', icon: 'solar:inbox-in-linear', className: 'received', failed: false}
+  }
+  const status = Number(item.status)
+  if ([3, 8].includes(status)) return {label: settingStore.lang === 'zh' ? '发送失败' : 'Failed', icon: 'solar:danger-triangle-linear', className: 'failed', failed: true}
+  if (status === 5) return {label: settingStore.lang === 'zh' ? '发送延迟' : 'Delayed', icon: 'solar:clock-circle-linear', className: 'delayed', failed: false}
+  if (status === 2) return {label: settingStore.lang === 'zh' ? '已送达' : 'Delivered', icon: 'solar:check-circle-linear', className: 'delivered', failed: false}
+  return {label: settingStore.lang === 'zh' ? '已发送' : 'Sent', icon: 'solar:plain-2-linear', className: 'sent', failed: false}
+}
+
+function canRetryThreadMessage(item) {
+  return Number(item?.type) === 1 && [3, 8].includes(Number(item.status)) && !item.attList?.length
+}
+
+function isRetrying(item) {
+  return retryingMessageIds.value.includes(item.emailId)
+}
+
+function sortThreadMessages(list) {
+  return [...list].sort((a, b) => {
+    const aTime = Date.parse(String(a.createTime || '').replace(' ', 'T')) || 0
+    const bTime = Date.parse(String(b.createTime || '').replace(' ', 'T')) || 0
+    return aTime - bTime || Number(a.emailId) - Number(b.emailId)
+  })
+}
+
 function threadAddress(item) {
   if (item.type !== 1) return `<${item.sendEmail || ''}>`
   try {
@@ -461,20 +543,11 @@ function messageThreadKeys(message) {
       .filter(Boolean))]
 }
 
-function normalizedThreadSubject(subject) {
-  return String(subject || '').replace(/^\s*(?:(?:re|fw|fwd|回复|转发)\s*[:：]\s*)+/i, '').trim().toLowerCase()
-}
-
 function isRelatedSentMessage(item) {
   if (Number(item?.type) !== 1) return false
   const keys = messageThreadKeys(email.value)
-  const relation = `${item.inReplyTo || ''} ${item.relation || ''}`
-  if (keys.some(key => relation.includes(key))) return true
-
-  const sameSubject = normalizedThreadSubject(item.subject) === normalizedThreadSubject(email.value.subject)
-  if (!sameSubject) return false
-  const target = String(email.value.sendEmail || '').toLowerCase()
-  return threadAddress(item).toLowerCase().split(/[,;]\s*/).includes(target)
+  const relatedKeys = messageThreadKeys(item)
+  return keys.some(key => relatedKeys.includes(key))
 }
 
 async function loadThreadFallback(emailId) {
@@ -489,7 +562,7 @@ async function loadThreadFallback(emailId) {
   )
   if (email.value?.emailId !== emailId) return
   const sent = (data?.list || []).filter(isRelatedSentMessage)
-  threadMessages.value = [email.value, ...sent].sort((a, b) => Number(a.emailId) - Number(b.emailId))
+  threadMessages.value = sortThreadMessages([email.value, ...sent])
 }
 
 async function loadThread() {
@@ -500,7 +573,7 @@ async function loadThread() {
   }
   try {
     const list = await emailThread(emailId)
-    if (email.value?.emailId === emailId) threadMessages.value = Array.isArray(list) ? list : []
+    if (email.value?.emailId === emailId) threadMessages.value = Array.isArray(list) ? sortThreadMessages(list) : []
   } catch (error) {
     try {
       await loadThreadFallback(emailId)
@@ -581,7 +654,8 @@ function handleThreadUpdated(event) {
   if (Number(event.detail?.sourceEmailId) !== Number(email.value?.emailId)) return
   const sent = Array.isArray(event.detail?.emails) ? event.detail.emails : []
   const existingIds = new Set(threadMessages.value.map(item => item.emailId))
-  threadMessages.value = [...threadMessages.value, ...sent.filter(item => !existingIds.has(item.emailId))]
+  threadMessages.value = sortThreadMessages([...threadMessages.value, ...sent.filter(item => !existingIds.has(item.emailId))])
+  if (sent.length) emailStore.markListReplied(email.value.emailId)
 }
 
 function handleKeyDown(event) {
@@ -678,6 +752,65 @@ function escapeHtml(value) {
       .replaceAll("'", '&#039;')
 }
 
+function currentSenderAccount() {
+  return accountStore.currentAccount?.email
+      ? accountStore.currentAccount
+      : userStore.user.account
+}
+
+function replyPayload({text, html, subject, receiveEmail}) {
+  const currentAccount = currentSenderAccount()
+  return {
+    sendEmail: currentAccount.email || userStore.user.email,
+    receiveEmail,
+    accountId: currentAccount.accountId,
+    name: currentAccount.name || userStore.user.name,
+    subject,
+    content: html,
+    text,
+    sendType: 'reply',
+    emailId: email.value.emailId,
+    attachments: [],
+  }
+}
+
+async function retryThreadMessage(item) {
+  if (!canRetryThreadMessage(item) || isRetrying(item)) return
+  retryingMessageIds.value = [...retryingMessageIds.value, item.emailId]
+  try {
+    const recipients = threadAddress(item).split(/[,;]\s*/).filter(Boolean)
+    const sentEmails = await emailSend(replyPayload({
+      text: String(item.text || '').trim(),
+      html: String(item.content || '').trim(),
+      subject: item.subject || `Re: ${email.value.subject || ''}`,
+      receiveEmail: recipients.length ? recipients : [email.value.sendEmail],
+    }), () => {})
+    const failedIndex = threadMessages.value.findIndex(message => message.emailId === item.emailId)
+    const next = [...threadMessages.value]
+    if (failedIndex >= 0) next.splice(failedIndex, 1)
+    threadMessages.value = sortThreadMessages([...next, ...sentEmails])
+    sentEmails.forEach(message => emailStore.sendScroll?.addItem(message))
+    emailStore.markListReplied(email.value.emailId)
+    ElNotification({
+      title: settingStore.lang === 'zh' ? '回复已重新发送' : 'Reply sent again',
+      type: 'success',
+      message: item.subject,
+      position: 'bottom-right',
+    })
+  } catch (error) {
+    item.status = 8
+    item.message = JSON.stringify({message: error?.message || ''})
+    ElNotification({
+      title: settingStore.lang === 'zh' ? '重新发送失败' : 'Retry failed',
+      type: 'error',
+      message: error?.message || (settingStore.lang === 'zh' ? '请稍后再试' : 'Please try again later'),
+      position: 'bottom-right',
+    })
+  } finally {
+    retryingMessageIds.value = retryingMessageIds.value.filter(id => id !== item.emailId)
+  }
+}
+
 async function sendQuickReply() {
   const replyText = quickReply.value.trim()
   if (!replyText) {
@@ -690,24 +823,10 @@ async function sendQuickReply() {
   }
   if (quickSending.value) return
 
-  const currentAccount = accountStore.currentAccount?.email
-      ? accountStore.currentAccount
-      : userStore.user.account
   const subject = email.value.subject || ''
   const replySubject = /^(Re:|Re：|回复：|回复:)/i.test(subject) ? subject : `Re: ${subject}`
   const html = `<div>${escapeHtml(replyText).replaceAll('\n', '<br>')}</div>`
-  const payload = {
-    sendEmail: currentAccount.email || userStore.user.email,
-    receiveEmail: [email.value.sendEmail],
-    accountId: currentAccount.accountId,
-    name: currentAccount.name || userStore.user.name,
-    subject: replySubject,
-    content: html,
-    text: replyText,
-    sendType: 'reply',
-    emailId: email.value.emailId,
-    attachments: [],
-  }
+  const payload = replyPayload({text: replyText, html, subject: replySubject, receiveEmail: [email.value.sendEmail]})
 
   quickSending.value = true
   try {
@@ -723,6 +842,21 @@ async function sendQuickReply() {
       position: 'bottom-right',
     })
   } catch (error) {
+    threadMessages.value = sortThreadMessages([...threadMessages.value, {
+      emailId: -Date.now(),
+      accountId: payload.accountId,
+      sendEmail: payload.sendEmail,
+      name: payload.name,
+      subject: payload.subject,
+      content: payload.content,
+      text: payload.text,
+      recipient: JSON.stringify(payload.receiveEmail.map(address => ({address, name: ''}))),
+      type: 1,
+      status: 8,
+      createTime: new Date().toISOString(),
+      attList: [],
+      message: JSON.stringify({message: error?.message || ''}),
+    }])
     ElNotification({
       title: settingStore.lang === 'zh' ? '回复发送失败' : 'Reply failed',
       type: error.code === 403 ? 'warning' : 'error',
@@ -1262,6 +1396,7 @@ const handleDelete = () => {
 .conversation-heading > span { color: var(--text-3); font-size: 11px; }
 .thread-message { overflow: hidden; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
 .thread-message.sent { border-color: color-mix(in srgb, var(--brand-500) 25%, var(--border)); background: linear-gradient(145deg, var(--surface), color-mix(in srgb, var(--brand-soft) 30%, var(--surface))); }
+.thread-message.failed { border-color: color-mix(in srgb, var(--danger) 38%, var(--border)); }
 .thread-message-head { display: flex; align-items: center; gap: 10px; }
 .thread-avatar { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: #fff; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #ec4899); font-size: 11px; font-weight: 750; }
 .thread-avatar.sent { background: linear-gradient(135deg, var(--brand-500), #0ea5e9); }
@@ -1271,10 +1406,21 @@ const handleDelete = () => {
 .thread-sender span, .thread-sender small { color: var(--text-3); font-size: 11px; }
 .thread-sender span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .thread-sender small { display: block; margin-top: 2px; }
+.thread-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
 .thread-direction { flex: 0 0 auto; padding: 5px 8px; display: inline-flex; align-items: center; gap: 4px; color: var(--brand-700); border-radius: 7px; background: var(--brand-soft); font-size: 10.5px; font-weight: 700; }
+.thread-direction.failed { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--surface)); }
+.thread-direction.delayed { color: var(--warning); background: color-mix(in srgb, var(--warning) 11%, var(--surface)); }
+.thread-direction.delivered { color: var(--success); background: color-mix(in srgb, var(--success) 11%, var(--surface)); }
+.thread-retry { height: 27px; padding: 0 8px; display: inline-flex; align-items: center; gap: 4px; color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)); border-radius: 7px; background: var(--surface); font: inherit; font-size: 10.5px; font-weight: 700; cursor: pointer; }
+.thread-retry:disabled { cursor: wait; opacity: .6; }
 .thread-subject { margin: 13px 0 0; padding-top: 12px; color: var(--text-2); border-top: 1px solid var(--border); font-size: 12px; font-weight: 700; }
 .thread-body { margin-top: 13px; padding: 14px 15px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 13px; line-height: 1.7; }
 .thread-text { font-family: inherit; white-space: pre-wrap; word-break: break-word; }
+.quoted-content { margin-top: 10px; border-top: 1px solid var(--border); }
+.quoted-content summary { width: max-content; margin-top: 10px; padding: 5px 7px; display: flex; align-items: center; gap: 5px; color: var(--text-3); border-radius: 7px; font-size: 11px; font-weight: 600; cursor: pointer; list-style: none; }
+.quoted-content summary::-webkit-details-marker { display: none; }
+.quoted-content summary:hover { color: var(--brand-700); background: var(--brand-soft); }
+.quoted-body { margin-top: 7px; opacity: .78; }
 .system-notice { margin-top: 16px; padding: 15px 16px; display: flex; align-items: flex-start; gap: 11px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2); }
 .notice-icon { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: var(--text-3); background: var(--surface-3); border-radius: 9px; }
 .system-notice strong { font-size: 13px; }

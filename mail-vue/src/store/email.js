@@ -81,5 +81,16 @@ export const useEmailStore = defineStore('email', {
                 if (item) item.unread = EmailUnreadEnum.READ
             }
         },
+        markListReplied(emailId) {
+            const scrolls = [this.emailScroll, this.starScroll]
+            for (const scroll of scrolls) {
+                const list = scroll?.emailList
+                if (!list?.length) continue
+                const item = list.find(e => e.emailId === emailId)
+                if (item) item.hasReply = true
+            }
+            if (this.detailMap[emailId]) this.detailMap[emailId].hasReply = true
+            if (this.contentData.email?.emailId === emailId) this.contentData.email.hasReply = true
+        },
     },
 })

@@ -24,6 +24,14 @@ import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
 
+function emailReferenceTokens(...values) {
+	return [...new Set(values
+		.filter(Boolean)
+		.flatMap(value => String(value).match(/<[^>]+>|[^\s,]+/g) || [])
+		.map(value => value.trim())
+		.filter(Boolean))];
+}
+
 const emailService = {
 
 	async list(c, params, userId) {
@@ -119,6 +127,31 @@ const emailService = {
 
 		let [list, totalRow, latestEmail] = await Promise.all([listQuery, totalQuery, latestEmailQuery]);
 
+		if (type === emailConst.type.RECEIVE && list.length > 0) {
+			const messageIds = [...new Set(list.map(item => item.messageId).filter(Boolean))];
+			if (messageIds.length > 0) {
+				const replyFilters = messageIds.flatMap(messageId => [
+					eq(email.inReplyTo, messageId),
+					like(email.relation, `%${messageId}%`)
+				]);
+				const replies = await orm(c).select({
+					inReplyTo: email.inReplyTo,
+					relation: email.relation,
+				}).from(email).where(and(
+					eq(email.userId, userId),
+					eq(email.type, emailConst.type.SEND),
+					eq(email.isDel, isDel.NORMAL),
+					or(...replyFilters)
+				)).all();
+
+				for (const item of list) {
+					item.hasReply = Boolean(item.messageId && replies.some(reply =>
+						emailReferenceTokens(reply.inReplyTo, reply.relation).includes(item.messageId)
+					));
+				}
+			}
+		}
+
 		list = list.map(item => ({
 			...item,
 			isStar: item.starId != null ? 1 : 0
@@ -152,13 +185,7 @@ const emailService = {
 			throw new BizError(t('notExistEmailReply'), 404);
 		}
 
-		const keys = [...new Set(
-			[current.messageId, current.inReplyTo, current.relation]
-				.filter(Boolean)
-				.flatMap(value => String(value).match(/<[^>]+>|[^\s,]+/g) || [])
-				.map(value => value.trim())
-				.filter(Boolean)
-		)];
+		const keys = emailReferenceTokens(current.messageId, current.inReplyTo, current.relation);
 
 		const relationFilters = [eq(email.emailId, emailId)];
 		for (const key of keys) {
@@ -167,7 +194,7 @@ const emailService = {
 			relationFilters.push(like(email.relation, `%${key}%`));
 		}
 
-		const list = await orm(c).select({ ...emailListColumns }).from(email)
+		let list = await orm(c).select({ ...emailListColumns }).from(email)
 			.where(and(
 				eq(email.userId, userId),
 				eq(email.accountId, current.accountId),
@@ -177,6 +204,11 @@ const emailService = {
 			.orderBy(asc(email.emailId))
 			.limit(100)
 			.all();
+
+		const keySet = new Set(keys);
+		list = list.filter(item => item.emailId === emailId ||
+			emailReferenceTokens(item.messageId, item.inReplyTo, item.relation).some(key => keySet.has(key))
+		);
 
 		await this.emailAddAtt(c, list);
 		return list;
@@ -411,7 +443,8 @@ const emailService = {
 					html,
 					attachments: [...imageDataList, ...attachments],
 					sendType,
-					messageId: emailRow.messageId
+					messageId: emailRow.messageId,
+					references: [emailRow.relation, emailRow.messageId].filter(Boolean).join(' ')
 				});
 			} else {
 				sendResult = await this.sendByResend(resendToken, {
@@ -423,7 +456,8 @@ const emailService = {
 					html,
 					attachments: [...imageDataList, ...attachments],
 					sendType,
-					messageId: emailRow.messageId
+					messageId: emailRow.messageId,
+					references: [emailRow.relation, emailRow.messageId].filter(Boolean).join(' ')
 				});
 			}
 
@@ -453,6 +487,9 @@ const emailService = {
 		emailData.type = emailConst.type.SEND;
 		emailData.userId = userId;
 		emailData.resendEmailId = data?.id;
+		// Cloudflare Email Service returns the SMTP Message-ID. Resend returns a
+		// provider record id instead, so do not store that value as a Message-ID.
+		emailData.messageId = useCloudflareEmail ? (data?.id || '') : '';
 
 		const recipient = [];
 
@@ -464,7 +501,7 @@ const emailService = {
 
 		if (sendType === 'reply') {
 			emailData.inReplyTo = emailRow.messageId;
-			emailData.relation = emailRow.messageId;
+			emailData.relation = [emailRow.relation, emailRow.messageId].filter(Boolean).join(' ');
 		}
 
 		//如果权限有发送次数增加用户发送次数
@@ -536,7 +573,7 @@ const emailService = {
 		if (params.sendType === 'reply' && params.messageId) {
 			sendForm.headers = {
 				'in-reply-to': params.messageId,
-				'references': params.messageId
+				'references': params.references || params.messageId
 			};
 		}
 
@@ -564,7 +601,7 @@ const emailService = {
 		if (params.sendType === 'reply') {
 			sendForm.headers = {
 				'in-reply-to': params.messageId,
-				'references': params.messageId
+				'references': params.references || params.messageId
 			};
 		}
 
