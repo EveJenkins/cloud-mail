@@ -116,6 +116,29 @@ watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
   }
 })
 
+watch(
+  () => [
+    selectedEmailId.value,
+    emailStore.contentData.email?.emailId,
+    emailStore.contentData.email?.accountId,
+    emailStore.contentData.email?.messageId,
+    emailStore.contentData.email?.subject,
+  ],
+  () => {
+    if (!isDesktop.value || switchingInbox.value || !selectedEmailId.value) return
+    const selected = scroll.value?.emailList?.find(item => Number(item.emailId) === Number(selectedEmailId.value))
+    if (!selected) {
+      selectedEmailId.value = null
+      emailStore.clearContent()
+      return
+    }
+    if (!emailStore.sameEmailIdentity(selected, emailStore.contentData.email)) {
+      emailStore.contentData.email = emailStore.toContentEmail(selected)
+    }
+  },
+  {flush: 'sync'}
+)
+
 
 watch(() => accountStore.currentAccountId, async (accountId, previousAccountId) => {
   if (Number(accountId) === Number(previousAccountId)) return
