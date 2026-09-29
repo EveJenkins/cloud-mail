@@ -8,6 +8,12 @@ on:
       - "mail-vue/**"
   workflow_dispatch:
 
+# Cloudflare custom-domain deployments must run serially. Overlapping publishes
+# can briefly activate a Worker version before its D1/KV bindings are available.
+concurrency:
+  group: cloud-mail-production
+  cancel-in-progress: false
+
 jobs:
   Deploy-cloud-mail:
     name: 🏗️ Build and Deploy
