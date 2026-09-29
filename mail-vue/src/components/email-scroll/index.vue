@@ -381,6 +381,7 @@ const checkAll = ref(false);
 const isIndeterminate = ref(false);
 const scroll = ref(null)
 const firstLoad = ref(true)
+let requestVersion = 0
 let scrollTop = 0
 const latestEmail = ref(null)
 const scrollbarRef = ref(null)
@@ -933,7 +934,9 @@ function jumpDetails(email) {
 
 function getEmailList(refresh = false) {
 
-  if (reqLock) return;
+  if (reqLock && !refresh) return Promise.resolve();
+
+  const version = refresh ? ++requestVersion : requestVersion
 
   let emailId = emailList.length > 0 ? emailList.at(-1).emailId : 0;
 
@@ -960,12 +963,14 @@ function getEmailList(refresh = false) {
   }
   let start = Date.now();
 
-  props.getEmailList(emailId, queryParam.size).then(async data => {
+  return props.getEmailList(emailId, queryParam.size).then(async data => {
+    if (version !== requestVersion) return
     let end = Date.now();
     let duration = end - start;
     if (duration < 300 && !emailId) {
         await sleep(300 - duration)
     }
+    if (version !== requestVersion) return
     firstLoad.value = false
 
     let list = data.list.map(item => ({
@@ -990,8 +995,10 @@ function getEmailList(refresh = false) {
     total.value = data.total;
     lastSyncedAt.value = new Date();
   }).finally(() => {
-    loading.value = false
-    reqLock = false
+    if (version === requestVersion) {
+      loading.value = false
+      reqLock = false
+    }
   })
 }
 
@@ -1028,7 +1035,7 @@ function refresh() {
 function refreshList() {
   checkAll.value = false;
   isIndeterminate.value = false;
-  getEmailList(true);
+  return getEmailList(true);
 }
 
 function loadData() {

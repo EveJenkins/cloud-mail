@@ -22,6 +22,18 @@ export const useEmailStore = defineStore('email', {
         pick: ['contentData'],
     },
     actions: {
+        sameEmailIdentity(left, right) {
+            if (!left || !right) return false
+            if (left.emailId && right.emailId && Number(left.emailId) !== Number(right.emailId)) return false
+            if (left.accountId && right.accountId && Number(left.accountId) !== Number(right.accountId)) return false
+            if (left.messageId && right.messageId && String(left.messageId) !== String(right.messageId)) return false
+            return true
+        },
+        clearContent() {
+            this.contentData.email = null
+            this.contentData.delType = null
+            this.contentData.showUnread = false
+        },
         fetchList(request) {
             return request(0).then(data => {
                 request(1).then(fullData => {
@@ -40,21 +52,22 @@ export const useEmailStore = defineStore('email', {
                 if (!item?.emailId) continue
                 if (!item.attList) item.attList = []
                 // 完整列表可能早于「标已读」返回，避免把本地已读状态盖回未读
-                const prev = this.detailMap[item.emailId]
+                const cached = this.detailMap[item.emailId]
+                const prev = this.sameEmailIdentity(cached, item) ? cached : null
                 const keepRead = prev?.unread === EmailUnreadEnum.READ
                     || (currentId === item.emailId && this.contentData.email?.unread === EmailUnreadEnum.READ)
                 if (keepRead) {
                     item.unread = EmailUnreadEnum.READ
                 }
                 this.detailMap[item.emailId] = item
-                if (currentId && item.emailId === currentId) {
+                if (currentId && item.emailId === currentId && this.sameEmailIdentity(this.contentData.email, item)) {
                     this.contentData.email = item
                 }
             }
         },
         toContentEmail(email) {
             const id = email?.emailId
-            if (id && this.detailMap[id]) {
+            if (id && this.detailMap[id] && this.sameEmailIdentity(email, this.detailMap[id])) {
                 const detail = this.detailMap[id]
                 if (detail.content || detail.text || !email?.listText) return detail
                 return {

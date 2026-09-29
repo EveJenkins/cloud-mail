@@ -29,7 +29,12 @@
       </emailScroll>
     </section>
     <section class="mail-preview-pane" v-if="isDesktop">
-      <Content v-if="selectedEmailId" embedded @close="selectedEmailId = null" />
+      <Content v-if="selectedEmailId && !switchingInbox" :key="`${accountStore.currentAccountId}:${selectedEmailId}`" embedded @close="selectedEmailId = null" />
+      <div v-else-if="switchingInbox" class="preview-loading">
+        <Icon icon="svg-spinners:ring-resize" width="28" height="28" />
+        <strong>{{ settingStore.lang === 'zh' ? '正在切换邮箱…' : 'Switching mailbox…' }}</strong>
+        <p>{{ settingStore.lang === 'zh' ? '正在加载当前账号的邮件' : 'Loading messages for this account' }}</p>
+      </div>
       <div v-else class="preview-empty">
         <div class="empty-main">
           <span class="preview-icon"><Icon icon="solar:letter-opened-linear" width="32" height="32" /></span>
@@ -56,7 +61,7 @@ import {useUiStore} from "@/store/ui.js";
 import emailScroll from "@/components/email-scroll/index.vue"
 import {emailList, emailDelete, emailLatest, emailRead} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {computed, defineOptions, h, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
+import {computed, defineOptions, h, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
@@ -79,6 +84,7 @@ const params = reactive({
 const isDesktop = ref(window.innerWidth >= 1280)
 const isPhone = ref(window.innerWidth < 768)
 const selectedEmailId = ref(null)
+const switchingInbox = ref(false)
 const syncedAt = ref(new Date())
 const syncedTimeLabel = computed(() => {
   const time = new Intl.DateTimeFormat(settingStore.lang === 'zh' ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit', hour12: false}).format(syncedAt.value)
@@ -103,7 +109,7 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
 
 watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
-  if (isDesktop.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
+  if (isDesktop.value && !switchingInbox.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
     const persistedId = emailStore.contentData.email?.emailId
     const persisted = scroll.value.emailList.find(item => Number(item.emailId) === Number(persistedId))
     openContent(persisted || scroll.value.emailList[0])
@@ -111,14 +117,20 @@ watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
 })
 
 
-watch(() => accountStore.currentAccountId, () => {
-  const persisted = emailStore.contentData.email
-  if (persisted?.accountId && Number(persisted.accountId) !== Number(accountStore.currentAccountId)) {
-    selectedEmailId.value = null
-    emailStore.contentData.email = null
+watch(() => accountStore.currentAccountId, async (accountId, previousAccountId) => {
+  if (Number(accountId) === Number(previousAccountId)) return
+  switchingInbox.value = true
+  selectedEmailId.value = null
+  emailStore.clearContent()
+  await nextTick()
+  try {
+    await scroll.value.refreshList?.()
+    const firstEmail = scroll.value.emailList?.[0]
+    if (firstEmail && Number(accountStore.currentAccountId) === Number(accountId)) openContent(firstEmail)
+  } finally {
+    switchingInbox.value = false
   }
-  scroll.value.refreshList();
-})
+}, {flush: 'sync'})
 
 function changeTimeSort() {
   params.timeSort = params.timeSort ? 0 : 1
@@ -236,6 +248,9 @@ function getEmailList(emailId, size) {
 .inbox-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
 .mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
 .mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
+.preview-loading { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--brand-600); text-align: center; }
+.preview-loading strong { margin-top: 13px; color: var(--text-2); font-size: 14px; font-weight: 600; }
+.preview-loading p { margin-top: 5px; color: var(--text-3); font-size: 12px; }
 .preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
 .empty-main { display: flex; flex-direction: column; align-items: center; }
 .preview-empty strong { margin-top: 15px; color: var(--text); font-size: 15px; font-weight: 600; }
