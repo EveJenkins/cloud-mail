@@ -254,7 +254,7 @@ import ShadowHtml from '@/components/shadow-html/index.vue'
 import {computed, reactive, ref, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox, ElNotification} from 'element-plus'
-import {emailAiCompose, emailAiReply, emailDelete, emailRead, emailSend, emailThread} from "@/request/email.js";
+import {emailAiCompose, emailAiReply, emailDelete, emailList, emailRead, emailSend, emailThread} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
@@ -453,6 +453,45 @@ function threadInitial(item) {
   return String(item.name || item.sendEmail || 'M').replace(/@.*/, '').trim().charAt(0).toUpperCase() || 'M'
 }
 
+function messageThreadKeys(message) {
+  return [...new Set([message?.messageId, message?.inReplyTo, message?.relation]
+      .filter(Boolean)
+      .flatMap(value => String(value).match(/<[^>]+>|[^\s,]+/g) || [])
+      .map(value => value.trim())
+      .filter(Boolean))]
+}
+
+function normalizedThreadSubject(subject) {
+  return String(subject || '').replace(/^\s*(?:(?:re|fw|fwd|回复|转发)\s*[:：]\s*)+/i, '').trim().toLowerCase()
+}
+
+function isRelatedSentMessage(item) {
+  if (Number(item?.type) !== 1) return false
+  const keys = messageThreadKeys(email.value)
+  const relation = `${item.inReplyTo || ''} ${item.relation || ''}`
+  if (keys.some(key => relation.includes(key))) return true
+
+  const sameSubject = normalizedThreadSubject(item.subject) === normalizedThreadSubject(email.value.subject)
+  if (!sameSubject) return false
+  const target = String(email.value.sendEmail || '').toLowerCase()
+  return threadAddress(item).toLowerCase().split(/[,;]\s*/).includes(target)
+}
+
+async function loadThreadFallback(emailId) {
+  const data = await emailList(
+      accountStore.currentAccountId,
+      accountStore.currentAccount?.allReceive,
+      0,
+      0,
+      50,
+      1,
+      1
+  )
+  if (email.value?.emailId !== emailId) return
+  const sent = (data?.list || []).filter(isRelatedSentMessage)
+  threadMessages.value = [email.value, ...sent].sort((a, b) => Number(a.emailId) - Number(b.emailId))
+}
+
 async function loadThread() {
   const emailId = email.value?.emailId
   if (!emailId) {
@@ -463,8 +502,12 @@ async function loadThread() {
     const list = await emailThread(emailId)
     if (email.value?.emailId === emailId) threadMessages.value = Array.isArray(list) ? list : []
   } catch (error) {
-    console.error('Unable to load email thread', error)
-    threadMessages.value = []
+    try {
+      await loadThreadFallback(emailId)
+    } catch (fallbackError) {
+      console.error('Unable to load email thread', error, fallbackError)
+      threadMessages.value = []
+    }
   }
 }
 
