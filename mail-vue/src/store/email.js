@@ -25,10 +25,10 @@ export const useEmailStore = defineStore('email', {
         sameEmailIdentity(left, right) {
             if (!left || !right) return false
             if (left.emailId && right.emailId && Number(left.emailId) !== Number(right.emailId)) return false
-            if (left.accountId && right.accountId && Number(left.accountId) !== Number(right.accountId)) return false
-            if (left.messageId && right.messageId && String(left.messageId) !== String(right.messageId)) return false
-            if (!left.messageId && !right.messageId && left.subject && right.subject && String(left.subject) !== String(right.subject)) return false
-            if (!left.messageId && !right.messageId && left.sendEmail && right.sendEmail && String(left.sendEmail).toLowerCase() !== String(right.sendEmail).toLowerCase()) return false
+            if ((left.accountId || right.accountId) && Number(left.accountId || 0) !== Number(right.accountId || 0)) return false
+            if ((left.messageId || right.messageId) && String(left.messageId || '') !== String(right.messageId || '')) return false
+            if (left.subject && right.subject && String(left.subject) !== String(right.subject)) return false
+            if (left.sendEmail && right.sendEmail && String(left.sendEmail).toLowerCase() !== String(right.sendEmail).toLowerCase()) return false
             return true
         },
         clearContent() {
