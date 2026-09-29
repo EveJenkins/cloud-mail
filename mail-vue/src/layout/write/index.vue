@@ -4,6 +4,10 @@
       <header class="compose-topbar">
         <button class="back-button" type="button" @click="close"><Icon icon="solar:alt-arrow-left-linear" width="17"/>{{ settingStore.lang === 'zh' ? '返回' : 'Back' }}</button>
         <h1>{{ composeTitle }}</h1>
+        <span v-if="draftSaveState !== 'idle'" :class="['draft-save-status', draftSaveState]">
+          <Icon :icon="draftSaveState === 'saving' ? 'svg-spinners:ring-resize' : draftSaveState === 'error' ? 'solar:danger-circle-linear' : 'solar:cloud-check-linear'" width="15"/>
+          {{ draftSaveLabel }}
+        </span>
         <div class="topbar-actions">
           <button class="secondary-button" type="button" @click="saveDraftNow"><Icon icon="solar:diskette-outline" width="17"/>{{ settingStore.lang === 'zh' ? '存草稿' : 'Save draft' }}</button>
           <button class="secondary-button" type="button" @click="previewMail"><Icon icon="solar:eye-linear" width="17"/>{{ settingStore.lang === 'zh' ? '预览' : 'Preview' }}</button>
@@ -208,6 +212,7 @@ const showContacts = ref(false)
 const showMailPreview = ref(false)
 const previewContent = ref('')
 const translating = ref(false)
+const draftSaveState = ref('idle')
 const translateLanguage = ref('auto')
 const signatureLanguage = ref('auto')
 const phraseDialogOpen = ref(false)
@@ -215,6 +220,9 @@ const phraseEditIndex = ref(-1)
 const phraseForm = reactive({label: '', text: ''})
 const mySelect = ref()
 let selectStatus = false
+let autoSaveTimer = null
+let lastSavedFingerprint = ''
+let autoSaveReady = false
 const backReply = reactive({
   receiveEmail: [],
   subject: '',
@@ -248,6 +256,11 @@ const sendActionLabel = computed(() => {
   if (form.sendType === 'reply') return t('reply')
   if (form.sendType === 'forward') return t('forward')
   return t('send')
+})
+const draftSaveLabel = computed(() => {
+  if (draftSaveState.value === 'saving') return settingStore.lang === 'zh' ? '正在保存…' : 'Saving…'
+  if (draftSaveState.value === 'error') return settingStore.lang === 'zh' ? '自动保存失败' : 'Autosave failed'
+  return settingStore.lang === 'zh' ? '已自动保存' : 'Autosaved'
 })
 const quotaHint = computed(() => {
   const max = Number(userStore.user.role?.sendCount) || 0
@@ -617,7 +630,7 @@ async function sendEmail() {
 
   emailSend(form, (e) => {
     percent.value = Math.round((e.loaded * 98) / e.total)
-  }).then(emailList => {
+  }).then(async emailList => {
     const email = emailList[0]
     emailList.forEach(item => {
       emailStore.sendScroll?.addItem(item)
@@ -640,10 +653,13 @@ async function sendEmail() {
     addRecipientRecord();
 
     if (form.draftId) {
-      form.subject = ''
-      form.content = ''
-      form.receiveEmail = []
-      draftStore.setDraft = {...toRaw(form)}
+      try {
+        await db.value.draft.delete(form.draftId)
+        await db.value.att.delete(form.draftId)
+        draftStore.refreshList++
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     show.value = false
@@ -678,6 +694,8 @@ function addRecipientRecord() {
 }
 
 function resetForm() {
+  clearTimeout(autoSaveTimer)
+  autoSaveReady = false
   form.receiveEmail = []
   form.subject = ''
   form.content = ''
@@ -694,6 +712,8 @@ function resetForm() {
   showMailPreview.value = false
   previewContent.value = ''
   signatureLanguage.value = 'auto'
+  draftSaveState.value = 'idle'
+  lastSavedFingerprint = ''
   editor.value.clearEditor()
 }
 
@@ -738,6 +758,75 @@ function openSignatureManager() {
 function change(content, text) {
   form.content = content;
   form.text = text
+}
+
+function draftFingerprint() {
+  return JSON.stringify({
+    accountId: form.accountId,
+    receiveEmail: [...form.receiveEmail],
+    subject: form.subject,
+    content: form.content,
+    sendType: form.sendType,
+    emailId: form.emailId,
+    attachments: form.attachments.map(item => [item.filename, item.size]),
+  })
+}
+
+function hasDraftChanges() {
+  const content = String(form.content || '')
+  const body = removeSignatureFromHtml(content)
+  const documentNode = new DOMParser().parseFromString(`<body>${body}</body>`, 'text/html')
+  const hasBody = Boolean(documentNode.body.textContent?.trim() || documentNode.body.querySelector('img'))
+  if (backReply.sendType === 'reply' || backReply.sendType === 'forward') {
+    const sameSubject = form.subject === backReply.subject
+    const sameContent = content === backReply.content
+    const sameRecipients = form.receiveEmail.join('|') === backReply.receiveEmail.join('|')
+    if (sameSubject && sameContent && sameRecipients && !form.attachments.length) return false
+  }
+  return Boolean(form.subject.trim() || form.receiveEmail.length || hasBody || form.attachments.length)
+}
+
+async function autoSaveDraft() {
+  if (!show.value || sending || !hasDraftChanges()) return
+  const fingerprint = draftFingerprint()
+  if (fingerprint === lastSavedFingerprint) {
+    draftSaveState.value = 'saved'
+    return
+  }
+
+  draftSaveState.value = 'saving'
+  try {
+    const draft = {...toRaw(form), receiveEmail: [...form.receiveEmail]}
+    const attachments = [...toRaw(form.attachments)]
+    delete draft.attachments
+    delete draft.draftId
+    if (form.draftId) {
+      await db.value.draft.update(form.draftId, draft)
+      await db.value.att.put({draftId: form.draftId, attachments})
+    } else {
+      draft.createTime = dayjs().utc().format('YYYY-MM-DD HH:mm:ss')
+      form.draftId = await db.value.draft.add(draft)
+      await db.value.att.put({draftId: form.draftId, attachments})
+    }
+    lastSavedFingerprint = draftFingerprint()
+    draftSaveState.value = 'saved'
+    draftStore.refreshList++
+  } catch (error) {
+    console.error(error)
+    draftSaveState.value = 'error'
+  }
+}
+
+function scheduleAutoSave() {
+  if (!show.value || !autoSaveReady) return
+  clearTimeout(autoSaveTimer)
+  autoSaveTimer = setTimeout(autoSaveDraft, 1200)
+}
+
+function protectUnsavedDraft(event) {
+  if (!show.value || !hasDraftChanges() || draftFingerprint() === lastSavedFingerprint) return
+  event.preventDefault()
+  event.returnValue = ''
 }
 
 function focusChange() {
@@ -827,9 +916,14 @@ async function open() {
     form.accountId = accountStore.currentAccount.accountId;
     form.name = accountStore.currentAccount.name;
   }
+  autoSaveReady = false
   show.value = true;
   await nextTick()
-  setTimeout(() => applySignatureToEditor())
+  setTimeout(() => {
+    applySignatureToEditor()
+    lastSavedFingerprint = draftFingerprint()
+    autoSaveReady = true
+  }, 100)
   editor.value?.focus?.()
 }
 
@@ -842,8 +936,14 @@ async function openWithRecipient(email) {
 
 async function openDraft(draft) {
   Object.assign(form, {...draft})
+  draftSaveState.value = 'saved'
+  autoSaveReady = false
   defValue.value = ''
-  setTimeout(() => defValue.value = form.content)
+  setTimeout(() => {
+    defValue.value = form.content
+    lastSavedFingerprint = draftFingerprint()
+    autoSaveReady = true
+  }, 100)
   show.value = true;
   await nextTick()
   editor.value?.focus?.()
@@ -857,11 +957,16 @@ const handleKeyDown = (event) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('beforeunload', protectUnsavedDraft);
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('beforeunload', protectUnsavedDraft);
+  clearTimeout(autoSaveTimer)
 });
+
+watch(() => [form.receiveEmail.join('|'), form.subject, form.content, form.attachments.map(item => `${item.filename}:${item.size}`).join('|')], scheduleAutoSave, {flush: 'post'})
 
 watch(() => [form.receiveEmail.join('|'), signatureLanguage.value, configuredSignatures.value.length], () => {
   if (!show.value) return
@@ -1324,6 +1429,9 @@ async function saveDraftNow() {
 .compose-workspace { width: min(1320px, calc(100% - 40px)); min-height: 100%; margin: 0 auto; padding: 24px 0 36px; }
 .compose-topbar { height: 42px; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .compose-topbar h1 { margin: 0; color: var(--text); font-size: 17px; font-weight: 800; letter-spacing: -.25px; }
+.draft-save-status { min-width: 0; display: inline-flex; align-items: center; gap: 5px; color: var(--text-3); font-size: 11.5px; white-space: nowrap; }
+.draft-save-status.saved { color: var(--brand-600); }
+.draft-save-status.error { color: var(--danger); }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .back-button, .secondary-button, .inline-link, .add-attachment, .contact-book-button, .phrase-list button, .phrase-add, .phrase-empty, .dialog-delete, .translate-row button { border: 0; font: inherit; cursor: pointer; }
 .back-button, .secondary-button { height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 11px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 9px; font-size: 12.5px; font-weight: 650; }
@@ -1432,6 +1540,7 @@ async function saveDraftNow() {
   .compose-workspace { width: 100%; padding: 10px 10px 24px; }
   .compose-topbar { height: auto; min-height: 42px; flex-wrap: wrap; }
   .compose-topbar h1 { font-size: 15px; }
+  .draft-save-status { order: 4; width: 100%; padding-left: 47px; }
   .topbar-actions { gap: 5px; }
   .secondary-button { width: 36px; padding: 0; font-size: 0; }
   .topbar-actions .send-button { min-width: 68px; padding: 0 10px; }
