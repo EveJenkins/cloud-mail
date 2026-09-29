@@ -622,6 +622,11 @@ async function sendEmail() {
     emailList.forEach(item => {
       emailStore.sendScroll?.addItem(item)
     })
+    if (form.sendType === 'reply' && form.emailId) {
+      window.dispatchEvent(new CustomEvent('mail-thread-updated', {
+        detail: { sourceEmailId: form.emailId, emails: emailList }
+      }))
+    }
 
     ElNotification({
       title: t('sendSuccessMsg'),

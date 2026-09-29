@@ -150,6 +150,28 @@
           </div>
         </div>
         </div>
+        <section class="conversation-thread" v-if="relatedThreadMessages.length">
+          <div class="conversation-heading">
+            <div>
+              <Icon icon="solar:chat-round-dots-linear" width="18" />
+              <strong>{{ settingStore.lang === 'zh' ? '会话记录' : 'Conversation' }}</strong>
+            </div>
+            <span>{{ relatedThreadMessages.length }} {{ settingStore.lang === 'zh' ? '封关联邮件' : 'related messages' }}</span>
+          </div>
+          <article class="thread-message" v-for="item in relatedThreadMessages" :key="item.emailId" :class="{ sent: item.type === 1 }">
+            <header class="thread-message-head">
+              <span class="thread-avatar" :class="{ sent: item.type === 1 }">{{ threadInitial(item) }}</span>
+              <div class="thread-sender">
+                <div><strong>{{ item.type === 1 ? (settingStore.lang === 'zh' ? '我的回复' : 'My reply') : (item.name || item.sendEmail) }}</strong><span>{{ threadAddress(item) }}</span></div>
+                <small>{{ item.type === 1 ? (settingStore.lang === 'zh' ? '发送给客户' : 'Sent to customer') : (settingStore.lang === 'zh' ? '客户回复' : 'Customer reply') }} · {{ formatDetailDate(item.createTime) }}</small>
+              </div>
+              <span class="thread-direction"><Icon :icon="item.type === 1 ? 'solar:plain-2-linear' : 'solar:inbox-in-linear'" width="15" />{{ item.type === 1 ? (settingStore.lang === 'zh' ? '已发送' : 'Sent') : (settingStore.lang === 'zh' ? '已接收' : 'Received') }}</span>
+            </header>
+            <div class="thread-subject" v-if="item.subject && item.subject !== email.subject">{{ item.subject }}</div>
+            <ShadowHtml v-if="messageDisplayBody(item).html" class="thread-body" :html="messageDisplayBody(item).html" comfortable />
+            <pre v-else class="thread-body thread-text">{{ messageDisplayBody(item).text || (settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'No displayable message body') }}</pre>
+          </article>
+        </section>
         <section class="system-notice" v-if="detectedCode">
           <span class="notice-icon"><Icon icon="solar:shield-check-linear" width="18" /></span>
           <div><strong>{{ settingStore.lang === 'zh' ? '系统通知类邮件，无需回复' : 'System notification — no reply needed' }}</strong><p>{{ settingStore.lang === 'zh' ? 'Workers AI 已识别为验证码通知，因此不会生成回复草稿；验证码可直接复制使用。' : 'Workers AI recognized a verification-code notice, so no reply draft is generated.' }}</p></div>
@@ -232,7 +254,7 @@ import ShadowHtml from '@/components/shadow-html/index.vue'
 import {computed, reactive, ref, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox, ElNotification} from 'element-plus'
-import {emailAiCompose, emailAiReply, emailDelete, emailRead, emailSend} from "@/request/email.js";
+import {emailAiCompose, emailAiReply, emailDelete, emailRead, emailSend, emailThread} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
@@ -286,6 +308,7 @@ const translationOpen = ref(false)
 const translationLanguage = ref('zh')
 const translating = ref(false)
 const translatedText = ref('')
+const threadMessages = ref([])
 const toneOptions = computed(() => settingStore.lang === 'zh'
     ? [{value: 'formal', label: '正式'}, {value: 'brief', label: '简洁'}, {value: 'friendly', label: '友好'}]
     : [{value: 'formal', label: 'Formal'}, {value: 'brief', label: 'Brief'}, {value: 'friendly', label: 'Friendly'}])
@@ -391,9 +414,9 @@ const senderGradient = computed(() => {
   const [from, to] = palettes[score % palettes.length]
   return `linear-gradient(135deg, ${from}, ${to})`
 })
-const displayBody = computed(() => {
-  const html = formatImage(String(email.value.content || '').trim())
-  const text = String(email.value.text || '').trim()
+function messageDisplayBody(message) {
+  const html = formatImage(String(message?.content || '').trim())
+  const text = String(message?.text || '').trim()
   if (!html) return {html: '', text}
   try {
     const documentNode = new DOMParser().parseFromString(html, 'text/html')
@@ -411,7 +434,39 @@ const displayBody = computed(() => {
     if (!html.replace(/<[^>]+>/g, '').trim()) return {html: '', text}
   }
   return {html, text}
-})
+}
+const displayBody = computed(() => messageDisplayBody(email.value))
+const relatedThreadMessages = computed(() => threadMessages.value.filter(item => item.emailId !== email.value.emailId))
+
+function threadAddress(item) {
+  if (item.type !== 1) return `<${item.sendEmail || ''}>`
+  try {
+    const recipients = Array.isArray(item.recipient) ? item.recipient : JSON.parse(item.recipient || '[]')
+    return recipients.map(recipient => recipient.address || recipient.email || recipient).filter(Boolean).join(', ')
+  } catch {
+    return ''
+  }
+}
+
+function threadInitial(item) {
+  if (item.type === 1) return settingStore.lang === 'zh' ? '我' : 'ME'
+  return String(item.name || item.sendEmail || 'M').replace(/@.*/, '').trim().charAt(0).toUpperCase() || 'M'
+}
+
+async function loadThread() {
+  const emailId = email.value?.emailId
+  if (!emailId) {
+    threadMessages.value = []
+    return
+  }
+  try {
+    const list = await emailThread(emailId)
+    if (email.value?.emailId === emailId) threadMessages.value = Array.isArray(list) ? list : []
+  } catch (error) {
+    console.error('Unable to load email thread', error)
+    threadMessages.value = []
+  }
+}
 
 const { t } = useI18n()
 watch(() => accountStore.currentAccountId, () => {
@@ -427,6 +482,7 @@ watch(() => email.value?.emailId, () => {
   aiLanguage.value = 'auto'
   translationOpen.value = false
   translatedText.value = ''
+  loadThread()
 })
 
 let readRequesting = false
@@ -466,14 +522,24 @@ watch(
 
 onMounted(() => {
   tryMarkRead()
+  loadThread()
   window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('mail-thread-updated', handleThreadUpdated)
 })
 
 onUnmounted(() => {
   emailStore.contentData.showUnread = false;
   readRequesting = false
   window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('mail-thread-updated', handleThreadUpdated)
 })
+
+function handleThreadUpdated(event) {
+  if (Number(event.detail?.sourceEmailId) !== Number(email.value?.emailId)) return
+  const sent = Array.isArray(event.detail?.emails) ? event.detail.emails : []
+  const existingIds = new Set(threadMessages.value.map(item => item.emailId))
+  threadMessages.value = [...threadMessages.value, ...sent.filter(item => !existingIds.has(item.emailId))]
+}
 
 function handleKeyDown(event) {
   if (event.key !== 'Escape') return;
@@ -604,6 +670,7 @@ async function sendQuickReply() {
   try {
     const sentEmails = await emailSend(payload, () => {})
     sentEmails.forEach(item => emailStore.sendScroll?.addItem(item))
+    handleThreadUpdated({detail: {sourceEmailId: email.value.emailId, emails: sentEmails}})
     userStore.refreshUserInfo()
     quickReply.value = ''
     ElNotification({
@@ -1145,6 +1212,26 @@ const handleDelete = () => {
 .container .bottom-distance { margin-bottom: 0; }
 .container .content .att { margin: 16px 0 0; background: var(--surface); box-shadow: var(--sh-1); }
 .container .delivery-trace { margin-top: 16px; background: var(--surface); box-shadow: var(--sh-1); }
+.conversation-thread { margin-top: 16px; display: grid; gap: 10px; }
+.conversation-heading { min-height: 38px; padding: 0 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.conversation-heading > div { display: flex; align-items: center; gap: 7px; color: var(--text); }
+.conversation-heading strong { font-size: 13.5px; }
+.conversation-heading > span { color: var(--text-3); font-size: 11px; }
+.thread-message { overflow: hidden; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
+.thread-message.sent { border-color: color-mix(in srgb, var(--brand-500) 25%, var(--border)); background: linear-gradient(145deg, var(--surface), color-mix(in srgb, var(--brand-soft) 30%, var(--surface))); }
+.thread-message-head { display: flex; align-items: center; gap: 10px; }
+.thread-avatar { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: #fff; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #ec4899); font-size: 11px; font-weight: 750; }
+.thread-avatar.sent { background: linear-gradient(135deg, var(--brand-500), #0ea5e9); }
+.thread-sender { min-width: 0; flex: 1; }
+.thread-sender > div { min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 8px; }
+.thread-sender strong { color: var(--text); font-size: 13px; }
+.thread-sender span, .thread-sender small { color: var(--text-3); font-size: 11px; }
+.thread-sender span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thread-sender small { display: block; margin-top: 2px; }
+.thread-direction { flex: 0 0 auto; padding: 5px 8px; display: inline-flex; align-items: center; gap: 4px; color: var(--brand-700); border-radius: 7px; background: var(--brand-soft); font-size: 10.5px; font-weight: 700; }
+.thread-subject { margin: 13px 0 0; padding-top: 12px; color: var(--text-2); border-top: 1px solid var(--border); font-size: 12px; font-weight: 700; }
+.thread-body { margin-top: 13px; padding: 14px 15px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 13px; line-height: 1.7; }
+.thread-text { font-family: inherit; white-space: pre-wrap; word-break: break-word; }
 .system-notice { margin-top: 16px; padding: 15px 16px; display: flex; align-items: flex-start; gap: 11px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2); }
 .notice-icon { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: var(--text-3); background: var(--surface-3); border-radius: 9px; }
 .system-notice strong { font-size: 13px; }
@@ -1161,6 +1248,8 @@ const handleDelete = () => {
   .container .translation-card { padding: 13px; }
   .container .translation-title small { display: none; }
   .container .content .email-info .sender-secondary { white-space: normal; }
+  .thread-message { padding: 12px; }
+  .thread-direction { font-size: 0; }
   .container .quick-reply { padding: 10px; border-radius: var(--r-md); }
   .container .quick-reply-heading > span,
   .container .ai-reply-title small,

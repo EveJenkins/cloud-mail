@@ -141,6 +141,47 @@ const emailService = {
 		return { list, total: totalRow.total, latestEmail };
 	},
 
+	async thread(c, emailId, userId) {
+		emailId = Number(emailId);
+		if (!emailId) {
+			throw new BizError(t('notExistEmailReply'));
+		}
+
+		const current = await this.selectById(c, emailId);
+		if (!current || current.userId !== userId) {
+			throw new BizError(t('notExistEmailReply'), 404);
+		}
+
+		const keys = [...new Set(
+			[current.messageId, current.inReplyTo, current.relation]
+				.filter(Boolean)
+				.flatMap(value => String(value).match(/<[^>]+>|[^\s,]+/g) || [])
+				.map(value => value.trim())
+				.filter(Boolean)
+		)];
+
+		const relationFilters = [eq(email.emailId, emailId)];
+		for (const key of keys) {
+			relationFilters.push(eq(email.messageId, key));
+			relationFilters.push(eq(email.inReplyTo, key));
+			relationFilters.push(like(email.relation, `%${key}%`));
+		}
+
+		const list = await orm(c).select({ ...emailListColumns }).from(email)
+			.where(and(
+				eq(email.userId, userId),
+				eq(email.accountId, current.accountId),
+				eq(email.isDel, isDel.NORMAL),
+				or(...relationFilters)
+			))
+			.orderBy(asc(email.emailId))
+			.limit(100)
+			.all();
+
+		await this.emailAddAtt(c, list);
+		return list;
+	},
+
 	toListText(item) {
 		const raw = emailUtils.formatText(item.text) || emailUtils.htmlToText(item.content);
 		return raw.replace(/\s+/g, ' ').trim().slice(0, EMAIL_LIST_TEXT_LEN);
