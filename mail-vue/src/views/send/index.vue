@@ -29,7 +29,7 @@
       </emailScroll>
     </section>
     <section class="mail-preview-pane" v-if="isDesktop">
-      <Content v-if="selectedEmailId" embedded @close="selectedEmailId = null" />
+      <Content v-if="selectedEmailId" :key="`sent:${accountStore.currentAccountId}:${selectedEmailId}`" embedded @close="selectedEmailId = null" />
       <div v-else class="preview-empty">
         <span class="preview-icon"><Icon icon="solar:letter-opened-linear" width="34" height="34" /></span>
         <strong>{{ settingStore.lang === 'zh' ? '选择一封已发送邮件' : 'Select a sent message' }}</strong>
@@ -46,7 +46,7 @@ import {useSettingStore} from "@/store/setting.js";
 import emailScroll from "@/components/email-scroll/index.vue"
 import {emailList, emailDelete} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {defineOptions, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
+import {defineOptions, nextTick, onActivated, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import Content from '@/views/content/index.vue'
@@ -78,11 +78,36 @@ onMounted(() => {
 
 onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
 
+// The route is kept alive. Restore this folder's selected message whenever the
+// user returns, otherwise the shared detail pane can still show the message
+// selected in Inbox or Starred (email ids are not globally unique by folder).
+onActivated(async () => {
+  await nextTick()
+  const list = sendScroll.value?.emailList || []
+  const selected = list.find(item => Number(item.emailId) === Number(selectedEmailId.value)) || list[0]
+  if (selected) openContent(selected)
+  else {
+    selectedEmailId.value = null
+    emailStore.clearContent()
+  }
+})
+
 watch(() => sendScroll.value?.emailList?.[0]?.emailId, () => {
   if (isDesktop.value && !selectedEmailId.value && sendScroll.value?.emailList?.length) {
     openContent(sendScroll.value.emailList[0])
   }
 })
+
+watch(
+  () => [selectedEmailId.value, emailStore.contentData.email],
+  () => {
+    if (!isDesktop.value || !selectedEmailId.value) return
+    const selected = sendScroll.value?.emailList?.find(item => Number(item.emailId) === Number(selectedEmailId.value))
+    if (!selected) return
+    if (!emailStore.sameEmailIdentity(selected, emailStore.contentData.email)) openContent(selected)
+  },
+  {flush: 'sync'}
+)
 
 watch(() => accountStore.currentAccountId, () => {
   sendScroll.value.refreshList();

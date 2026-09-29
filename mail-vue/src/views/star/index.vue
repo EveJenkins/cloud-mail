@@ -20,7 +20,7 @@
       />
     </section>
     <section class="mail-preview-pane" v-if="isDesktop">
-      <Content v-if="selectedEmailId" embedded @close="selectedEmailId = null" />
+      <Content v-if="selectedEmailId" :key="`star:${selectedEmailId}`" embedded @close="selectedEmailId = null" />
       <div v-else class="preview-empty">
         <span class="preview-icon"><Icon icon="solar:star-fall-minimalistic-2-linear" width="34" height="34" /></span>
         <strong>{{ settingStore.lang === 'zh' ? '选择一封星标邮件' : 'Select a starred message' }}</strong>
@@ -36,7 +36,7 @@ import {emailDelete} from "@/request/email.js";
 import {starAdd, starCancel, starList} from "@/request/star.js";
 import {useEmailStore} from "@/store/email.js";
 import {useSettingStore} from "@/store/setting.js";
-import {defineOptions, onBeforeUnmount, onMounted, ref, watch} from "vue";
+import {defineOptions, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import Content from '@/views/content/index.vue'
@@ -88,11 +88,33 @@ onMounted(() => {
 
 onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
 
+onActivated(async () => {
+  await nextTick()
+  const list = scroll.value?.emailList || []
+  const selected = list.find(item => Number(item.emailId) === Number(selectedEmailId.value)) || list[0]
+  if (selected) openContent(selected)
+  else {
+    selectedEmailId.value = null
+    emailStore.clearContent()
+  }
+})
+
 watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
   if (isDesktop.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
     openContent(scroll.value.emailList[0])
   }
 })
+
+watch(
+  () => [selectedEmailId.value, emailStore.contentData.email],
+  () => {
+    if (!isDesktop.value || !selectedEmailId.value) return
+    const selected = scroll.value?.emailList?.find(item => Number(item.emailId) === Number(selectedEmailId.value))
+    if (!selected) return
+    if (!emailStore.sameEmailIdentity(selected, emailStore.contentData.email)) openContent(selected)
+  },
+  {flush: 'sync'}
+)
 
 </script>
 
