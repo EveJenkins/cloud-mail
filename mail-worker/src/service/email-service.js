@@ -130,19 +130,14 @@ const emailService = {
 		if (type === emailConst.type.RECEIVE && list.length > 0) {
 			const messageIds = [...new Set(list.map(item => item.messageId).filter(Boolean))];
 			if (messageIds.length > 0) {
-				const replyFilters = messageIds.flatMap(messageId => [
-					eq(email.inReplyTo, messageId),
-					like(email.relation, `%${messageId}%`)
-				]);
 				const replies = await orm(c).select({
 					inReplyTo: email.inReplyTo,
 					relation: email.relation,
 				}).from(email).where(and(
 					eq(email.userId, userId),
 					eq(email.type, emailConst.type.SEND),
-					eq(email.isDel, isDel.NORMAL),
-					or(...replyFilters)
-				)).all();
+					eq(email.isDel, isDel.NORMAL)
+				)).orderBy(desc(email.emailId)).limit(500).all();
 
 				for (const item of list) {
 					item.hasReply = Boolean(item.messageId && replies.some(reply =>
