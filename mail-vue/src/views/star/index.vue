@@ -9,6 +9,7 @@
                :star-add="starAdd"
                :star-cancel="starCancel"
                @jump="jumpContent"
+               @list-loaded="syncSelection"
                actionLeft="6px"
                :show-account-icon="false"
                :show-inbox-summary="true"
@@ -36,7 +37,7 @@ import {emailDelete} from "@/request/email.js";
 import {starAdd, starCancel, starList} from "@/request/star.js";
 import {useEmailStore} from "@/store/email.js";
 import {useSettingStore} from "@/store/setting.js";
-import {defineOptions, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch} from "vue";
+import {defineOptions, nextTick, onActivated, onBeforeMount, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import Content from '@/views/content/index.vue'
@@ -86,10 +87,19 @@ onMounted(() => {
   window.addEventListener('resize', handleViewport)
 })
 
+onBeforeMount(() => {
+  selectedEmailId.value = null
+  emailStore.clearContent()
+})
+
 onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
 
 onActivated(async () => {
   await nextTick()
+  syncSelection()
+})
+
+function syncSelection() {
   const list = scroll.value?.emailList || []
   const selected = list.find(item => Number(item.emailId) === Number(selectedEmailId.value)) || list[0]
   if (selected) openContent(selected)
@@ -97,11 +107,11 @@ onActivated(async () => {
     selectedEmailId.value = null
     emailStore.clearContent()
   }
-})
+}
 
 watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
   if (isDesktop.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
-    openContent(scroll.value.emailList[0])
+    syncSelection()
   }
 })
 

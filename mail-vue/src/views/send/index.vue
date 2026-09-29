@@ -11,6 +11,7 @@
                actionLeft="4px"
                :star-cancel="starCancel"
                @jump="jumpContent"
+               @list-loaded="syncSelection"
                :time-sort="params.timeSort"
                :type="'send'"
                :show-inbox-summary="true"
@@ -46,7 +47,7 @@ import {useSettingStore} from "@/store/setting.js";
 import emailScroll from "@/components/email-scroll/index.vue"
 import {emailList, emailDelete} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {defineOptions, nextTick, onActivated, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
+import {defineOptions, nextTick, onActivated, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import Content from '@/views/content/index.vue'
@@ -76,6 +77,11 @@ onMounted(() => {
   window.addEventListener('resize', handleViewport)
 })
 
+onBeforeMount(() => {
+  selectedEmailId.value = null
+  emailStore.clearContent()
+})
+
 onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
 
 // The route is kept alive. Restore this folder's selected message whenever the
@@ -83,6 +89,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
 // selected in Inbox or Starred (email ids are not globally unique by folder).
 onActivated(async () => {
   await nextTick()
+  syncSelection()
+})
+
+function syncSelection() {
   const list = sendScroll.value?.emailList || []
   const selected = list.find(item => Number(item.emailId) === Number(selectedEmailId.value)) || list[0]
   if (selected) openContent(selected)
@@ -90,11 +100,11 @@ onActivated(async () => {
     selectedEmailId.value = null
     emailStore.clearContent()
   }
-})
+}
 
 watch(() => sendScroll.value?.emailList?.[0]?.emailId, () => {
   if (isDesktop.value && !selectedEmailId.value && sendScroll.value?.emailList?.length) {
-    openContent(sendScroll.value.emailList[0])
+    syncSelection()
   }
 })
 

@@ -364,7 +364,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search'])
+const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search', 'list-loaded'])
 const {t} = useI18n()
 const settingStore = useSettingStore()
 const accountStore = useAccountStore()
@@ -987,6 +987,7 @@ function getEmailList(refresh = false) {
 
     handleList(list);
     emailList.push(...list);
+    emit('list-loaded', emailList)
     if (refresh) scrollbarRef.value?.setScrollTop(0);
 
     noLoading.value = data.list.length < queryParam.size;
