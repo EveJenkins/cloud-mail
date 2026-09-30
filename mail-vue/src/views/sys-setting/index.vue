@@ -5,9 +5,17 @@
     </div>
     <el-scrollbar class="scroll" v-if="!firstLoading">
       <div class="scroll-body">
+        <nav class="settings-nav">
+          <button v-for="item in sections" :key="item.key" type="button"
+                  class="nav-item" :class="{ active: activeSection === item.key }"
+                  @click="activeSection = item.key">
+            <Icon :icon="item.icon" width="17" />
+            <span>{{ item.label }}</span>
+          </button>
+        </nav>
         <div class="card-grid">
           <!-- Basic Settings Card -->
-          <div class="settings-card">
+          <div v-show="activeSection === 'website'" class="settings-card">
             <div class="card-title">{{ $t('websiteSetting') }}</div>
             <div class="card-content">
               <div class="setting-item">
@@ -87,7 +95,7 @@
           </div>
 
           <!-- Personalization Settings Card -->
-          <div class="settings-card">
+          <div v-show="activeSection === 'custom'" class="settings-card">
             <div class="card-title">{{ $t('customization') }}</div>
             <div class="card-content">
               <div class="setting-item">
@@ -136,7 +144,7 @@
           </div>
 
           <!-- Email Sending Settings Card -->
-          <div class="settings-card">
+          <div v-show="activeSection === 'email'" class="settings-card">
             <div class="card-title">{{ $t('emailSetting') }}</div>
             <div class="card-content">
               <div class="setting-item">
@@ -231,7 +239,7 @@
             </div>
           </div>
 
-          <div class="settings-card">
+          <div v-show="activeSection === 'push'" class="settings-card">
             <div class="card-title">{{ $t('emailPush') }}</div>
             <div class="card-content">
               <div class="setting-item">
@@ -274,7 +282,7 @@
           </div>
 
           <!-- Object Storage Card -->
-          <div class="settings-card">
+          <div v-show="activeSection === 'oss'" class="settings-card">
             <div class="card-title">{{ $t('oss') }}</div>
             <div class="card-content">
               <div class="r2domain-item">
@@ -315,7 +323,7 @@
           </div>
 
           <!-- Turnstile Verification Card -->
-          <div class="settings-card">
+          <div v-show="activeSection === 'turnstile'" class="settings-card">
             <div class="card-title">{{ $t('turnstileSetting') }}</div>
             <div class="card-content">
               <div class="setting-item">
@@ -377,7 +385,7 @@
             </div>
           </div>
 
-          <div class="settings-card">
+          <div v-show="activeSection === 'notice'" class="settings-card">
             <div class="card-title">{{ $t('noticeTitle') }}</div>
             <div class="card-content">
               <div class="setting-item">
@@ -400,7 +408,7 @@
             </div>
           </div>
 
-          <div class="settings-card">
+          <div v-show="activeSection === 'ai'" class="settings-card">
             <div class="card-title">Workers AI</div>
             <div class="card-content">
               <div class="setting-item">
@@ -422,7 +430,7 @@
           </div>
 
           <!-- OAuth Login Card -->
-          <div class="settings-card">
+          <div v-show="activeSection === 'oauth'" class="settings-card">
             <div class="card-title">{{ $t('oauthLogin') }}</div>
             <div class="card-content">
               <div class="setting-item" v-for="p in oauthPlatforms" :key="p.key">
@@ -441,7 +449,7 @@
             </div>
           </div>
 
-          <div class="settings-card about">
+          <div v-show="activeSection === 'about'" class="settings-card about">
             <div class="card-title">{{ $t('about') }}</div>
             <div class="card-content">
               <div class="concerning-item">
@@ -958,6 +966,21 @@ const hasUpdate = ref(false)
 let getUpdateErrorCount = 1;
 const {t, locale} = useI18n();
 const firstLoading = ref(true)
+
+// 设置分区导航
+const activeSection = ref('website')
+const sections = computed(() => [
+  { key: 'website', icon: 'solar:document-text-linear', label: t('websiteSetting') },
+  { key: 'custom', icon: 'solar:palette-linear', label: t('customization') },
+  { key: 'email', icon: 'solar:letter-linear', label: t('emailSetting') },
+  { key: 'push', icon: 'solar:bell-linear', label: t('emailPush') },
+  { key: 'oss', icon: 'solar:cloud-upload-linear', label: t('oss') },
+  { key: 'turnstile', icon: 'solar:shield-check-linear', label: t('turnstileSetting') },
+  { key: 'notice', icon: 'solar:megaphone-linear', label: t('noticeTitle') },
+  { key: 'ai', icon: 'solar:magic-stick-3-linear', label: 'Workers AI' },
+  { key: 'oauth', icon: 'solar:key-linear', label: t('oauthLogin') },
+  { key: 'about', icon: 'solar:info-circle-linear', label: t('about') },
+])
 const settingReady = ref(false)
 const backgroundImage = ref('')
 const localUpShow = ref(false)
@@ -1794,24 +1817,13 @@ function editSetting(settingForm, refreshStatus = true) {
     height: 100%;
   }
 
-  .scroll-body {
-    min-height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
 }
 
 .card-grid {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  gap: 20px;
-  @media (max-width: 1023px) {
-    gap: 15px;
-    padding: 15px;
-  }
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
 }
 
 .background {
@@ -1842,7 +1854,6 @@ function editSetting(settingForm, refreshStatus = true) {
   box-shadow: var(--sh-1);
   transition: all var(--dur) var(--ease);
   overflow: hidden;
-  max-width: 1080px;
   width: 100%;
 }
 
@@ -1863,22 +1874,37 @@ function editSetting(settingForm, refreshStatus = true) {
 
 .setting-item {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
+  grid-template-columns: 200px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 38px;
   font-weight: normal;
 
   > div:first-child {
     display: flex;
     align-items: center;
     gap: 5px;
+    color: var(--text-2);
+    font-size: 13px;
   }
 
   > div:last-child {
     display: grid;
     grid-template-columns: 1fr auto;
-    justify-items: flex-end;
+    justify-items: start;
+    align-items: center;
+    min-width: 0;
     font-weight: normal;
   }
+}
+
+/* 值 + 设置按钮的行：整体靠左，不要被 1fr 推到最右 */
+.setting-item > div.forward {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  grid-template-columns: none;
+  justify-items: start;
 }
 
 .oauth-icon {
@@ -2129,6 +2155,10 @@ function editSetting(settingForm, refreshStatus = true) {
 }
 
 .forward {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
   span {
     display: flex;
     align-items: center;
@@ -2136,7 +2166,7 @@ function editSetting(settingForm, refreshStatus = true) {
 
   .el-button {
     width: 48px;
-    margin: 0 0 0 10px;
+    margin: 0;
   }
 }
 
@@ -2294,4 +2324,51 @@ form .el-button {
 <style>
 .el-popper.is-dark {
 }
+/* 左侧分区导航 + 右侧内容 */
+.scroll-body {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 24px var(--page-pad) 40px;
+}
+.settings-nav {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+}
+.nav-item {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px;
+  color: var(--text-2);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.nav-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-item:hover { color: var(--text); background: var(--surface-3); }
+.nav-item.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 600; }
+
+@media (max-width: 1023px) {
+  .scroll-body { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .settings-nav { position: static; grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; }
+  .setting-item { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
 </style>
+

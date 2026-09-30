@@ -1,52 +1,59 @@
 <template>
   <div class="account-box">
     <div class="head-opt">
-      <Icon v-perm="'account:add'" class="icon add" icon="ion:add-outline" width="23" height="23" @click="add"/>
-      <Icon class="icon refresh" icon="ion:reload" width="18" height="18" @click="refresh"/>
+      <span class="head-title">{{ settingStore.lang === 'zh' ? '我的邮箱' : 'My mailboxes' }}</span>
+      <span class="head-actions">
+        <button v-perm="'account:add'" class="head-btn" type="button" :title="settingStore.lang === 'zh' ? '添加邮箱' : 'Add mailbox'" @click="add">
+          <Icon icon="solar:add-circle-linear" width="17"/>
+        </button>
+        <button class="head-btn" type="button" :title="settingStore.lang === 'zh' ? '刷新' : 'Refresh'" @click="refresh">
+          <Icon icon="solar:refresh-linear" width="16"/>
+        </button>
+      </span>
     </div>
     <el-scrollbar class="scrollbar" ref="scrollbarRef">
       <div v-infinite-scroll="getAccountList" :infinite-scroll-distance="600" :infinite-scroll-immediate="false">
-        <el-card class="item" :class="itemBg(item.accountId)" v-for="(item, index) in accounts" :key="item.accountId"
-                 @click="changeAccount(item)">
-          <div class="account">
-            {{ item.email }}
-          </div>
-          <div class="opt">
-            <div class="send-email" @click.stop>
-              <Icon @click="setAllReceive(item)" v-if="!item.allReceive" icon="eva:email-fill" width="22" height="22" color="#fccb1a"/>
-              <Icon @click="setAllReceive(item)" v-else icon="flat-color-icons:folder" width="22" height="22" color="#23c4f1" />
-            </div>
-            <div class="settings" @click.stop>
-              <Icon icon="fluent-color:clipboard-24" width="22" height="22" @click.stop="copyAccount(item.email)"/>
-              <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"
-                    v-if="showNullSetting(item)"/>
-              <el-dropdown v-else>
-                <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"/>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item v-if="hasPerm('email:send')" @click="openSetName(item)">{{ $t('rename') }}</el-dropdown-item>
-                    <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId" @click="setAsTop(item, index)">{{ $t('pin') }}</el-dropdown-item>
-                    <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId && hasPerm('account:delete')"
-                                      @click="remove(item)">{{ $t('delete') }}
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </div>
-          </div>
-        </el-card>
+        <div class="item" :class="itemBg(item.accountId)" v-for="(item, index) in accounts" :key="item.accountId"
+             @click="changeAccount(item)">
+          <span class="item-avatar">{{ (item.email || 'M').charAt(0).toUpperCase() }}</span>
+          <span class="item-email">{{ item.email }}</span>
+          <span class="item-actions" @click.stop>
+            <button class="act" type="button" :class="{ on: item.allReceive }"
+                    :title="item.allReceive ? (settingStore.lang === 'zh' ? '已开启全部接收，点击关闭' : 'Receiving all mail — click to disable') : (settingStore.lang === 'zh' ? '开启全部接收' : 'Receive all mail')"
+                    @click="setAllReceive(item)">
+              <Icon :icon="item.allReceive ? 'solar:inbox-archive-linear' : 'solar:inbox-in-linear'" width="16"/>
+            </button>
+            <button class="act" type="button" :title="settingStore.lang === 'zh' ? '复制地址' : 'Copy address'" @click="copyAccount(item.email)">
+              <Icon icon="solar:copy-linear" width="15"/>
+            </button>
+            <button class="act" type="button" disabled v-if="showNullSetting(item)" :title="settingStore.lang === 'zh' ? '无可用操作' : 'No actions'">
+              <Icon icon="solar:settings-linear" width="15"/>
+            </button>
+            <el-dropdown v-else trigger="click">
+              <button class="act" type="button" :title="settingStore.lang === 'zh' ? '更多设置' : 'More'">
+                <Icon icon="solar:settings-linear" width="15"/>
+              </button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item v-if="hasPerm('email:send')" @click="openSetName(item)">{{ $t('rename') }}</el-dropdown-item>
+                  <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId" @click="setAsTop(item, index)">{{ $t('pin') }}</el-dropdown-item>
+                  <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId && hasPerm('account:delete')"
+                                    @click="remove(item)">{{ $t('delete') }}
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </span>
+        </div>
 
         <!-- Initial Loading Skeleton -->
         <template v-if="loading">
           <el-skeleton v-for="i in skeletonRows" :key="i" animated>
             <template #template>
-              <el-card class="item">
-                <el-skeleton-item variant="p" style="width: 70%; height: 20px; margin-bottom: 25px"/>
-                <div style="display: flex; justify-content: space-between">
-                  <el-skeleton-item variant="text" style="width: 20px"/>
-                  <el-skeleton-item variant="text" style="width: 20px"/>
-                </div>
-              </el-card>
+              <div class="item skeleton-row">
+                <el-skeleton-item variant="circle" style="width: 26px; height: 26px"/>
+                <el-skeleton-item variant="text" style="width: 60%; height: 14px"/>
+              </div>
             </template>
           </el-skeleton>
         </template>
@@ -55,20 +62,14 @@
         <template v-if="accounts.length > 0 && !noLoading">
           <el-skeleton animated>
             <template #template>
-              <el-card class="item">
-                <el-skeleton-item variant="p" style="width: 70%; height: 20px; margin-bottom: 20px"/>
-                <div style="display: flex; justify-content: space-between">
-                  <el-skeleton-item variant="text" style="width: 20px"/>
-                  <el-skeleton-item variant="text" style="width: 20px"/>
-                </div>
-              </el-card>
+              <div class="item skeleton-row">
+                <el-skeleton-item variant="circle" style="width: 26px; height: 26px"/>
+                <el-skeleton-item variant="text" style="width: 60%; height: 14px"/>
+              </div>
             </template>
           </el-skeleton>
         </template>
 
-        <div class="noLoading" v-if="noLoading && accounts.length > 0">
-          <div>{{ $t('noMoreData') }}</div>
-        </div>
         <div class="empty" v-if="noLoading && accounts.length === 0">
           <el-empty :description="$t('noMessagesFound')"/>
         </div>
@@ -140,6 +141,7 @@ import {sleep} from "@/utils/time-utils.js"
 import {isEmail} from "@/utils/verify-utils.js";
 import {useSettingStore} from "@/store/setting.js";
 import {useAccountStore} from "@/store/account.js";
+import {useUiStore} from "@/store/ui.js";
 import {useEmailStore} from "@/store/email.js";
 import {useUserStore} from "@/store/user.js";
 import {hasPerm} from "@/perm/perm.js"
@@ -149,6 +151,7 @@ import {AccountAllReceiveEnum} from "@/enums/account-enum.js";
 const {t} = useI18n();
 const userStore = useUserStore();
 const accountStore = useAccountStore();
+const uiStore = useUiStore();
 const settingStore = useSettingStore();
 const emailStore = useEmailStore();
 const showAdd = ref(false)
@@ -343,6 +346,8 @@ function refresh() {
 function changeAccount(account) {
   accountStore.currentAccountId = account.accountId
   accountStore.currentAccount = account
+  // 选中后收起下拉
+  uiStore.accountShow = false
 }
 
 function add() {
@@ -530,27 +535,27 @@ path[fill="#ffdda1"] {
   .head-opt {
     display: flex;
     align-items: center;
-    height: 36px;
+    height: 38px;
+    padding: 0 6px 0 12px;
     border-bottom: 1px solid var(--border);
     background: var(--surface-2);
-    padding: 0 8px;
-
-    .icon {
-      cursor: pointer;
-    }
-
-    .refresh {
-      margin-left: 10px;
-    }
-
-    .add {
-      margin-left: 2px;
-    }
-
-    .head-opt:not(.add) .refresh {
-      margin-left: 5px;
-    }
   }
+  .head-title { flex: 1; color: var(--text-2); font-size: 12px; font-weight: 600; }
+  .head-actions { display: flex; align-items: center; gap: 2px; }
+  .head-btn {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-3);
+    border: 0;
+    border-radius: var(--r-md);
+    background: transparent;
+    cursor: pointer;
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .head-btn:hover { color: var(--brand-600); background: var(--brand-soft); }
 
   .scrollbar {
     width: 100%;
@@ -580,45 +585,62 @@ path[fill="#ffdda1"] {
   }
 
   .item {
-    background-color: var(--surface);
-    border: 1px solid var(--border);
+    min-width: 0;
+    margin: 4px 6px 0;
+    padding: 6px 6px 6px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid transparent;
     border-radius: var(--r-md);
-    padding: 8px 10px;
-    margin: 6px 8px 0;
+    background: transparent;
     cursor: pointer;
     transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
-
-    .account {
-      font-weight: 400;
-      font-size: 12.5px;
-      margin-bottom: 4px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-
-    .opt {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-3);
-
-      .settings {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .send-email {
-        display: flex;
-        align-items: center;
-      }
-    }
-
-    :deep(.el-card__body) {
-      padding: 0;
-    }
   }
+  .item:hover { background: var(--surface-2); border-color: var(--border); }
+
+  .skeleton-row { pointer-events: none; }
+
+  .item-avatar {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: var(--brand-600);
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .item-email {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 12.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item-actions { flex: none; display: flex; align-items: center; gap: 1px; opacity: 0; transition: opacity var(--dur) var(--ease); }
+  .item:hover .item-actions,
+  .item-choose .item-actions { opacity: 1; }
+  .act {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-3);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    cursor: pointer;
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .act:hover:not(:disabled) { color: var(--brand-600); background: var(--brand-soft); }
+  .act.on { color: var(--brand-600); }
+  .act:disabled { cursor: default; opacity: .45; }
 
   .item:first-child {
     margin-top: 6px;
@@ -626,11 +648,13 @@ path[fill="#ffdda1"] {
 
   .item:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); }
 
-  .item-choose {
-    background: var(--choose-account-background);
+  .item-choose,
+  .item-choose:hover {
+    background: var(--brand-soft);
     border-color: color-mix(in srgb, var(--brand-500) 34%, var(--border));
     box-shadow: inset 2px 0 0 var(--brand-600);
   }
+  .item-choose .item-email { color: var(--brand-700); font-weight: 600; }
 }
 
 

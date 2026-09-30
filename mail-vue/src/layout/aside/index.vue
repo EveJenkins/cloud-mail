@@ -175,9 +175,9 @@ const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
 
 .mailbox-pop {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
-  right: 0;
+  width: 296px;
   z-index: 30;
 }
 
