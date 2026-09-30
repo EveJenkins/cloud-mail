@@ -144,7 +144,7 @@
 </template>
 <script setup>
 import {Icon} from "@iconify/vue";
-import {defineOptions, nextTick, reactive, ref} from "vue";
+import {defineOptions, nextTick, onBeforeUnmount, onMounted, reactive, ref} from "vue";
 import {roleAdd, roleDelete, rolePermTree, roleRoleList, roleSet, roleSetDef} from "@/request/role.js";
 import loading from '@/components/loading/index.vue';
 import {useRoleStore} from "@/store/role.js";
@@ -408,9 +408,12 @@ function adjustWidth() {
 
 adjustWidth()
 
-window.onresize = () => {
+function handleWindowResize() {
   adjustWidth()
-};
+}
+
+onMounted(() => window.addEventListener('resize', handleWindowResize))
+onBeforeUnmount(() => window.removeEventListener('resize', handleWindowResize))
 
 
 </script>

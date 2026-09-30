@@ -12,12 +12,14 @@
                :email-read="emailRead"
                :show-unread="true"
                :show-inbox-summary="true"
+               :search-query="typeof route.query.q === 'string' ? route.query.q : ''"
                :empty-title="settingStore.lang === 'zh' ? '收件箱是空的' : 'Your inbox is empty'"
                :empty-description="settingStore.lang === 'zh' ? '新邮件同步后会出现在这里' : 'New messages will appear here after syncing'"
                :selected-id="selectedEmailId"
                :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
                actionLeft="4px"
                @jump="jumpContent"
+               @filters-reset="clearRouteSearch"
   >
     <template #first>
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
@@ -85,6 +87,7 @@ const isDesktop = ref(window.innerWidth >= 1280)
 const isPhone = ref(window.innerWidth < 768)
 const selectedEmailId = ref(null)
 const switchingInbox = ref(false)
+let refreshLoopActive = true
 const syncedAt = ref(new Date())
 const syncedTimeLabel = computed(() => {
   const time = new Intl.DateTimeFormat(settingStore.lang === 'zh' ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit', hour12: false}).format(syncedAt.value)
@@ -106,7 +109,10 @@ onMounted(() => {
   latest()
 })
 
-onBeforeUnmount(() => window.removeEventListener('resize', handleViewport))
+onBeforeUnmount(() => {
+  refreshLoopActive = false
+  window.removeEventListener('resize', handleViewport)
+})
 
 watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
   if (isDesktop.value && !switchingInbox.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
@@ -165,6 +171,10 @@ function syncInbox() {
   syncedAt.value = new Date()
 }
 
+function clearRouteSearch() {
+  if (route.query.q) router.replace({name: 'email'})
+}
+
 function jumpContent(email) {
   if (isDesktop.value) {
     openContent(email)
@@ -186,10 +196,12 @@ function openContent(email) {
 const existIds = new Set();
 
 async function latest() {
-  while (true) {
+  while (refreshLoopActive) {
 
     let autoRefresh = settingStore.settings.autoRefresh;
     await sleep(autoRefresh > 1 ? autoRefresh * 1000 : 3000);
+
+    if (!refreshLoopActive) break
 
     if (route.name !== 'email') {
       continue;

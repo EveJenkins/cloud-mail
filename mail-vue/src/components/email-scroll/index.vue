@@ -55,7 +55,7 @@
                         :options="{ itemHeight: itemHeight, overscan: 15 }"
                         class="virtual"
                         style="height: 100%"
-                        v-if="!loading && emailList.length > 0"
+                        v-if="!loading && list.length > 0"
                         :key="keyCount"
         >
           <template #default="{ data: item, index }" >
@@ -174,8 +174,14 @@
                        :showStatus="showStatus"
                        :showUserInfo="showUserInfo"
                        :type="type"/>
-      <div class="empty" v-if="noLoading && emailList.length === 0 && !loading">
-        <div v-if="props.emptyTitle" class="compact-empty">
+      <div class="empty" v-if="noLoading && list.length === 0 && !loading">
+        <div v-if="isFiltering" class="compact-empty">
+          <span><Icon icon="solar:magnifer-linear" width="24" height="24" /></span>
+          <strong>{{ settingStore.lang === 'zh' ? '未找到匹配邮件' : 'No matching messages' }}</strong>
+          <p>{{ settingStore.lang === 'zh' ? '请调整关键词或筛选条件' : 'Try another keyword or filter' }}</p>
+          <button type="button" class="clear-filter" @click="resetFilters">{{ settingStore.lang === 'zh' ? '清除筛选' : 'Clear filters' }}</button>
+        </div>
+        <div v-else-if="props.emptyTitle" class="compact-empty">
           <span><Icon icon="solar:inbox-line-linear" width="24" height="24" /></span>
           <strong>{{ props.emptyTitle }}</strong>
           <p>{{ props.emptyDescription }}</p>
@@ -361,10 +367,14 @@ const props = defineProps({
   emptyDescription: {
     type: String,
     default: ''
+  },
+  searchQuery: {
+    type: String,
+    default: ''
   }
 })
 
-const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search', 'list-loaded'])
+const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search', 'list-loaded', 'filters-reset'])
 const {t} = useI18n()
 const settingStore = useSettingStore()
 const accountStore = useAccountStore()
@@ -483,15 +493,17 @@ onMounted(() => {
       email.formatCreateTime = fromNow(email.createTime);
     })
   }, 1000 * 60);
+  window.addEventListener('resize', handleWindowResize)
 })
 
 onUnmounted(() => {
   clearInterval(timer)
+  window.removeEventListener('resize', handleWindowResize)
 })
 
 getEmailList()
 
-window.onresize = () => {
+function handleWindowResize() {
   isMobile.value = innerWidth < 1367
 }
 
@@ -513,6 +525,22 @@ const attachmentCount = computed(() => emailList.filter(item => item.attList?.le
 const codeCount = computed(() => emailList.filter(item => item.code).length)
 const searchKeyword = ref('')
 const activeFilter = ref('all')
+const isFiltering = computed(() => Boolean(searchKeyword.value) || activeFilter.value !== 'all')
+
+watch(
+  () => props.searchQuery,
+  value => {
+    searchKeyword.value = value || ''
+    if (value) activeFilter.value = 'all'
+  },
+  {immediate: true}
+)
+
+function resetFilters() {
+  searchKeyword.value = ''
+  activeFilter.value = 'all'
+  emit('filters-reset')
+}
 const currentAccountLabel = computed(() => accountStore.currentAccount?.email || '')
 const lastSyncedLabel = computed(() => {
   if (!lastSyncedAt.value) return settingStore.lang === 'zh' ? '正在同步' : 'Syncing'
@@ -1094,6 +1122,18 @@ function loadData() {
 
     strong { margin-top: 12px; color: var(--text-2); font-size: 14px; font-weight: 600; }
     p { margin-top: 5px; font-size: 12px; line-height: 1.7; opacity: .72; }
+
+    .clear-filter {
+      margin-top: 12px;
+      padding: 7px 12px;
+      color: var(--brand-600);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface-1);
+      cursor: pointer;
+    }
+
+    .clear-filter:hover { background: var(--brand-soft); border-color: var(--brand-300); }
   }
 
   .noLoading {

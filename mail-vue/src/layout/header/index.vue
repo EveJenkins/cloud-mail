@@ -8,8 +8,10 @@
       <input
           ref="searchRef"
           v-model="searchQuery"
-          :placeholder="settingStore.lang === 'zh' ? '搜索邮件、同事、客户、主题…' : 'Search mail, colleagues, customers or subjects…'"
+          :placeholder="settingStore.lang === 'zh' ? '搜索发件人、主题或正文…' : 'Search senders, subjects or message text…'"
           aria-label="Global search"
+          @keydown.enter="submitGlobalSearch"
+          @keydown.esc="clearGlobalSearch"
       />
       <kbd>Ctrl K</kbd>
     </div>
@@ -88,7 +90,7 @@ import {Icon} from "@iconify/vue";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
 import {useRoute} from "vue-router";
-import {computed, onMounted, onUnmounted, ref} from "vue";
+import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 import {useSettingStore} from "@/store/setting.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
@@ -107,10 +109,29 @@ const searchQuery = ref('')
 const userDisplayName = computed(() => userStore.user.name || userStore.user.email?.split('@')[0] || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
 const roleName = computed(() => userStore.user.role?.name || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
 
+watch(
+  () => route.query.q,
+  value => {
+    searchQuery.value = typeof value === 'string' ? value : ''
+  },
+  {immediate: true}
+)
+
 function handleGlobalSearchShortcut(event) {
   if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
   event.preventDefault()
   searchRef.value?.focus()
+}
+
+function submitGlobalSearch() {
+  const query = searchQuery.value.trim()
+  router.push({name: 'email', query: query ? {q: query} : {}})
+}
+
+function clearGlobalSearch() {
+  searchQuery.value = ''
+  if (route.name === 'email' && route.query.q) router.replace({name: 'email'})
+  searchRef.value?.blur()
 }
 
 onMounted(() => window.addEventListener('keydown', handleGlobalSearchShortcut))
