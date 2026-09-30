@@ -1,9 +1,13 @@
 <template>
-  <div class="header" :class="!hasPerm('email:send') ? 'not-send' : ''">
+  <div class="header" :class="[{ 'not-send': !hasPerm('email:send'), 'mobile-search-open': mobileSearchOpen }]">
     <div class="header-btn">
       <hanburger @click="changeAside"></hanburger>
     </div>
-    <div class="global-search">
+    <div class="global-search" :class="{ open: mobileSearchOpen }">
+      <button class="mobile-context" type="button" @click="openMobileSearch">
+        <span>{{ routeTitle }}</span>
+        <small>{{ currentContext }}</small>
+      </button>
       <Icon class="search-icon" icon="solar:magnifer-linear" width="18" height="18"/>
       <input
           ref="searchRef"
@@ -14,17 +18,23 @@
           @keydown.esc="clearGlobalSearch"
       />
       <kbd>Ctrl K</kbd>
+      <button class="mobile-search-close" type="button" :aria-label="settingStore.lang === 'zh' ? '关闭搜索' : 'Close search'" @click="closeMobileSearch">
+        <Icon icon="solar:close-circle-linear" width="19" height="19" />
+      </button>
     </div>
     <div class="toolbar">
-      <div v-if="uiStore.dark" class="sun-icon icon-item" @click="openDark($event)">
+      <button class="mobile-search-trigger icon-item" type="button" :aria-label="settingStore.lang === 'zh' ? '搜索邮件' : 'Search mail'" @click="openMobileSearch">
+        <Icon icon="solar:magnifer-linear" />
+      </button>
+      <button v-if="uiStore.dark" class="sun-icon icon-item" type="button" :aria-label="settingStore.lang === 'zh' ? '切换浅色主题' : 'Use light theme'" @click="openDark($event)">
         <Icon icon="mingcute:sun-fill"/>
-      </div>
-      <div v-else class="dark-icon icon-item" @click="openDark($event)">
+      </button>
+      <button v-else class="dark-icon icon-item" type="button" :aria-label="settingStore.lang === 'zh' ? '切换深色主题' : 'Use dark theme'" @click="openDark($event)">
         <Icon icon="solar:moon-linear"/>
-      </div>
-      <div class="notice icon-item" @click="openNotice">
+      </button>
+      <button class="notice icon-item" type="button" :aria-label="settingStore.lang === 'zh' ? '系统通知' : 'Notifications'" @click="openNotice">
         <Icon icon="streamline-plump:announcement-megaphone"/>
-      </div>
+      </button>
       <el-dropdown ref="userinfoRef" @visible-change="e => userInfoShow = e" :teleported="false" popper-class="detail-dropdown">
         <div class="avatar" @click="userInfoHide" >
           <div class="avatar-text">
@@ -90,7 +100,7 @@ import {Icon} from "@iconify/vue";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
 import {useRoute} from "vue-router";
-import {computed, onMounted, onUnmounted, ref, watch} from "vue";
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
 import {useSettingStore} from "@/store/setting.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
@@ -106,8 +116,33 @@ const userInfoShow = ref(false)
 const userinfoRef = ref({})
 const searchRef = ref(null)
 const searchQuery = ref('')
+const mobileSearchOpen = ref(false)
 const userDisplayName = computed(() => userStore.user.name || userStore.user.email?.split('@')[0] || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
 const roleName = computed(() => userStore.user.role?.name || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
+const routeTitle = computed(() => {
+  const zh = settingStore.lang === 'zh'
+  const labels = {
+    email: zh ? '收件箱' : 'Inbox',
+    content: zh ? '邮件详情' : 'Message',
+    star: zh ? '星标邮件' : 'Starred',
+    send: zh ? '已发送' : 'Sent',
+    draft: zh ? '草稿箱' : 'Drafts',
+    contacts: zh ? '通讯录' : 'Contacts',
+    quickPhrases: zh ? '快捷短语' : 'Quick phrases',
+    signatures: zh ? '邮件签名' : 'Signatures',
+    setting: zh ? '个人设置' : 'Settings',
+    analysis: zh ? '数据分析' : 'Analytics',
+    user: zh ? '成员管理' : 'Members',
+    role: zh ? '权限管理' : 'Permissions',
+    'all-email': zh ? '全部邮件' : 'All mail',
+    'reg-key': zh ? '邀请码' : 'Invite codes',
+    'sys-setting': zh ? '系统设置' : 'System settings',
+  }
+  return labels[route.meta.name] || (zh ? '企业邮箱' : 'Business mail')
+})
+const currentContext = computed(() => route.meta.name === 'email'
+  ? (settingStore.lang === 'zh' ? '搜索与处理邮件' : 'Search and manage mail')
+  : (settingStore.lang === 'zh' ? '轻触搜索全部邮件' : 'Tap to search all mail'))
 
 watch(
   () => route.query.q,
@@ -117,25 +152,49 @@ watch(
   {immediate: true}
 )
 
-function handleGlobalSearchShortcut(event) {
-  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
-  event.preventDefault()
-  searchRef.value?.focus()
+watch(() => route.name, () => { mobileSearchOpen.value = false })
+
+function handleGlobalShortcut(event) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    mobileSearchOpen.value = true
+    nextTick(() => searchRef.value?.focus())
+    return
+  }
+
+  const target = event.target
+  const isEditing = target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+  if (!isEditing && !event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'c' && hasPerm('email:send')) {
+    event.preventDefault()
+    openSend()
+  }
 }
 
 function submitGlobalSearch() {
   const query = searchQuery.value.trim()
   router.push({name: 'email', query: query ? {q: query} : {}})
+  mobileSearchOpen.value = false
 }
 
 function clearGlobalSearch() {
   searchQuery.value = ''
   if (route.name === 'email' && route.query.q) router.replace({name: 'email'})
   searchRef.value?.blur()
+  mobileSearchOpen.value = false
 }
 
-onMounted(() => window.addEventListener('keydown', handleGlobalSearchShortcut))
-onUnmounted(() => window.removeEventListener('keydown', handleGlobalSearchShortcut))
+function openMobileSearch() {
+  mobileSearchOpen.value = true
+  nextTick(() => searchRef.value?.focus())
+}
+
+function closeMobileSearch() {
+  mobileSearchOpen.value = false
+  searchRef.value?.blur()
+}
+
+onMounted(() => window.addEventListener('keydown', handleGlobalShortcut))
+onUnmounted(() => window.removeEventListener('keydown', handleGlobalShortcut))
 
 const accountCount = computed(() => {
   return userStore.user.role.accountCount
@@ -444,6 +503,8 @@ function formatName(email) {
   }
 }
 
+.mobile-context, .mobile-search-trigger, .mobile-search-close { display: none; }
+
 .writer-box {
   cursor: pointer;
   display: flex;
@@ -481,10 +542,33 @@ function formatName(email) {
 @media (max-width: 767px) {
   .header { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 6px; padding: 0 8px; }
   .header.not-send { grid-template-columns: 38px minmax(0, 1fr) auto; }
+  .header.mobile-search-open, .header.not-send.mobile-search-open { grid-template-columns: 38px minmax(0, 1fr); }
   .header-btn { display: inline-flex; }
   .global-search { height: 38px; }
-  .global-search input { padding-right: 10px; font-size: 12.5px; }
+  .global-search:not(.open) .search-icon,
+  .global-search:not(.open) input,
   .global-search kbd { display: none; }
+  .mobile-context {
+    width: 100%;
+    min-width: 0;
+    height: 38px;
+    padding: 0 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+  .mobile-context span { max-width: 100%; overflow: hidden; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-context small { max-width: 100%; margin-top: 1px; overflow: hidden; color: var(--text-3); font-size: 9.5px; text-overflow: ellipsis; white-space: nowrap; }
+  .global-search.open .mobile-context { display: none; }
+  .global-search.open .search-icon { display: block; }
+  .global-search.open input { display: block; padding-right: 34px; font-size: 12.5px; }
+  .mobile-search-close { position: absolute; right: 7px; width: 28px; height: 28px; display: none; place-items: center; color: var(--text-3); border-radius: 7px; cursor: pointer; }
+  .global-search.open .mobile-search-close { display: grid; }
+  .header.mobile-search-open .toolbar { display: none; }
 }
 
 .breadcrumb-item {
@@ -522,6 +606,8 @@ function formatName(email) {
     justify-content: center;
     cursor: pointer;
   }
+
+  .mobile-search-trigger { display: none; }
 
   .icon-item:hover {
     background: var(--surface-3);
@@ -582,7 +668,10 @@ function formatName(email) {
 
   @media (max-width: 767px) {
     .notice { margin-right: 0; }
+    .mobile-search-trigger { display: flex; }
+    .notice { display: none; }
     .avatar .setting-icon, .avatar .avatar-identity { display: none; }
+    .icon-item { width: 34px; height: 34px; }
   }
 
 }

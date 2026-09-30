@@ -1,15 +1,15 @@
 <template>
   <nav class="mobile-tabs" aria-label="Mobile navigation">
-    <button :class="{ active: route.meta.name === 'email' }" @click="go('email')">
-      <Icon icon="hugeicons:mailbox-01" /><span>{{ $t('inbox') }}</span>
+    <button :class="{ active: mailSectionActive }" :aria-current="mailSectionActive ? 'page' : undefined" @click="go('email')">
+      <Icon icon="hugeicons:mailbox-01" /><span>{{ settingStore.lang === 'zh' ? '邮箱' : 'Mail' }}</span>
     </button>
-    <button v-perm="'email:send'" @click="compose">
-      <Icon icon="material-symbols:edit-outline" /><span>{{ settingStore.lang === 'zh' ? '写信' : 'Compose' }}</span>
+    <button class="compose-tab" v-perm="'email:send'" @click="compose">
+      <span class="compose-icon"><Icon icon="material-symbols:edit-outline" /></span><span>{{ settingStore.lang === 'zh' ? '写信' : 'Compose' }}</span>
     </button>
-    <button :class="{ active: route.meta.name === 'contacts' }" @click="go('contacts')">
+    <button :class="{ active: route.meta.name === 'contacts' }" :aria-current="route.meta.name === 'contacts' ? 'page' : undefined" @click="go('contacts')">
       <Icon icon="fluent:people-team-20-regular" /><span>{{ settingStore.lang === 'zh' ? '通讯录' : 'Directory' }}</span>
     </button>
-    <button :class="{ active: route.meta.name === 'setting' }" @click="go('setting')">
+    <button :class="{ active: route.meta.name === 'setting' }" :aria-current="route.meta.name === 'setting' ? 'page' : undefined" @click="go('setting')">
       <Icon icon="fluent:settings-48-regular" /><span>{{ $t('settings') }}</span>
     </button>
   </nav>
@@ -21,10 +21,12 @@ import { useRoute } from 'vue-router'
 import router from '@/router/index.js'
 import { useUiStore } from '@/store/ui.js'
 import { useSettingStore } from '@/store/setting.js'
+import { computed } from 'vue'
 
 const route = useRoute()
 const uiStore = useUiStore()
 const settingStore = useSettingStore()
+const mailSectionActive = computed(() => ['email', 'content', 'star', 'send', 'draft'].includes(route.meta.name))
 const go = name => router.push({ name })
 const compose = () => uiStore.writerRef?.open?.()
 </script>
@@ -60,5 +62,8 @@ const compose = () => uiStore.writerRef?.open?.()
   }
   button svg { width: 20px; height: 20px; }
   button.active { color: var(--brand-600); font-weight: 650; }
+  .compose-tab { color: var(--brand-700); font-weight: 650; }
+  .compose-icon { width: 38px; height: 28px; display: grid; place-items: center; color: #fff; border-radius: 11px; background: var(--brand-600); box-shadow: 0 5px 14px color-mix(in srgb, var(--brand-600) 24%, transparent); transform: translateY(-2px); }
+  .compose-tab svg { width: 18px; height: 18px; }
 }
 </style>

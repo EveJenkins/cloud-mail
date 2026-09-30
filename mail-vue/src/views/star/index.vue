@@ -16,17 +16,28 @@
                :summary-title="settingStore.lang === 'zh' ? '星标邮件' : 'Starred'"
                :empty-title="settingStore.lang === 'zh' ? '还没有星标邮件' : 'No starred messages yet'"
                :empty-description="settingStore.lang === 'zh' ? '加星的邮件会集中显示在这里' : 'Starred messages will appear here'"
+               empty-icon="solar:star-fall-minimalistic-2-linear"
                :selected-id="selectedEmailId"
                :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
-      />
+      >
+        <template #empty-actions>
+          <button class="primary" type="button" @click="router.push({name: 'email'})"><Icon icon="hugeicons:mailbox-01" width="15" />{{ settingStore.lang === 'zh' ? '返回收件箱' : 'Go to inbox' }}</button>
+        </template>
+      </emailScroll>
     </section>
     <section class="mail-preview-pane" v-if="isDesktop">
       <Content v-if="selectedEmailId" :key="`star:${selectedEmailId}`" embedded @close="selectedEmailId = null" />
-      <div v-else class="preview-empty">
-        <span class="preview-icon"><Icon icon="solar:star-fall-minimalistic-2-linear" width="34" height="34" /></span>
-        <strong>{{ settingStore.lang === 'zh' ? '选择一封星标邮件' : 'Select a starred message' }}</strong>
-        <p>{{ settingStore.lang === 'zh' ? '邮件内容和附件将在这里显示' : 'Message content and attachments appear here' }}</p>
-      </div>
+      <MailPreviewEmpty
+          v-else
+          icon="solar:star-fall-minimalistic-2-linear"
+          :title="settingStore.lang === 'zh' ? '选择一封星标邮件' : 'Select a starred message'"
+          :description="settingStore.lang === 'zh' ? '重要邮件的正文、附件和会话会显示在这里' : 'Important message content, attachments and conversations appear here'"
+      >
+        <template #actions>
+          <button class="primary" type="button" @click="router.push({name: 'email'})"><Icon icon="hugeicons:mailbox-01" width="16" />{{ settingStore.lang === 'zh' ? '返回收件箱' : 'Go to inbox' }}</button>
+          <button type="button" @click="scroll.refreshList?.()"><Icon icon="solar:refresh-linear" width="16" />{{ settingStore.lang === 'zh' ? '刷新列表' : 'Refresh' }}</button>
+        </template>
+      </MailPreviewEmpty>
     </section>
   </div>
 </template>
@@ -41,6 +52,7 @@ import {defineOptions, nextTick, onActivated, onBeforeMount, onBeforeUnmount, on
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import Content from '@/views/content/index.vue'
+import MailPreviewEmpty from '@/components/mail-preview-empty/index.vue'
 
 defineOptions({
   name: 'star'
@@ -133,10 +145,6 @@ watch(
 .star-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
 .mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
 .mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
-.preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
-.preview-empty strong { margin-top: 14px; color: var(--text-2); font-size: 15px; }
-.preview-empty p { margin-top: 5px; font-size: 12.5px; }
-.preview-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; color: var(--brand-600); background: var(--brand-soft); }
 @media (max-width: 767px) {
   .mail-list-pane :deep(.email-row) { padding-right: 12px; padding-left: 8px; }
 }

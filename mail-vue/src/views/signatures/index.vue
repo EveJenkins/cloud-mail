@@ -12,8 +12,8 @@
       <section class="auto-note"><Icon icon="solar:global-linear" width="19" /><div><strong>{{ zh ? '自动语言规则' : 'Automatic language matching' }}</strong><p>{{ zh ? '系统按通讯录中的国家/地区选择同一签名内的语言版本；没有匹配语言时优先使用英语版本。' : 'The recipient country selects a language version within the same signature. English is used when no matching version exists.' }}</p></div></section>
 
       <section v-if="signatures.length" class="signature-grid">
-        <article v-for="signature in signatures" :key="signature.id" class="signature-card">
-          <header><div class="language-list"><span v-for="code in Object.keys(signature.translations)" :key="code" class="language-badge">{{ languageName(code) }}</span><span v-if="signature.translations.en" class="fallback-badge">{{ zh ? '含英语回退' : 'English fallback' }}</span></div><div class="card-actions"><button type="button" @click="openEdit(signature)"><Icon icon="solar:pen-new-square-linear" width="16" /></button><button class="danger" type="button" @click="removeSignature(signature)"><Icon icon="solar:trash-bin-trash-linear" width="16" /></button></div></header>
+        <article v-for="(signature, index) in signatures" :key="signature.id" class="signature-card">
+          <header><div class="language-list"><button v-for="code in Object.keys(signature.translations)" :key="code" type="button" class="language-badge" :class="{active: previewLanguage(signature) === code}" @click="setPreviewLanguage(signature, code)">{{ languageName(code) }}</button><span v-if="index === 0" class="default-badge">{{ zh ? '默认' : 'Default' }}</span><span v-if="signature.translations.en" class="fallback-badge">{{ zh ? '含英语回退' : 'English fallback' }}</span></div><div class="card-actions"><button v-if="index > 0" type="button" :title="zh ? '设为默认签名' : 'Make default'" @click="makeDefault(signature)"><Icon icon="solar:star-line-duotone" width="16" /></button><button type="button" :title="zh ? '编辑签名' : 'Edit signature'" @click="openEdit(signature)"><Icon icon="solar:pen-new-square-linear" width="16" /></button><button class="danger" type="button" :title="zh ? '删除签名' : 'Delete signature'" @click="removeSignature(signature)"><Icon icon="solar:trash-bin-trash-linear" width="16" /></button></div></header>
           <h2>{{ signature.name }}</h2>
           <div class="signature-preview" v-html="signatureContentHtml(previewContent(signature))"></div>
         </article>
@@ -52,6 +52,7 @@ const zh = computed(() => settingStore.lang === 'zh')
 const dialogOpen = ref(false)
 const editingId = ref('')
 const form = reactive({name: '', translations: []})
+const previewLanguages = reactive({})
 const languages = [
   {value:'en',label:'English'}, {value:'zh',label:'简体中文'}, {value:'zh-TW',label:'繁體中文'},
   {value:'de',label:'Deutsch'}, {value:'fr',label:'Français'}, {value:'es',label:'Español'},
@@ -72,7 +73,22 @@ function openCreate() {resetForm(); dialogOpen.value = true}
 function openEdit(signature) {editingId.value = signature.id; form.name = signature.name; form.translations = Object.entries(signature.translations).map(([language, content]) => newTranslation(language, content)); dialogOpen.value = true}
 function addTranslation() {const language = languages.find(item => !form.translations.some(row => row.language === item.value))?.value; if (language) form.translations.push(newTranslation(language))}
 function availableLanguages(index) {const used = new Set(form.translations.filter((_, rowIndex) => rowIndex !== index).map(row => row.language)); return languages.filter(item => !used.has(item.value))}
-function previewContent(signature) {return signature.translations.en || Object.values(signature.translations)[0] || ''}
+function previewLanguage(signature) {
+  const selected = previewLanguages[signature.id]
+  if (selected && signature.translations[selected]) return selected
+  return signature.translations.en ? 'en' : Object.keys(signature.translations)[0]
+}
+function setPreviewLanguage(signature, language) { previewLanguages[signature.id] = language }
+function previewContent(signature) {return signature.translations[previewLanguage(signature)] || ''}
+function makeDefault(signature) {
+  const rows = Array.isArray(writerStore.signatures) ? [...writerStore.signatures] : []
+  const index = rows.findIndex(item => item.id === signature.id)
+  if (index <= 0) return
+  const [item] = rows.splice(index, 1)
+  rows.unshift(item)
+  writerStore.signatures = rows
+  ElMessage({message: zh.value ? '已设为默认签名' : 'Default signature updated', type:'success', plain:true})
+}
 function saveSignature() {
   const name = form.name.trim()
   const rows = form.translations.map(row => ({language: row.language, content: row.content.trim()})).filter(row => row.content)
@@ -86,6 +102,7 @@ function saveSignature() {
 function removeSignature(signature) {
   ElMessageBox.confirm(zh.value ? `删除“${signature.name}”？` : `Delete “${signature.name}”?`, zh.value ? '删除签名' : 'Delete signature', {type:'warning'}).then(() => {
     writerStore.signatures = signatures.value.filter(item => item.id !== signature.id)
+    ElMessage({message: zh.value ? '签名已删除' : 'Signature deleted', type:'success', plain:true})
   }).catch(() => {})
 }
 </script>
@@ -105,7 +122,7 @@ function removeSignature(signature) {
 .signature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .signature-card { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
 .signature-card header { gap: 6px; }.signature-card h2 { margin: 13px 0 9px; color: var(--text); font-size: 14px; }.language-list { min-width: 0; display: flex; flex-wrap: wrap; gap: 5px; }
-.language-badge, .fallback-badge { padding: 4px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700; }.language-badge { color: var(--brand-700); background: var(--brand-soft); }.fallback-badge { color: var(--text-3); background: var(--surface-3); }
+.language-badge, .fallback-badge, .default-badge { padding: 4px 7px; border: 0; border-radius: 6px; font-size: 10.5px; font-weight: 700; }.language-badge { color: var(--text-3); background: var(--surface-3); cursor: pointer; }.language-badge.active { color: var(--brand-700); background: var(--brand-soft); box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-500) 28%, transparent) inset; }.default-badge { color: #fff; background: var(--brand-600); }.fallback-badge { color: var(--text-3); background: var(--surface-3); }
 .card-actions { margin-left: auto; gap: 5px; }.card-actions button { width: 30px; height: 30px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; }.card-actions button:hover { color: var(--brand-600); background: var(--brand-soft); }.card-actions .danger:hover { color: var(--danger); }
 .signature-preview { min-height: 118px; padding: 14px; overflow: auto; color: var(--text-2); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); font-size: 12px; line-height: 1.7; word-break: break-word; }.signature-preview :deep(img) { max-width: 100%; height: auto; }.signature-preview :deep(table) { max-width: 100%; }
 .empty-state { min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); border: 1px dashed var(--border); border-radius: var(--r-lg); background: var(--surface); }.empty-state > span { width: 56px; height: 56px; display: grid; place-items: center; color: var(--brand-600); border-radius: 16px; background: var(--brand-soft); }.empty-state strong { margin-top: 14px; color: var(--text); }.empty-state p { margin: 5px 0 0; font-size: 12px; }.empty-state button { margin-top: 14px; padding: 8px 12px; color: #fff; border: 0; border-radius: 8px; background: var(--brand-600); cursor: pointer; }

@@ -18,6 +18,7 @@
                :summary-title="settingStore.lang === 'zh' ? '已发送' : 'Sent'"
                :empty-title="settingStore.lang === 'zh' ? '还没有已发送邮件' : 'No sent messages yet'"
                :empty-description="settingStore.lang === 'zh' ? '发送成功的邮件会出现在这里' : 'Successfully sent messages will appear here'"
+               empty-icon="solar:plain-2-linear"
                :selected-id="selectedEmailId"
                :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
   >
@@ -27,15 +28,24 @@
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else
             width="28" height="28"/>
     </template>
+    <template #empty-actions>
+      <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '写新邮件' : 'Compose' }}</button>
+    </template>
       </emailScroll>
     </section>
     <section class="mail-preview-pane" v-if="isDesktop">
       <Content v-if="selectedEmailId" :key="`sent:${accountStore.currentAccountId}:${selectedEmailId}`" embedded @close="selectedEmailId = null" />
-      <div v-else class="preview-empty">
-        <span class="preview-icon"><Icon icon="solar:letter-opened-linear" width="34" height="34" /></span>
-        <strong>{{ settingStore.lang === 'zh' ? '选择一封已发送邮件' : 'Select a sent message' }}</strong>
-        <p>{{ settingStore.lang === 'zh' ? '邮件内容和附件将在这里显示' : 'Message content and attachments appear here' }}</p>
-      </div>
+      <MailPreviewEmpty
+          v-else
+          icon="solar:plain-2-linear"
+          :title="settingStore.lang === 'zh' ? '选择一封已发送邮件' : 'Select a sent message'"
+          :description="settingStore.lang === 'zh' ? '查看投递内容、附件与发送状态' : 'Review delivery content, attachments and sending status'"
+      >
+        <template #actions>
+          <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="16" />{{ settingStore.lang === 'zh' ? '写新邮件' : 'Compose' }}</button>
+          <button type="button" @click="sendScroll.refreshList?.()"><Icon icon="solar:refresh-linear" width="16" />{{ settingStore.lang === 'zh' ? '刷新列表' : 'Refresh' }}</button>
+        </template>
+      </MailPreviewEmpty>
     </section>
   </div>
 </template>
@@ -51,6 +61,8 @@ import {defineOptions, nextTick, onActivated, onBeforeMount, onBeforeUnmount, on
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import Content from '@/views/content/index.vue'
+import MailPreviewEmpty from '@/components/mail-preview-empty/index.vue'
+import {useUiStore} from '@/store/ui.js'
 
 defineOptions({
   name: 'send'
@@ -59,6 +71,7 @@ defineOptions({
 const emailStore = useEmailStore();
 const accountStore = useAccountStore();
 const settingStore = useSettingStore();
+const uiStore = useUiStore();
 const sendScroll = ref({})
 const params = reactive({
   timeSort: 0,
@@ -172,11 +185,6 @@ function getEmailList(emailId, size) {
 .sent-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
 .mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
 .mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
-.preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
-.preview-empty strong { margin-top: 14px; color: var(--text-2); font-size: 15px; }
-.preview-empty p { margin-top: 5px; font-size: 12.5px; }
-.preview-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; color: var(--brand-600); background: var(--brand-soft); }
-
 @media (max-width: 767px) {
   .mail-list-pane :deep(.email-row) { padding-right: 12px; padding-left: 8px; }
 }

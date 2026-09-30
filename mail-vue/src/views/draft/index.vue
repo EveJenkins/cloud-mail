@@ -18,6 +18,7 @@
                :summary-title="settingStore.lang === 'zh' ? '草稿箱' : 'Drafts'"
                :empty-title="settingStore.lang === 'zh' ? '还没有草稿' : 'No drafts yet'"
                :empty-description="settingStore.lang === 'zh' ? '未完成的邮件会保存在这里' : 'Unfinished messages will be saved here'"
+               empty-icon="solar:document-add-linear"
                :selected-id="selectedDraft?.draftId"
                :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
   >
@@ -36,6 +37,9 @@
       >
         <Icon icon="solar:trash-bin-trash-linear" width="16" />
       </button>
+    </template>
+    <template #empty-actions>
+      <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '新建邮件' : 'New message' }}</button>
     </template>
       </emailScroll>
     </section>
@@ -72,11 +76,16 @@
           </div>
         </div>
       </div>
-      <div v-else class="preview-empty">
-        <span class="preview-icon"><Icon icon="solar:document-add-linear" width="34" height="34" /></span>
-        <strong>{{ settingStore.lang === 'zh' ? '选择一封草稿' : 'Select a draft' }}</strong>
-        <p>{{ settingStore.lang === 'zh' ? '可在这里预览并继续编辑' : 'Preview and continue editing here' }}</p>
-      </div>
+      <MailPreviewEmpty
+          v-else
+          icon="solar:document-add-linear"
+          :title="settingStore.lang === 'zh' ? '选择一封草稿' : 'Select a draft'"
+          :description="settingStore.lang === 'zh' ? '预览未完成内容，或继续编辑后发送' : 'Preview unfinished content or continue editing before sending'"
+      >
+        <template #actions>
+          <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="16" />{{ settingStore.lang === 'zh' ? '新建邮件' : 'New message' }}</button>
+        </template>
+      </MailPreviewEmpty>
     </section>
   </div>
 </template>
@@ -93,6 +102,7 @@ import {useSettingStore} from "@/store/setting.js";
 import {Icon} from "@iconify/vue";
 import ShadowHtml from '@/components/shadow-html/index.vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
+import MailPreviewEmpty from '@/components/mail-preview-empty/index.vue'
 
 defineOptions({
   name: 'draft'
@@ -226,10 +236,6 @@ function editSelectedDraft() {
 .draft-body { min-height: 220px; padding: 20px; color: var(--text); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 var(--r-lg) var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
 .draft-body pre { margin: 0; color: var(--text-3); font: inherit; white-space: pre-wrap; }
 .draft-attachments { margin-top: 16px; padding: 13px 16px; display: flex; align-items: center; gap: 8px; color: var(--text-2); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 12.5px; }
-.preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
-.preview-empty strong { margin-top: 14px; color: var(--text-2); font-size: 15px; }
-.preview-empty p { margin-top: 5px; font-size: 12.5px; }
-.preview-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; color: var(--brand-600); background: var(--brand-soft); }
 .send-email {
   font-weight: normal;
 }

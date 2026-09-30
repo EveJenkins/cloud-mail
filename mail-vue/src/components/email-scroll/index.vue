@@ -195,9 +195,10 @@
           <button type="button" class="clear-filter" @click="resetFilters">{{ settingStore.lang === 'zh' ? '清除筛选' : 'Clear filters' }}</button>
         </div>
         <div v-else-if="props.emptyTitle" class="compact-empty">
-          <span><Icon icon="solar:inbox-line-linear" width="24" height="24" /></span>
+          <span><Icon :icon="props.emptyIcon" width="24" height="24" /></span>
           <strong>{{ props.emptyTitle }}</strong>
           <p>{{ props.emptyDescription }}</p>
+          <div v-if="$slots['empty-actions']" class="compact-empty-actions"><slot name="empty-actions" /></div>
         </div>
         <el-empty v-else :image-size="isMobile ? 96 : 120" :description="$t('noMessagesFound')"/>
       </div>
@@ -380,6 +381,10 @@ const props = defineProps({
   emptyDescription: {
     type: String,
     default: ''
+  },
+  emptyIcon: {
+    type: String,
+    default: 'solar:inbox-line-linear'
   },
   searchQuery: {
     type: String,
@@ -1147,11 +1152,28 @@ function loadData() {
       color: var(--brand-600);
       border: 1px solid var(--border);
       border-radius: 9px;
-      background: var(--surface-1);
+      background: var(--surface);
       cursor: pointer;
     }
 
-    .clear-filter:hover { background: var(--brand-soft); border-color: var(--brand-300); }
+    .clear-filter:hover { background: var(--brand-soft); border-color: var(--brand-500); }
+
+    .compact-empty-actions { margin-top: 14px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+    .compact-empty-actions :deep(button) {
+      min-height: 34px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .compact-empty-actions :deep(button.primary) { color: #fff; border-color: var(--brand-600); background: var(--brand-600); }
   }
 
   .noLoading {

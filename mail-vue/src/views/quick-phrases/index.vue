@@ -10,7 +10,7 @@
           </div>
         </div>
         <div class="head-actions">
-          <label class="search-box"><Icon icon="solar:magnifer-linear" width="16" /><input v-model.trim="keyword" :placeholder="zh ? '搜索短语或内容' : 'Search phrases'" /></label>
+          <label class="search-box"><Icon icon="solar:magnifer-linear" width="16" /><input v-model.trim="keyword" :placeholder="zh ? '搜索短语或内容' : 'Search phrases'" /><button v-if="keyword" type="button" :aria-label="zh ? '清除搜索' : 'Clear search'" @click.prevent="keyword = ''"><Icon icon="solar:close-circle-linear" width="16" /></button></label>
           <button class="secondary-button" type="button" @click="resetDefaults"><Icon icon="solar:restart-linear" width="16" />{{ zh ? '恢复默认' : 'Restore defaults' }}</button>
           <button class="primary-button" type="button" @click="openCreate"><Icon icon="solar:add-circle-linear" width="17" />{{ zh ? '新建短语' : 'New phrase' }}</button>
         </div>
@@ -36,7 +36,7 @@
             </div>
           </article>
         </div>
-        <div v-else class="empty-state"><Icon icon="solar:notes-minimalistic-linear" width="42" /><strong>{{ zh ? '没有匹配的快捷短语' : 'No matching phrases' }}</strong><span>{{ zh ? '新建一条常用回复，写邮件时即可快速插入。' : 'Create a reusable response for the composer.' }}</span><button type="button" @click="openCreate">{{ zh ? '新建短语' : 'New phrase' }}</button></div>
+        <div v-else class="empty-state"><span class="empty-icon"><Icon :icon="keyword ? 'solar:magnifer-linear' : 'solar:notes-minimalistic-linear'" width="30" /></span><strong>{{ keyword ? (zh ? '没有匹配的快捷短语' : 'No matching phrases') : (zh ? '还没有快捷短语' : 'No quick phrases yet') }}</strong><span>{{ keyword ? (zh ? '换个关键词，或清除搜索条件' : 'Try another keyword or clear the search') : (zh ? '新建一条常用回复，写邮件时即可快速插入。' : 'Create a reusable response for the composer.') }}</span><button type="button" @click="keyword ? keyword = '' : openCreate()">{{ keyword ? (zh ? '清除搜索' : 'Clear search') : (zh ? '新建短语' : 'New phrase') }}</button></div>
       </section>
     </div>
 
@@ -107,16 +107,23 @@ function savePhrase() {
 function removePhrase(phrase) {
   ElMessageBox.confirm(zh.value ? `删除“${phrase.label}”？` : `Delete “${phrase.label}”?`, zh.value ? '删除快捷短语' : 'Delete phrase', {type: 'warning'}).then(() => {
     materialize(); writerStore.quickPhrases = writerStore.quickPhrases.filter(item => item.id !== phrase.id)
+    ElMessage({message: zh.value ? '快捷短语已删除' : 'Quick phrase deleted', type: 'success', plain: true})
   }).catch(() => {})
 }
 function resetDefaults() {
   ElMessageBox.confirm(zh.value ? '这会替换当前全部短语，是否继续？' : 'This replaces all current phrases. Continue?', zh.value ? '恢复默认短语' : 'Restore defaults', {type: 'warning'}).then(() => {
     writerStore.quickPhrases = defaults.value.map(item => ({...item}))
+    keyword.value = ''
+    ElMessage({message: zh.value ? '已恢复默认短语' : 'Default phrases restored', type: 'success', plain: true})
   }).catch(() => {})
 }
 async function copyPhrase(phrase) {
-  await navigator.clipboard.writeText(phrase.text)
-  ElMessage({message: zh.value ? '已复制到剪贴板' : 'Copied to clipboard', type: 'success', plain: true})
+  try {
+    await navigator.clipboard.writeText(phrase.text)
+    ElMessage({message: zh.value ? '已复制到剪贴板' : 'Copied to clipboard', type: 'success', plain: true})
+  } catch {
+    ElMessage({message: zh.value ? '复制失败，请手动复制' : 'Copy failed. Please copy manually.', type: 'warning', plain: true})
+  }
 }
 </script>
 
@@ -132,6 +139,8 @@ async function copyPhrase(phrase) {
 .head-actions { margin-left: auto; gap: 8px; }
 .search-box { width: 220px; height: 38px; padding: 0 11px; display: flex; align-items: center; gap: 7px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); }
 .search-box input { min-width: 0; flex: 1; color: var(--text); font-size: 12px; }
+.search-box > button { width: 24px; height: 24px; flex: 0 0 24px; display: grid; place-items: center; color: var(--text-3); border-radius: 6px; cursor: pointer; }
+.search-box > button:hover { color: var(--brand-600); background: var(--brand-soft); }
 .primary-button, .secondary-button { height: 38px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-sm); font-size: 12px; font-weight: 700; cursor: pointer; }
 .primary-button { color: #fff; background: var(--brand-600); }
 .secondary-button { color: var(--text-2); border: 1px solid var(--border); background: var(--surface); }
@@ -158,9 +167,10 @@ async function copyPhrase(phrase) {
 .row-actions button:hover { color: var(--brand-600); background: var(--brand-soft); }
 .row-actions .danger { width: 32px; padding: 0; justify-content: center; }
 .row-actions .danger:hover { color: var(--danger); }
-.empty-state { min-height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); }
+.empty-state { min-height: 320px; padding: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
+.empty-state .empty-icon { width: 56px; height: 56px; display: grid; place-items: center; color: var(--brand-600); border-radius: 17px; background: var(--brand-soft); }
 .empty-state strong { margin-top: 12px; color: var(--text-2); }
-.empty-state span { margin-top: 4px; font-size: 12px; }
+.empty-state > span:not(.empty-icon) { margin-top: 4px; font-size: 12px; }
 .empty-state button { margin-top: 14px; padding: 8px 12px; color: #fff; border: 0; border-radius: 8px; background: var(--brand-600); cursor: pointer; }
 .phrase-form { display: grid; gap: 16px; }
 .phrase-form label > span { display: block; margin-bottom: 6px; color: var(--text-2); font-size: 12px; font-weight: 700; }

@@ -10,6 +10,7 @@
           <label class="contact-search">
             <Icon icon="solar:magnifer-linear" width="16" />
             <input v-model.trim="keyword" :placeholder="zh ? '搜索姓名 / 邮箱 / 公司' : 'Search name, email or company'" />
+            <button v-if="keyword" type="button" :aria-label="zh ? '清除搜索' : 'Clear search'" @click.prevent="keyword = ''"><Icon icon="solar:close-circle-linear" width="16" /></button>
           </label>
           <button v-if="activeTab === 'external'" class="primary-button" type="button" @click="openCreate">
             <Icon icon="solar:user-plus-linear" width="17" />{{ zh ? '新建联系人' : 'New contact' }}
@@ -49,9 +50,13 @@
           </article>
         </div>
         <div v-else class="empty-state">
-          <Icon icon="solar:users-group-rounded-linear" width="38" />
-          <strong>{{ zh ? '没有匹配的联系人' : 'No matching contacts' }}</strong>
-          <span>{{ zh ? '换个关键词试试' : 'Try another search' }}</span>
+          <span class="empty-icon"><Icon :icon="keyword ? 'solar:magnifer-linear' : 'solar:users-group-rounded-linear'" width="30" /></span>
+          <strong>{{ keyword ? (zh ? '没有匹配的联系人' : 'No matching contacts') : (zh ? '还没有外部联系人' : 'No external contacts yet') }}</strong>
+          <span>{{ keyword ? (zh ? '换个关键词，或清除搜索条件' : 'Try another keyword or clear the search') : (zh ? '保存客户和供应商后，可快速写信与自动选择翻译语言' : 'Save customers and suppliers for faster composing and language selection') }}</span>
+          <div class="empty-actions">
+            <button v-if="keyword" type="button" @click="keyword = ''"><Icon icon="solar:restart-linear" width="15" />{{ zh ? '清除搜索' : 'Clear search' }}</button>
+            <button v-else-if="activeTab === 'external'" class="primary" type="button" @click="openCreate"><Icon icon="solar:user-plus-linear" width="15" />{{ zh ? '新建联系人' : 'New contact' }}</button>
+          </div>
         </div>
       </section>
 
@@ -173,6 +178,7 @@ function saveContact() {
 function removeContact(contact) {
   ElMessageBox.confirm(zh.value ? `删除联系人“${contact.name}”？` : `Delete “${contact.name}”?`, zh.value ? '删除联系人' : 'Delete contact', { type: 'warning' }).then(() => {
     writerStore.contacts = writerStore.contacts.filter(item => item.id !== contact.id)
+    ElMessage({ message: zh.value ? '联系人已删除' : 'Contact deleted', type: 'success', plain: true })
   }).catch(() => {})
 }
 
@@ -189,6 +195,8 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .contact-search { width: 240px; height: 38px; padding: 0 11px; display: flex; align-items: center; gap: 8px; color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); }
 .contact-search:focus-within { border-color: var(--brand-500); box-shadow: 0 0 0 3px var(--brand-soft); }
 .contact-search input { min-width: 0; flex: 1; color: var(--text); font-size: 12.5px; }
+.contact-search button { width: 24px; height: 24px; flex: 0 0 24px; display: grid; place-items: center; color: var(--text-3); border-radius: 6px; cursor: pointer; }
+.contact-search button:hover { color: var(--brand-600); background: var(--brand-soft); }
 .primary-button { height: 38px; padding: 0 13px; display: inline-flex; align-items: center; gap: 6px; color: #fff; background: var(--brand-600); border-radius: var(--r-sm); font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .primary-button:hover { background: var(--brand-700); }
 .contact-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
@@ -217,9 +225,13 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .row-actions button:hover { color: var(--brand-600); background: var(--brand-soft); }
 .row-actions .icon-button { width: 32px; padding: 0; display: grid; place-items: center; }
 .row-actions .danger:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
-.empty-state { min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); }
+.empty-state { min-height: 300px; padding: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
+.empty-state .empty-icon { width: 56px; height: 56px; display: grid; place-items: center; color: var(--brand-600); border-radius: 17px; background: var(--brand-soft); }
 .empty-state strong { margin-top: 12px; color: var(--text-2); font-size: 14px; }
-.empty-state span { margin-top: 4px; font-size: 12.5px; }
+.empty-state > span:not(.empty-icon) { max-width: 430px; margin-top: 5px; font-size: 12.5px; line-height: 1.65; }
+.empty-actions { margin-top: 15px; display: flex; gap: 8px; }
+.empty-actions button { min-height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12px; font-weight: 650; cursor: pointer; }
+.empty-actions button.primary { color: #fff; border-color: var(--brand-600); background: var(--brand-600); }
 .team-note { margin-top: 16px; padding: 16px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); font-size: 13px; }
 .team-note strong { color: var(--text); }
 .team-note p { margin: 7px 0 0; line-height: 1.7; }

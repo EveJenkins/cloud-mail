@@ -27,6 +27,10 @@
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else
             width="28" height="28"/>
     </template>
+    <template #empty-actions>
+      <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
+      <button type="button" @click="syncInbox"><Icon icon="solar:refresh-linear" width="15" />{{ settingStore.lang === 'zh' ? '重新同步' : 'Sync again' }}</button>
+    </template>
 
       </emailScroll>
     </section>
@@ -37,20 +41,18 @@
         <strong>{{ settingStore.lang === 'zh' ? '正在切换邮箱…' : 'Switching mailbox…' }}</strong>
         <p>{{ settingStore.lang === 'zh' ? '正在加载当前账号的邮件' : 'Loading messages for this account' }}</p>
       </div>
-      <div v-else class="preview-empty">
-        <div class="empty-main">
-          <span class="preview-icon"><Icon icon="solar:letter-opened-linear" width="32" height="32" /></span>
-          <strong>{{ settingStore.lang === 'zh' ? '选择一封邮件开始阅读' : 'Select a message to start reading' }}</strong>
-          <p>{{ settingStore.lang === 'zh' ? '正文与附件将显示在这里' : 'The message and its attachments will appear here' }}</p>
-        </div>
-        <div class="empty-guide">
-          <div class="empty-actions">
-            <button class="primary-action" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="16" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
-            <button type="button" @click="syncInbox"><Icon icon="solar:refresh-linear" width="16" />{{ settingStore.lang === 'zh' ? '同步邮件' : 'Sync mail' }}</button>
-          </div>
-          <div class="empty-meta"><span><i></i>{{ syncedTimeLabel }}</span><span><kbd>Ctrl K</kbd>{{ settingStore.lang === 'zh' ? '搜索' : 'Search' }}</span></div>
-        </div>
-      </div>
+      <MailPreviewEmpty
+          v-else
+          icon="solar:letter-opened-linear"
+          :title="settingStore.lang === 'zh' ? '选择一封邮件开始阅读' : 'Select a message to start reading'"
+          :description="settingStore.lang === 'zh' ? '正文、附件和会话记录将在这里显示' : 'The message, attachments and conversation history will appear here'"
+      >
+        <template #actions>
+          <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="16" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
+          <button type="button" @click="syncInbox"><Icon icon="solar:refresh-linear" width="16" />{{ settingStore.lang === 'zh' ? '同步邮件' : 'Sync mail' }}</button>
+        </template>
+        <template #meta><span><i></i>{{ syncedTimeLabel }}</span><span><kbd>Ctrl K</kbd>{{ settingStore.lang === 'zh' ? '全局搜索' : 'Global search' }}</span></template>
+      </MailPreviewEmpty>
     </section>
   </div>
 </template>
@@ -69,6 +71,7 @@ import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import { useRoute } from 'vue-router'
 import Content from '@/views/content/index.vue'
+import MailPreviewEmpty from '@/components/mail-preview-empty/index.vue'
 
 defineOptions({
   name: 'email'
@@ -286,21 +289,6 @@ function getEmailList(emailId, size) {
 .preview-loading { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--brand-600); text-align: center; }
 .preview-loading strong { margin-top: 13px; color: var(--text-2); font-size: 14px; font-weight: 600; }
 .preview-loading p { margin-top: 5px; color: var(--text-3); font-size: 12px; }
-.preview-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
-.empty-main { display: flex; flex-direction: column; align-items: center; }
-.preview-empty strong { margin-top: 15px; color: var(--text); font-size: 15px; font-weight: 600; }
-.preview-empty p { margin-top: 6px; font-size: 12.5px; line-height: 1.7; opacity: .8; }
-.preview-icon { width: 60px; height: 60px; display: grid; place-items: center; color: var(--brand-500); border: 1px solid var(--border); border-radius: 18px; background: var(--surface-2); }
-.empty-guide { width: min(390px, calc(100% - 48px)); margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border); }
-.empty-actions { display: flex; justify-content: center; gap: 9px; }
-.empty-actions button { height: 36px; padding: 0 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border-strong); border-radius: 9px; background: var(--surface-2); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease); }
-.empty-actions button:hover { color: var(--text); border-color: var(--brand-500); }
-.empty-actions .primary-action { color: #fff; border-color: color-mix(in srgb, var(--brand-500) 55%, transparent); background: var(--brand-600); }
-.empty-actions .primary-action:hover { border-color: var(--brand-500); background: var(--brand-700); }
-.empty-meta { margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 22px; font-size: 10.5px; }
-.empty-meta span { display: inline-flex; align-items: center; gap: 6px; }
-.empty-meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-600); box-shadow: 0 0 0 3px var(--brand-soft); }
-.empty-meta kbd { padding: 2px 5px; color: var(--text-3); border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); font: inherit; }
 
 @media (max-width: 767px) {
   .mail-list-pane :deep(.email-row) { padding-right: 12px; padding-left: 8px; }

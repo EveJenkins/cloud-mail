@@ -19,7 +19,7 @@
         <div class="setting-row">
           <div class="row-copy"><strong>{{$t('username')}}</strong><span>{{ settingStore.lang === 'zh' ? '用于邮件发件人显示' : 'Shown as your sender name' }}</span></div>
           <div v-if="setNameShow" class="name-editor"><el-input v-model="accountName" @keyup.enter="setName"/><button type="button" @click="setName">{{$t('save')}}</button></div>
-          <button v-else class="value-button" type="button" @click="showSetName"><span>{{ userStore.user.name }}</span><Icon icon="solar:pen-new-square-linear" width="16"/></button>
+          <button v-else class="value-button" type="button" @click="showSetName"><span>{{ userStore.user.name || (settingStore.lang === 'zh' ? '设置显示名称' : 'Set display name') }}</span><Icon icon="solar:pen-new-square-linear" width="16"/></button>
         </div>
         <div class="setting-row">
           <div class="row-copy"><strong>{{$t('emailAccount')}}</strong><span>{{ settingStore.lang === 'zh' ? '主登录邮箱，不可在此修改' : 'Primary sign-in email' }}</span></div>
@@ -69,6 +69,8 @@ import {accountSetName} from "@/request/account.js";
 import {useAccountStore} from "@/store/account.js";
 import {useI18n} from "vue-i18n";
 import {useSettingStore} from "@/store/setting.js";
+import i18n from '@/i18n/index.js'
+import {setExtend} from '@/utils/day.js'
 
 const { t } = useI18n()
 const accountStore = useAccountStore()
@@ -101,13 +103,14 @@ function setName() {
   }
 
   setNameShow.value = false
-  let name = accountName.value
+  const name = accountName.value.trim()
+  const previousName = userStore.user.name
 
   if (name === userStore.user.name) {
     return
   }
 
-  userStore.user.name = accountName.value
+  userStore.user.name = name
 
   accountSetName(userStore.user.account.accountId,name).then(() => {
     ElMessage({
@@ -119,19 +122,22 @@ function setName() {
     accountStore.changeUserAccountName = name
 
   }).catch(() => {
-    userStore.user.name = name
+    userStore.user.name = previousName
+    setNameShow.value = true
   })
 }
 
 function changeLang(lang) {
-  let setting = {}
-  try {
-    setting = JSON.parse(localStorage.getItem('setting') || '{}')
-  } catch (e) {
-    setting = {}
-  }
-  localStorage.setItem('setting', JSON.stringify({...setting, lang}))
-  window.location.reload()
+  if (lang === settingStore.lang) return
+  settingStore.lang = lang
+  langSelect.value = lang
+  i18n.global.locale.value = lang
+  setExtend(lang === 'en' ? 'en' : 'zh-cn')
+  ElMessage({
+    message: lang === 'zh' ? '界面语言已切换' : 'Interface language updated',
+    type: 'success',
+    plain: true,
+  })
 }
 
 const pwdShow = ref(false)
