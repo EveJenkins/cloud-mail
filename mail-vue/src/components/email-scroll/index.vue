@@ -6,12 +6,20 @@
           <strong>{{ props.summaryTitle || (settingStore.lang === 'zh' ? '收件箱' : 'Inbox') }}</strong>
           <span>{{ currentAccountLabel }}</span>
         </div>
-        <span v-if="total">{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
-        <span v-else class="sync-status"><i></i>{{ lastSyncedLabel }}</span>
+        <div class="summary-status">
+          <span v-if="total">{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
+          <span v-else class="sync-status"><i></i>{{ lastSyncedLabel }}</span>
+          <button type="button" class="summary-refresh" :disabled="loading" :title="settingStore.lang === 'zh' ? '同步邮件' : 'Sync messages'" @click="refresh">
+            <Icon icon="solar:refresh-linear" width="16" height="16" :class="{ spinning: loading }" />
+          </button>
+        </div>
       </div>
       <label class="inbox-search">
         <Icon icon="solar:magnifer-linear" width="16" height="16" />
-        <input v-model.trim="searchKeyword" :placeholder="settingStore.lang === 'zh' ? '搜索…' : 'Search…'" />
+        <input v-model.trim="searchKeyword" :placeholder="settingStore.lang === 'zh' ? '搜索…' : 'Search…'" :aria-label="settingStore.lang === 'zh' ? '搜索邮件' : 'Search messages'" />
+        <button v-if="searchKeyword" type="button" class="search-clear" :title="settingStore.lang === 'zh' ? '清除搜索' : 'Clear search'" @click.prevent="resetSearchOnly">
+          <Icon icon="solar:close-circle-linear" width="16" height="16" />
+        </button>
       </label>
     </div>
     <div class="header-actions" v-if="!props.showInboxSummary">
@@ -42,10 +50,10 @@
     </div>
 
     <div class="inbox-summary" v-if="props.showInboxSummary">
-      <button class="summary-chip" :class="{ active: activeFilter === 'all' }" @click="activeFilter = 'all'">{{ settingStore.lang === 'zh' ? '全部' : 'All' }}</button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'unread' }" @click="activeFilter = 'unread'">{{ settingStore.lang === 'zh' ? '未读' : 'Unread' }}</button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'attachment' }" @click="activeFilter = 'attachment'">{{ settingStore.lang === 'zh' ? '含附件' : 'Attachments' }}</button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'code' }" @click="activeFilter = 'code'">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }}</button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'all' }" @click="activeFilter = 'all'">{{ settingStore.lang === 'zh' ? '全部' : 'All' }} <small>{{ total || emailList.length }}</small></button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'unread' }" @click="activeFilter = 'unread'">{{ settingStore.lang === 'zh' ? '未读' : 'Unread' }} <small>{{ unreadCount }}</small></button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'attachment' }" @click="activeFilter = 'attachment'">{{ settingStore.lang === 'zh' ? '含附件' : 'Attachments' }} <small>{{ attachmentCount }}</small></button>
+      <button class="summary-chip" :class="{ active: activeFilter === 'code' }" @click="activeFilter = 'code'">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }} <small>{{ codeCount }}</small></button>
     </div>
 
     <div ref="scroll" class="scroll">
@@ -62,9 +70,14 @@
             <div :class="['email-row', props.type, { 'right-checked': item.rightChecked, 'mail-selected': (item.emailId ?? item.draftId) === props.selectedId }]"
                  :data-checked="item.checked"
                  @click="jumpDetails(item)"
+                 @keydown.enter.self.prevent="jumpDetails(item)"
+                 @keydown.space.self.prevent="jumpDetails(item)"
                  v-if="!item.expand"
                  :key="item.emailId || `draft-${item.draftId}`"
                  @contextmenu="handleContextmenu($event, item)"
+                 role="button"
+                 tabindex="0"
+                 :aria-selected="(item.emailId ?? item.draftId) === props.selectedId"
             >
               <el-checkbox v-if="!props.showInboxSummary" :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
                            v-model="item.checked"
@@ -539,6 +552,11 @@ watch(
 function resetFilters() {
   searchKeyword.value = ''
   activeFilter.value = 'all'
+  emit('filters-reset')
+}
+
+function resetSearchOnly() {
+  searchKeyword.value = ''
   emit('filters-reset')
 }
 const currentAccountLabel = computed(() => accountStore.currentAccount?.email || '')
@@ -1464,16 +1482,23 @@ function loadData() {
   background: var(--surface);
 }
 .inbox-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.inbox-title-row > div { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.inbox-title-row > div:first-child { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
 .inbox-title-row strong { color: var(--text); font-size: 13px; font-weight: 600; }
-.inbox-title-row > div span { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; overflow: hidden; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.inbox-title-row > span { flex: none; color: var(--text-3); font-size: 12.5px; }
-.inbox-title-row > .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; }
+.inbox-title-row > div:first-child span { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; overflow: hidden; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.summary-status { flex: none; display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 12px; }
+.sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; }
 .sync-status i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-600); box-shadow: 0 0 0 3px var(--brand-soft); }
+.summary-refresh, .search-clear { display: grid; place-items: center; padding: 0; color: var(--text-3); border: 0; background: transparent; cursor: pointer; }
+.summary-refresh { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 8px; }
+.summary-refresh:hover:not(:disabled), .search-clear:hover { color: var(--brand-600); background: var(--brand-soft); }
+.summary-refresh:disabled { cursor: wait; opacity: .6; }
+.summary-refresh .spinning { animation: summary-spin .75s linear infinite; }
+@keyframes summary-spin { to { transform: rotate(360deg); } }
 .inbox-search { height: 38px; margin-top: 10px; padding: 0 12px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
 .inbox-search:focus-within { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
 .inbox-search input { min-width: 0; flex: 1; color: var(--text); background: transparent; font-size: 12.5px; }
 .inbox-search input::placeholder { color: var(--text-3); }
+.search-clear { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 6px; }
 
 .inbox-summary {
   display: flex;
@@ -1499,6 +1524,7 @@ function loadData() {
   cursor: pointer;
 }
 .summary-chip.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 600; }
+.summary-chip small { margin-left: 3px; font-size: 10.5px; opacity: .72; }
 
 :deep(.sender-avatar) {
   width: 36px;
@@ -1541,6 +1567,7 @@ function loadData() {
 .email-container.has-summary :deep(.mail-badge) { height: 22px; padding: 0 8px; font-size: 11.5px; }
 .email-container.has-summary :deep(.email-right) { display: none; }
 .email-container.has-summary :deep(.email-row.mail-selected) { background: var(--brand-soft); }
+.email-container.has-summary :deep(.email-row:focus-visible) { outline: 2px solid var(--brand-500); outline-offset: -2px; }
 
 
 .phone-star {
