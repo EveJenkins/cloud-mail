@@ -36,6 +36,11 @@ export const useEmailStore = defineStore('email', {
             this.contentData.delType = null
             this.contentData.showUnread = false
         },
+        // 切换邮箱身份时调用：清掉详情缓存，确保不残留其他身份的邮件内容
+        clearIdentityCache() {
+            this.detailMap = {}
+            this.clearContent()
+        },
         fetchList(request) {
             return request(0).then(data => {
                 request(1).then(fullData => {

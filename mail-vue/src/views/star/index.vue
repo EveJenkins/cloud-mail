@@ -47,6 +47,7 @@ import emailScroll from "@/components/email-scroll/index.vue"
 import {emailDelete} from "@/request/email.js";
 import {starAdd, starCancel, starList} from "@/request/star.js";
 import {useEmailStore} from "@/store/email.js";
+import {useAccountStore} from "@/store/account.js";
 import {useSettingStore} from "@/store/setting.js";
 import {defineOptions, nextTick, onActivated, onBeforeMount, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import router from "@/router/index.js";
@@ -60,6 +61,7 @@ defineOptions({
 
 const scroll = ref({})
 const emailStore = useEmailStore();
+const accountStore = useAccountStore();
 const settingStore = useSettingStore();
 const isDesktop = ref(window.innerWidth >= 1280)
 const isPhone = ref(window.innerWidth < 768)
@@ -84,8 +86,18 @@ function openContent(email) {
   selectedEmailId.value = email.emailId
 }
 
+// 切换邮箱身份：清空列表与详情，避免残留其他身份的星标邮件
+watch(() => accountStore.currentAccountId, async (accountId, previousAccountId) => {
+  if (Number(accountId) === Number(previousAccountId)) return
+  selectedEmailId.value = null
+  emailStore.clearIdentityCache()
+  scroll.value.resetList?.()
+  await nextTick()
+  await scroll.value.refreshList?.()
+}, {flush: 'sync'})
+
 function getEmailList(emailId, size) {
-  return emailStore.fetchList(full => starList(emailId, size, full))
+  return emailStore.fetchList(full => starList(emailId, size, full, accountStore.currentAccountId))
 }
 
 function cancelStar(email) {

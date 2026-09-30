@@ -42,10 +42,11 @@ const starService = {
 	},
 
 	async list(c, params, userId) {
-		let { emailId, size, full } = params;
+		let { emailId, size, full, accountId } = params;
 		emailId = Number(emailId) || 0;
 		size = Number(size);
 		full = Number(full) === 1;
+		accountId = Number(accountId) || 0;
 		const columns = full ? emailListColumns : emailBriefColumns;
 
 		const list = await orm(c).select({
@@ -58,6 +59,8 @@ const starService = {
 				and(
 					eq(star.userId, userId),
 					eq(email.isDel, isDel.NORMAL),
+					// 星标邮件跟随当前邮箱身份，避免切换邮箱后看到其他邮箱的星标
+					accountId ? eq(email.accountId, accountId) : undefined,
 					emailId ? lt(star.emailId, emailId) : undefined))
 			.orderBy(desc(star.emailId))
 			.limit(size)

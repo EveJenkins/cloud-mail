@@ -521,19 +521,19 @@ path[fill="#ffdda1"] {
 </style>
 <style scoped lang="scss">
 .account-box {
-
-  border-right: 1px solid var(--border) !important;
   background-color: var(--surface);
-  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
   overflow: hidden;
 
   .head-opt {
     display: flex;
     align-items: center;
-    height: 50px;
+    height: 36px;
     border-bottom: 1px solid var(--border);
-    box-shadow: none;
-    padding: 0 14px;
+    background: var(--surface-2);
+    padding: 0 8px;
 
     .icon {
       cursor: pointer;
@@ -554,11 +554,9 @@ path[fill="#ffdda1"] {
 
   .scrollbar {
     width: 100%;
-    height: calc(100% - 50px);
+    max-height: 296px;
+    padding-bottom: 6px;
     overflow: auto;
-    @media (max-width: 767px) {
-      height: calc(100% - 98px);
-    }
 
     .empty {
       display: flex;
@@ -585,14 +583,15 @@ path[fill="#ffdda1"] {
     background-color: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
-    padding: 12px;
-    margin: 10px 12px 0;
+    padding: 8px 10px;
+    margin: 6px 8px 0;
     cursor: pointer;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 
     .account {
       font-weight: 400;
-      font-size: 15px;
-      margin-bottom: 20px;
+      font-size: 12.5px;
+      margin-bottom: 4px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
@@ -622,13 +621,15 @@ path[fill="#ffdda1"] {
   }
 
   .item:first-child {
-    margin-top: 10px;
+    margin-top: 6px;
   }
+
+  .item:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); }
 
   .item-choose {
     background: var(--choose-account-background);
     border-color: color-mix(in srgb, var(--brand-500) 34%, var(--border));
-    box-shadow: inset 3px 0 0 var(--brand-600);
+    box-shadow: inset 2px 0 0 var(--brand-600);
   }
 }
 

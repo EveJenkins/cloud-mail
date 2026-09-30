@@ -1,13 +1,20 @@
 <template>
   <div class="aside-shell">
-    <button class="mailbox-card" type="button" @click="uiStore.accountShow = !uiStore.accountShow">
-      <span class="mailbox-avatar">{{ mailboxInitial }}</span>
-      <span class="mailbox-copy">
-        <strong>{{ currentMailbox }}</strong>
-        <small>{{ currentDomain || (settingStore.lang === 'zh' ? '个人邮箱' : 'Personal mailbox') }}</small>
-      </span>
-      <Icon icon="mingcute:down-small-fill" width="16" height="16" />
-    </button>
+    <div class="mailbox-switch" ref="switchRef">
+      <button class="mailbox-card" type="button" :class="{ open: canSwitch && uiStore.accountShow }" @click="toggleSwitch">
+        <span class="mailbox-avatar">{{ mailboxInitial }}</span>
+        <span class="mailbox-copy">
+          <strong>{{ currentMailbox }}</strong>
+          <small>{{ currentDomain || (settingStore.lang === 'zh' ? '个人邮箱' : 'Personal mailbox') }}</small>
+        </span>
+        <Icon v-if="canSwitch" icon="mingcute:down-small-fill" width="16" height="16" />
+      </button>
+      <transition name="mailbox-pop">
+        <div class="mailbox-pop" v-show="canSwitch && uiStore.accountShow">
+          <account />
+        </div>
+      </transition>
+    </div>
 
     <el-scrollbar class="scroll">
       <el-menu :collapse="false">
@@ -95,7 +102,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import router from '@/router/index.js'
@@ -103,12 +110,42 @@ import { useSettingStore } from '@/store/setting.js'
 import { useUiStore } from '@/store/ui.js'
 import { useUserStore } from '@/store/user.js'
 import { useAccountStore } from '@/store/account.js'
+import { hasPerm } from '@/perm/perm.js'
+import account from '@/layout/account/index.vue'
 
 const settingStore = useSettingStore()
 const uiStore = useUiStore()
 const userStore = useUserStore()
 const accountStore = useAccountStore()
 const route = useRoute()
+
+const switchRef = ref(null)
+const canSwitch = computed(() => hasPerm('account:query') && settingStore.settings.manyEmail === 0)
+
+function toggleSwitch() {
+  if (!canSwitch.value) return
+  uiStore.accountShow = !uiStore.accountShow
+}
+
+function closeOnOutside(event) {
+  if (!uiStore.accountShow) return
+  if (switchRef.value?.contains(event.target)) return
+  uiStore.accountShow = false
+}
+
+function closeOnEsc(event) {
+  if (event.key === 'Escape') uiStore.accountShow = false
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeOnOutside)
+  window.addEventListener('keydown', closeOnEsc)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeOnOutside)
+  window.removeEventListener('keydown', closeOnEsc)
+})
 
 const currentEmail = computed(() => accountStore.currentAccount?.email || userStore.user.email || '')
 const currentDomain = computed(() => {
@@ -129,9 +166,27 @@ const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
   background: var(--sidebar-surface);
 }
 
-.mailbox-card {
+.mailbox-switch {
+  position: relative;
   flex: none;
   margin: 10px 10px 6px;
+  z-index: 20;
+}
+
+.mailbox-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+}
+
+.mailbox-pop-enter-active, .mailbox-pop-leave-active { transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
+.mailbox-pop-enter-from, .mailbox-pop-leave-to { opacity: 0; transform: translateY(-4px); }
+
+.mailbox-card {
+  width: 100%;
+  margin: 0;
   padding: 7px 8px;
   display: flex;
   align-items: center;
@@ -144,6 +199,7 @@ const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .mailbox-card:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); background: var(--surface); }
+.mailbox-card.open { border-color: var(--brand-500); background: var(--surface); }
 .mailbox-avatar { width: 26px; height: 26px; flex: none; display: grid; place-items: center; color: #fff; border-radius: var(--r-sm); background: var(--brand-600); font-size: 11px; font-weight: 600; }
 .mailbox-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; text-align: left; }
 .mailbox-copy strong { overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }

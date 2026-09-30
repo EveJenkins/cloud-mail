@@ -27,7 +27,8 @@
       </button>
     </div>
     <div class="toolbar">
-      <button v-if="hasPerm('email:send')" class="compose-btn" type="button" @click="openSend">
+      <button v-if="hasPerm('email:send')" class="compose-btn" :class="{ active: composeOpen }" type="button"
+              :aria-pressed="composeOpen" @click="openSend">
         <Icon icon="material-symbols:edit-outline" width="17" height="17" />
         <span>{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</span>
       </button>
@@ -341,8 +342,17 @@ function switchDark(nextIsDark, root) {
   uiStore.dark = nextIsDark
 }
 
+const composeOpen = computed(() => uiStore.composeOpen)
+
 function openSend() {
-  uiStore.writerRef.open()
+  const writer = uiStore.writerRef
+  if (!writer) return
+  // 浮窗已打开时不再重复打开，改为拉回默认位置并聚焦正文
+  if (uiStore.composeOpen) {
+    writer.focusCompose?.()
+    return
+  }
+  writer.open()
 }
 
 function changeAside() {
@@ -560,6 +570,13 @@ function formatName(email) {
     transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
   }
   .compose-btn:hover { color: var(--brand-700); background: var(--brand-50); }
+  /* 浮窗已打开：按钮呈按下态 */
+  .compose-btn.active,
+  .compose-btn.active:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, .18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55);
+  }
 
   .icon-item {
     width: 32px;

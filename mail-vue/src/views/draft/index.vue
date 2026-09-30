@@ -99,6 +99,8 @@ import {useUiStore} from "@/store/ui.js";
 import {userDraftStore} from "@/store/draft.js";
 import db from "@/db/db.js"
 import {useSettingStore} from "@/store/setting.js";
+import {useAccountStore} from "@/store/account.js";
+import {useUserStore} from "@/store/user.js";
 import {Icon} from "@iconify/vue";
 import ShadowHtml from '@/components/shadow-html/index.vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
@@ -111,6 +113,8 @@ defineOptions({
 const draftStore = userDraftStore();
 const uiStore = useUiStore();
 const settingStore = useSettingStore();
+const accountStore = useAccountStore();
+const userStore = useUserStore();
 const scroll = ref({})
 const isDesktop = ref(window.innerWidth >= 1280)
 const isPhone = ref(window.innerWidth < 768)
@@ -158,15 +162,34 @@ watch(() => draftStore.refreshList, async () => {
     }
 })
 
+// 切换邮箱身份：清空当前草稿选择并重新加载本邮箱的草稿
+watch(() => accountStore.currentAccountId, async () => {
+  selectedDraft.value = null
+  scroll.value.resetList?.()
+  const {list} = await getEmailList()
+  scroll.value.emailList.length = 0
+  scroll.value.handleList(list)
+  scroll.value.emailList.push(...list)
+}, {flush: 'sync'})
+
 watch(() => scroll.value?.emailList?.[0]?.draftId, async () => {
   if (isDesktop.value && !selectedDraft.value && scroll.value?.emailList?.length) {
     await selectDraft(scroll.value.emailList[0])
   }
 })
 
+// 草稿按当前邮箱身份过滤：老草稿没有 accountId 时归入主邮箱
+function draftAccountId(draft) {
+  const id = draft?.accountId
+  if (id === undefined || id === null || Number(id) <= 0) return Number(userStore.user.account?.accountId) || 0
+  return Number(id)
+}
+
 function getEmailList() {
+  const current = Number(accountStore.currentAccountId) || 0
   return new Promise((resolve, reject) => {
-    db.value.draft.orderBy('createTime').reverse().toArray().then(list => {
+    db.value.draft.orderBy('createTime').reverse().toArray().then(all => {
+      const list = all.filter(item => draftAccountId(item) === current)
       resolve({list, latestEmail: list[0] || null, total: list.length})
     })
   })

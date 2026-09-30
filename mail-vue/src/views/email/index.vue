@@ -154,7 +154,8 @@ watch(() => accountStore.currentAccountId, async (accountId, previousAccountId) 
   if (Number(accountId) === Number(previousAccountId)) return
   switchingInbox.value = true
   selectedEmailId.value = null
-  emailStore.clearContent()
+  emailStore.clearIdentityCache()
+  scroll.value.resetList?.()
   await nextTick()
   try {
     await scroll.value.refreshList?.()

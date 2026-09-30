@@ -133,6 +133,9 @@ watch(
 )
 
 watch(() => accountStore.currentAccountId, () => {
+  selectedEmailId.value = null
+  emailStore.clearIdentityCache()
+  sendScroll.value.resetList?.()
   sendScroll.value.refreshList();
 })
 

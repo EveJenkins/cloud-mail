@@ -213,7 +213,11 @@ defineExpose({
   openReply,
   openReplyWithContent,
   openForward,
-  openDraft
+  openDraft,
+  focusCompose,
+  // getter 而非直接暴露，避免在 show/minimized 声明前触发 TDZ
+  get show() { return show.value },
+  get minimized() { return minimized.value }
 })
 
 const {t} = useI18n()
@@ -238,6 +242,17 @@ const windowStyle = computed(() => windowPos.value.left === null ? {} : {
   right: 'auto',
   bottom: 'auto',
 })
+
+// 顶栏「写邮件」按钮据此显示按下态
+watch(show, value => { uiStore.composeOpen = value })
+
+// 浮窗已打开时再点「写邮件」：拉回右下角默认位置、取消最小化并聚焦正文
+function focusCompose() {
+  if (!show.value) return
+  minimized.value = false
+  windowPos.value = { left: null, top: null }
+  nextTick(() => editor.value?.focus?.())
+}
 
 function startDrag(event) {
   if (event.button !== 0) return

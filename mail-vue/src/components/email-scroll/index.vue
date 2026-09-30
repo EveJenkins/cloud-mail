@@ -490,7 +490,18 @@ const queryParam = reactive({
   size: 50
 });
 
+// 切换邮箱身份时同步清空，避免旧邮箱的邮件在刷新返回前闪现
+function resetList() {
+  emailList.length = 0
+  expandList.length = 0
+  total.value = 0
+  latestEmail.value = null
+  firstLoad.value = true
+  loading.value = true
+}
+
 defineExpose({
+  resetList,
   refreshList,
   deleteEmail,
   addItem,
@@ -1015,6 +1026,9 @@ function getEmailList(refresh = false) {
     emailId = 0
     loading.value = true
     scrollTop = 0
+    // 立即清空，避免刷新/切换邮箱期间仍渲染上一个邮箱的邮件
+    emailList.length = 0
+    expandList.length = 0
   }
 
   if (emailList.length === 0) {
@@ -1039,10 +1053,6 @@ function getEmailList(refresh = false) {
       checked: false
     }));
 
-
-    if (refresh) {
-      emailList.length = 0
-    }
 
     latestEmail.value = data.latestEmail
 
