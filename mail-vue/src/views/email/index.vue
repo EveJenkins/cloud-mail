@@ -12,6 +12,7 @@
                :email-read="emailRead"
                :show-unread="true"
                :show-inbox-summary="true"
+               :unread-badge="true"
                :search-query="typeof route.query.q === 'string' ? route.query.q : ''"
                :empty-title="settingStore.lang === 'zh' ? '收件箱是空的' : 'Your inbox is empty'"
                :empty-description="settingStore.lang === 'zh' ? '新邮件同步后会出现在这里' : 'New messages will appear here after syncing'"

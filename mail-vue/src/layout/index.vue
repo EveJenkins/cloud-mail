@@ -1,23 +1,23 @@
 <template>
-  <el-container class="layout">
-    <el-aside
-        class="aside"
-        :class="uiStore.asideShow ? 'aside-show' : 'el-aside-hide'">
-      <Aside />
-    </el-aside>
-    <div
-        :class="(uiStore.asideShow && isMobile)? 'overlay-show':'overlay-hide'"
-        @click="uiStore.asideShow = false"
-    ></div>
-    <el-container class="main-container">
-      <el-main>
-        <el-header>
-            <Header />
-        </el-header>
+  <div class="layout">
+    <header class="topbar">
+      <Header />
+    </header>
+    <div class="layout-body">
+      <aside
+          class="aside"
+          :class="uiStore.asideShow ? 'aside-show' : 'aside-hide'">
+        <Aside />
+      </aside>
+      <div
+          :class="(uiStore.asideShow && isMobile)? 'overlay-show':'overlay-hide'"
+          @click="uiStore.asideShow = false"
+      ></div>
+      <div class="main-container">
         <Main />
-      </el-main>
-    </el-container>
-  </el-container>
+      </div>
+    </div>
+  </div>
   <MobileTab />
   <writer ref="writerRef" />
 </template>
@@ -52,70 +52,52 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-.el-aside-hide {
-  position: fixed;
-  left: 0;
-  height: 100%;
-  z-index: 100;
-  transform: translateX(-100%);
-  transition: all 100ms ease;
-}
-
-.aside-show {
-  transform: translateX(0);
-  transition: all var(--dur) var(--ease);
-  z-index: 101;
-  @media (max-width: 1025px) {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 101;
-    height: 100%;
-    background: var(--el-bg-color);
-  }
-}
-
-.el-aside {
-  width: var(--sidebar-w);
-  transition: all var(--dur) var(--ease);
-}
-
 .layout {
-  height: 100%;
   position: fixed;
-  width: 100%;
-  top: 0;
-  left: 0;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  background: var(--bg);
+}
+
+.topbar {
+  flex: none;
+  height: var(--topbar-h);
+  background: var(--topbar-bg);
+  color: var(--topbar-fg);
+  z-index: 102;
+}
+
+.layout-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+
+.aside {
+  flex: none;
+  width: var(--sidebar-w);
+  height: 100%;
+  background: var(--sidebar-surface);
+  border-right: 1px solid var(--border);
+  transition: margin-left var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 
 .main-container {
-  min-height: 100%;
+  flex: 1;
+  min-width: 0;
   background: var(--settings-page-background);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-.el-main {
-  padding: 0;
-  background: var(--settings-page-background);
-}
-
-.el-header {
-  height: 52px;
-  background: var(--topbar-surface);
-  border-bottom: solid 1px var(--border);
-  padding: 0 0 0 0;
-}
-
 .overlay-show {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 99;
+  z-index: 100;
   transition: all 0.3s;
 }
 
@@ -125,8 +107,25 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
+@media (min-width: 1025px) {
+  .aside-hide { margin-left: calc(-1 * var(--sidebar-w)); }
+}
+
+@media (max-width: 1024px) {
+  .aside {
+    position: fixed;
+    top: var(--topbar-h);
+    bottom: 0;
+    left: 0;
+    z-index: 101;
+    transform: translateX(-100%);
+  }
+  .aside-show { transform: translateX(0); }
+}
+
 @media (max-width: 767px) {
+  .topbar { height: 48px; }
   .main-container { padding-bottom: calc(54px + env(safe-area-inset-bottom)); }
-  .el-header { height: 48px; }
+  .aside { top: 48px; }
 }
 </style>

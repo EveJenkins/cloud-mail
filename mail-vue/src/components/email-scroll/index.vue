@@ -367,6 +367,10 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  unreadBadge: {
+    type: Boolean,
+    default: false
+  },
   showInboxSummary: {
     type: Boolean,
     default: false
@@ -539,6 +543,11 @@ const list = computed(() => {
   return [...source, ...expandList]
 })
 const unreadCount = computed(() => emailList.filter(item => item.unread === EmailUnreadEnum.UNREAD).length)
+
+// 侧栏文件夹树的收件箱未读徽标（只有收件箱视图开启）
+watch(unreadCount, value => {
+  if (props.unreadBadge) uiStore.asideCount.email = Number(value) || 0
+}, { immediate: true, flush: 'post' })
 const attachmentCount = computed(() => emailList.filter(item => item.attList?.length > 0).length)
 const codeCount = computed(() => emailList.filter(item => item.code).length)
 const searchKeyword = ref('')

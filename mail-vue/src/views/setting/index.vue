@@ -44,6 +44,21 @@
         </div>
       </section>
 
+      <section class="settings-card">
+        <div class="card-title"><Icon icon="solar:chart-2-linear" width="20"/><div><strong>{{ settingStore.lang === 'zh' ? '外发配额' : 'Outbound quota' }}</strong><span>{{ settingStore.lang === 'zh' ? '本月邮件发送用量' : 'Messages sent this month' }}</span></div></div>
+        <div class="quota-row">
+          <div class="quota-head">
+            <span>{{ settingStore.lang === 'zh' ? '本月外发配额' : 'Monthly outbound' }}</span>
+            <span>{{ quotaText }}</span>
+          </div>
+          <div class="quota-track"><span :style="{ width: quotaPercent + '%' }" :class="{ warning: quotaPercent >= 80 }"></span></div>
+          <p class="quota-foot" :class="{ warning: quotaPercent >= 80 }">
+            <Icon :icon="quotaPercent >= 80 ? 'solar:danger-triangle-linear' : 'solar:check-circle-linear'" width="15" />
+            <span>{{ quotaPercent >= 80 ? (settingStore.lang === 'zh' ? '即将达到上限，超出需联系管理员' : 'Near the limit, contact your administrator') : (settingStore.lang === 'zh' ? '运行正常' : 'Healthy') }}</span>
+          </p>
+        </div>
+      </section>
+
       <section class="settings-card danger-card" v-perm="'my:delete'">
         <div class="card-title"><Icon icon="solar:danger-triangle-linear" width="20"/><div><strong>{{$t('deleteUser')}}</strong><span>{{ settingStore.lang === 'zh' ? '此操作无法撤销' : 'This action cannot be undone' }}</span></div></div>
         <p>{{$t('delAccountMsg')}}</p>
@@ -81,6 +96,13 @@ const setNameShow = ref(false)
 const accountName = ref(null)
 const langSelect = ref(settingStore.lang)
 const userInitial = computed(() => (userStore.user.name || userStore.user.email || 'U').trim().charAt(0).toUpperCase())
+
+const quotaMax = computed(() => Number(userStore.user.role?.sendCount) || 0)
+const quotaUsed = computed(() => Number(userStore.user.sendCount) || 0)
+const quotaPercent = computed(() => quotaMax.value ? Math.min(100, Math.round(quotaUsed.value / quotaMax.value * 100)) : 0)
+const quotaText = computed(() => quotaMax.value
+  ? `${quotaUsed.value} / ${quotaMax.value}`
+  : (settingStore.lang === 'zh' ? '不限' : 'Unlimited'))
 
 defineOptions({
   name: 'setting'
@@ -258,6 +280,15 @@ button { font: inherit; }
 .language-options strong { font-size: 12px; }
 .language-options small { color: var(--text-3); font-size: 10.5px; }
 .danger-card { border-color: color-mix(in srgb, var(--danger) 28%, var(--border)); }
+.quota-row { display: grid; gap: 8px; }
+.quota-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-2); font-size: 12px; }
+.quota-head span:last-child { color: var(--text-3); font-variant-numeric: tabular-nums; }
+.quota-track { height: 6px; overflow: hidden; border-radius: 99px; background: var(--surface-3); }
+.quota-track span { display: block; height: 100%; min-width: 4px; border-radius: inherit; background: var(--brand-600); transition: width var(--dur) var(--ease); }
+.quota-track span.warning { background: var(--warning); }
+.quota-foot { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--success); font-size: 11.5px; }
+.quota-foot.warning { color: var(--warning); }
+
 .danger-card .card-title { color: var(--danger-text); }
 .danger-card p { min-height: 38px; margin: 0 0 12px; color: var(--text-3); font-size: 11.5px; line-height: 1.6; }
 .danger-button { height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; color: var(--danger-text); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)); border-radius: var(--r-md); font-size: 12px; font-weight: 500; }

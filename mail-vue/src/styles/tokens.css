@@ -47,6 +47,15 @@
   /* 布局尺寸（紧凑） */
   --sidebar-w: 224px;
   --mail-list-w: 360px;
+  --topbar-h: 52px;
+
+  /* 顶部通栏 */
+  --topbar-bg: var(--brand-600);
+  --topbar-fg: #ffffff;
+  --topbar-fg-dim: rgba(255, 255, 255, .74);
+  --topbar-field: rgba(255, 255, 255, .16);
+  --topbar-field-hover: rgba(255, 255, 255, .24);
+  --topbar-hover: rgba(255, 255, 255, .14);
 
   /* 头像与图表调色板 */
   --avatar-1: #1677ff;
@@ -91,6 +100,11 @@ html.dark {
   --danger: #ff7875;
   --danger-text: #ff7875;
   --info: #4096ff;
+
+  --topbar-bg: #10305c;
+  --topbar-field: rgba(255, 255, 255, .12);
+  --topbar-field-hover: rgba(255, 255, 255, .18);
+  --topbar-hover: rgba(255, 255, 255, .10);
 
   --sh-1: none;
   --sh-2: none;

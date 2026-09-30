@@ -1,20 +1,36 @@
 <template>
-  <div class="send" :class="{ 'compose-full': !uiStore.asideShow }" v-show="show">
-    <div class="compose-workspace">
-      <header class="compose-topbar">
-        <button class="back-button" type="button" @click="close"><Icon icon="solar:alt-arrow-left-linear" width="17"/>{{ settingStore.lang === 'zh' ? '返回' : 'Back' }}</button>
-        <h1>{{ composeTitle }}</h1>
-        <span v-if="draftSaveState !== 'idle'" :class="['draft-save-status', draftSaveState]">
-          <Icon :icon="draftSaveState === 'saving' ? 'svg-spinners:ring-resize' : draftSaveState === 'error' ? 'solar:danger-circle-linear' : 'solar:cloud-check-linear'" width="15"/>
-          {{ draftSaveLabel }}
+  <div class="send" v-show="show">
+    <div ref="composeWindowRef" class="compose-window" :class="{ minimized }" :style="windowStyle">
+      <header class="compose-head" @mousedown="startDrag">
+        <span class="compose-head-title">
+          <Icon icon="material-symbols:edit-outline" width="16" />
+          <strong>{{ composeTitle }}</strong>
+          <span v-if="draftSaveState !== 'idle'" :class="['draft-save-status', draftSaveState]">
+            <Icon :icon="draftSaveState === 'saving' ? 'svg-spinners:ring-resize' : draftSaveState === 'error' ? 'solar:danger-circle-linear' : 'solar:cloud-check-linear'" width="14"/>
+            {{ draftSaveLabel }}
+          </span>
         </span>
-        <div class="topbar-actions">
-          <button class="secondary-button" type="button" @click="saveDraftNow"><Icon icon="solar:diskette-outline" width="17"/>{{ settingStore.lang === 'zh' ? '存草稿' : 'Save draft' }}</button>
-          <button class="secondary-button" type="button" @click="previewMail"><Icon icon="solar:eye-linear" width="17"/>{{ settingStore.lang === 'zh' ? '预览' : 'Preview' }}</button>
-          <button class="send-button" type="button" @click="sendEmail"><Icon icon="solar:plain-2-bold" width="17"/><span>{{ sendActionLabel }}</span></button>
-        </div>
+        <span class="compose-head-actions">
+          <button class="head-icon" type="button" :class="{ active: assistantOpen }" :title="settingStore.lang === 'zh' ? '写信助手' : 'Compose assistant'" @click="assistantOpen = !assistantOpen">
+            <Icon icon="solar:widget-5-linear" width="17"/>
+          </button>
+          <button class="head-icon" type="button" :title="settingStore.lang === 'zh' ? '存草稿' : 'Save draft'" @click="saveDraftNow">
+            <Icon icon="solar:diskette-outline" width="17"/>
+          </button>
+          <button class="head-icon" type="button" :title="settingStore.lang === 'zh' ? '预览' : 'Preview'" @click="previewMail">
+            <Icon icon="solar:eye-linear" width="17"/>
+          </button>
+          <button class="send-button" type="button" @click="sendEmail"><Icon icon="solar:plain-2-bold" width="15"/><span>{{ sendActionLabel }}</span></button>
+          <button class="head-icon" type="button" :title="minimized ? (settingStore.lang === 'zh' ? '展开' : 'Expand') : (settingStore.lang === 'zh' ? '最小化' : 'Minimize')" @click="minimized = !minimized">
+            <Icon :icon="minimized ? 'solar:maximize-square-2-linear' : 'solar:minimize-square-2-linear'" width="16"/>
+          </button>
+          <button class="head-icon" type="button" :title="settingStore.lang === 'zh' ? '关闭' : 'Close'" @click="close">
+            <Icon icon="material-symbols-light:close-rounded" width="19"/>
+          </button>
+        </span>
       </header>
 
+      <div class="compose-body" v-show="!minimized">
       <div class="compose-grid">
         <main class="compose-main-card">
           <section class="message-meta">
@@ -69,7 +85,12 @@
           </section>
         </main>
 
-        <aside class="compose-aside">
+        <aside class="compose-assistant" :class="{ open: assistantOpen }">
+          <div class="assistant-head">
+            <strong>{{ settingStore.lang === 'zh' ? '写信助手' : 'Compose assistant' }}</strong>
+            <button class="head-icon" type="button" @click="assistantOpen = false"><Icon icon="material-symbols-light:close-rounded" width="18"/></button>
+          </div>
+          <div class="assistant-body">
           <section class="side-card recipient-insight">
             <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '收件人洞察' : 'Recipient insight' }}</span><small>{{ form.receiveEmail.length }} {{ settingStore.lang === 'zh' ? '位' : 'people' }}</small></div>
             <div v-if="recipientInsights.length" class="insight-list">
@@ -117,7 +138,9 @@
             <div v-else class="signature-empty">{{ configuredSignatures.length ? (settingStore.lang === 'zh' ? '当前语言没有签名，将使用英语或首个可用签名' : 'No exact match; the fallback signature will be used') : (settingStore.lang === 'zh' ? '尚未配置签名' : 'No signature configured') }}</div>
             <button class="signature-apply" type="button" :disabled="!activeSignature" @click="applySignatureToEditor"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '插入 / 更新签名' : 'Insert / update signature' }}</button>
           </section>
+          </div>
         </aside>
+      </div>
       </div>
     </div>
 
@@ -203,6 +226,49 @@ const accountStore = useAccountStore()
 const editor = ref({})
 const userStore = useUserStore();
 const show = ref(false);
+const minimized = ref(false)
+const assistantOpen = ref(false)
+const composeWindowRef = ref(null)
+const windowPos = ref({ left: null, top: null })
+let dragState = null
+
+const windowStyle = computed(() => windowPos.value.left === null ? {} : {
+  left: `${windowPos.value.left}px`,
+  top: `${windowPos.value.top}px`,
+  right: 'auto',
+  bottom: 'auto',
+})
+
+function startDrag(event) {
+  if (event.button !== 0) return
+  if (event.target.closest('button')) return
+  if (window.innerWidth < 900) return
+  const el = composeWindowRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  dragState = { dx: event.clientX - rect.left, dy: event.clientY - rect.top }
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('mouseup', endDrag)
+  event.preventDefault()
+}
+
+function onDragMove(event) {
+  const el = composeWindowRef.value
+  if (!dragState || !el) return
+  const maxLeft = window.innerWidth - el.offsetWidth - 8
+  const maxTop = window.innerHeight - el.offsetHeight - 8
+  windowPos.value = {
+    left: Math.min(Math.max(8, event.clientX - dragState.dx), Math.max(8, maxLeft)),
+    top: Math.min(Math.max(8, event.clientY - dragState.dy), Math.max(8, maxTop)),
+  }
+}
+
+function endDrag() {
+  dragState = null
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', endDrag)
+}
+
 const percent = ref(0)
 let percentMessage = null
 let sending = false
@@ -917,6 +983,8 @@ async function open() {
     form.name = accountStore.currentAccount.name;
   }
   autoSaveReady = false
+  minimized.value = false
+  windowPos.value = { left: null, top: null }
   show.value = true;
   await nextTick()
   setTimeout(() => {
@@ -944,6 +1012,8 @@ async function openDraft(draft) {
     lastSavedFingerprint = draftFingerprint()
     autoSaveReady = true
   }, 100)
+  minimized.value = false
+  windowPos.value = { left: null, top: null }
   show.value = true;
   await nextTick()
   editor.value?.focus?.()
@@ -1089,36 +1159,61 @@ async function saveDraftNow() {
   position: fixed;
   inset: 0;
   z-index: 1900;
+  pointer-events: none;
+}
+
+.compose-window {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  width: min(680px, calc(100vw - 40px));
+  height: min(660px, calc(100vh - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, .22);
+}
+
+.compose-head {
+  flex: none;
+  height: 42px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, .45);
-  backdrop-filter: blur(8px);
-
-  .write-box {
-    width: min(1180px, 100%);
-    height: min(820px, calc(100vh - 48px));
-    display: grid;
-    grid-template-rows: auto 1fr;
-    overflow: hidden;
-    background: var(--el-bg-color);
-    border: 1px solid var(--el-border-color-light);
-    border-radius: var(--r-xl);
-    box-shadow: var(--sh-3);
-    transition: var(--el-transition-duration);
-
-    .container {
-      min-height: 0;
-      height: 100%;
-      display: grid;
-      grid-template-rows: auto minmax(250px, 1fr) auto;
-      gap: 14px;
-      padding: 18px 20px 20px;
-    }
-  }
+  gap: 10px;
+  padding: 0 8px 0 12px;
+  color: var(--text);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  cursor: move;
+  user-select: none;
 }
-.send.compose-full { left: 0; }
+.compose-head-title { min-width: 0; flex: 1; display: flex; align-items: center; gap: 7px; }
+.compose-head-title strong { overflow: hidden; font-size: 13.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.compose-head-actions { flex: none; display: flex; align-items: center; gap: 4px; }
+.head-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.head-icon:hover { color: var(--text); background: var(--surface-3); }
+.head-icon.active { color: var(--brand-600); background: var(--brand-soft); }
+.compose-head .send-button { height: 28px; min-width: 68px; padding: 0 12px; margin: 0 2px; border-radius: var(--r-md); font-size: 12.5px; }
+
+.compose-body { flex: 1; min-height: 0; display: flex; }
+.compose-window.minimized { height: 42px; }
+
 
 .compose-header {
   min-height: 70px;
@@ -1415,30 +1510,16 @@ async function saveDraftNow() {
   .compose-title-copy strong { font-size: 15px; }
 }
 
-/* Full-page compose workspace, aligned with the product redesign reference. */
-.send {
-  inset: 56px 0 0 var(--sidebar-w);
-  z-index: 90;
-  display: block;
-  padding: 0;
-  overflow: auto;
-  background: var(--surface-2);
-  backdrop-filter: none;
-}
-.compose-workspace { width: min(1320px, calc(100% - 40px)); min-height: 100%; margin: 0 auto; padding: 18px 0 28px; }
-.compose-topbar { height: 42px; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.compose-topbar h1 { margin: 0; color: var(--text); font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+/* 写信浮窗 */
 .draft-save-status { min-width: 0; display: inline-flex; align-items: center; gap: 5px; color: var(--text-3); font-size: 11.5px; white-space: nowrap; }
 .draft-save-status.saved { color: var(--brand-600); }
 .draft-save-status.error { color: var(--danger); }
-.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .back-button, .secondary-button, .inline-link, .add-attachment, .contact-book-button, .phrase-list button, .phrase-add, .phrase-empty, .dialog-delete, .translate-row button { border: 0; font: inherit; cursor: pointer; }
 .back-button, .secondary-button { height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 12.5px; font-weight: 500; }
 .back-button:hover, .secondary-button:hover { color: var(--brand-700); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); background: var(--brand-soft); }
-.topbar-actions .send-button { height: 32px; min-width: 76px; padding: 0 14px; border-radius: var(--r-md); font-size: 12.5px; }
-.compose-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 16px; }
-.compose-main-card { min-width: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
-.compose-main-card .message-meta { overflow: visible; border: 0; border-radius: 0; background: var(--surface); }
+.compose-grid { position: relative; flex: 1; min-width: 0; display: flex; }
+.compose-main-card { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); }
+.compose-main-card .message-meta { flex: none; overflow: visible; border: 0; border-radius: 0; background: var(--surface); }
 .compose-main-card .field-row { min-height: 40px; padding: 5px 14px; border-bottom: 1px solid var(--border); }
 .compose-main-card .field-row > label { width: 64px; flex-basis: 64px; color: var(--text-2); font-size: 12.5px; font-weight: 700; }
 .recipient-control { gap: 7px; }
@@ -1450,21 +1531,40 @@ async function saveDraftNow() {
 .sender-identity strong { color: var(--text); font-size: 12.5px; }
 .sender-avatar { width: 26px; height: 26px; flex-basis: 26px; }
 .quota-hint { margin-left: auto; color: var(--text-3); font-size: 11px; white-space: nowrap; }
-.compose-main-card .editor-shell { height: 450px; min-height: 360px; overflow: hidden; border: 0; border-radius: 0; background: var(--surface); }
+.compose-main-card .editor-shell { flex: 1; min-height: 140px; height: auto; overflow: hidden; border: 0; border-radius: 0; background: var(--surface); }
 .compose-main-card .editor-shell :deep(.tox-editor-header) { padding: 0 8px !important; background: var(--surface-2) !important; border-bottom: 1px solid var(--border) !important; }
 .compose-main-card .editor-shell :deep(.tox-toolbar-overlord), .compose-main-card .editor-shell :deep(.tox-toolbar__primary) { background: var(--surface-2) !important; }
 .compose-main-card .editor-shell :deep(.tox-edit-area) { background: var(--surface); }
-.editor-status { min-height: 36px; padding: 7px 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--text-3); background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 10.5px; }
+.editor-status { flex: none; min-height: 30px; padding: 6px 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--text-3); background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 10.5px; }
 .editor-status .compatibility { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
-.attachment-zone { padding: 14px 16px; background: var(--surface-2); }
+.attachment-zone { flex: none; padding: 10px 14px; background: var(--surface-2); }
 .attachment-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .attachment-head > div { display: flex; align-items: center; gap: 9px; }
 .attachment-head strong { color: var(--text-2); font-size: 12px; }
 .attachment-head span { color: var(--text-3); font-size: 11px; }
 .add-attachment { height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 0 9px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 11.5px; }
 .empty-attachments { min-height: 32px; margin-top: 8px; display: flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 11.5px; }
-.compose-main-card .att-list { max-height: 130px; }
-.compose-aside { display: grid; gap: 14px; }
+.compose-main-card .att-list { max-height: 84px; overflow-y: auto; }
+/* 写信助手：窗内滑出面板 */
+.compose-assistant {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 24px rgba(15, 23, 42, .08);
+  transform: translateX(102%);
+  transition: transform var(--dur) var(--ease);
+}
+.compose-assistant.open { transform: translateX(0); }
+.assistant-head { flex: none; height: 40px; padding: 0 8px 0 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.assistant-head strong { color: var(--text); font-size: 12.5px; font-weight: 600; }
+.assistant-body { flex: 1; min-height: 0; padding: 12px; display: grid; gap: 10px; align-content: start; overflow-y: auto; }
 .side-card { min-width: 0; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .side-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .side-title > span { color: var(--text-3); font-size: 11.5px; font-weight: 750; }
@@ -1525,33 +1625,30 @@ async function saveDraftNow() {
 .preview-message h2 { margin: 13px 0 18px; color: var(--text); font-size: 18px; }
 .preview-body { min-height: 240px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text); line-height: 1.75; }
 
-@media (max-width: 1200px) {
-  .compose-workspace { width: calc(100% - 24px); }
-  .compose-grid { grid-template-columns: minmax(0, 1fr) 285px; gap: 12px; }
-}
 @media (max-width: 1024px) {
-  .send { inset: 56px 0 0 0; }
-  .compose-grid { grid-template-columns: minmax(0, 1fr); }
-  .compose-aside { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .compose-window { right: 12px; bottom: 12px; width: min(640px, calc(100vw - 24px)); height: min(640px, calc(100vh - 24px)); }
 }
 @media (max-width: 767px) {
-  .send { inset: 52px 0 58px 0; }
-  .compose-workspace { width: 100%; padding: 10px 10px 24px; }
-  .compose-topbar { height: auto; min-height: 42px; flex-wrap: wrap; }
-  .compose-topbar h1 { font-size: 15px; }
-  .draft-save-status { order: 4; width: 100%; padding-left: 47px; }
-  .topbar-actions { gap: 5px; }
-  .secondary-button { width: 36px; padding: 0; font-size: 0; }
-  .topbar-actions .send-button { min-width: 68px; padding: 0 10px; }
-  .compose-main-card { border-radius: var(--r-md); }
-  .compose-main-card .field-row { align-items: flex-start; flex-direction: column; gap: 5px; padding: 9px 11px; }
+  .compose-window {
+    right: 0;
+    bottom: 0;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+  .compose-head { cursor: default; }
+  .draft-save-status { display: none; }
+  .compose-head .send-button { min-width: 62px; padding: 0 10px; }
+  .compose-assistant { width: 100%; }
+  .compose-main-card .field-row { align-items: flex-start; flex-direction: column; gap: 5px; padding: 8px 11px; }
   .compose-main-card .field-row > label { width: auto; flex-basis: auto; }
   .recipient-control { width: 100%; flex-wrap: wrap; }
   .recipient-control :deep(.el-input-tag) { flex-basis: 100%; }
   .quota-hint { margin-left: 0; }
-  .compose-main-card .editor-shell { height: 420px; min-height: 320px; }
-  .editor-status { gap: 7px; padding: 7px 10px; }
-  .editor-status .compatibility { width: 100%; margin-left: 0; }
-  .compose-aside { grid-template-columns: minmax(0, 1fr); }
+  .editor-status { gap: 7px; padding: 6px 10px; }
+  .editor-status .compatibility { display: none; }
 }
 </style>
