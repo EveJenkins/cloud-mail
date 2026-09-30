@@ -48,6 +48,8 @@
   --sidebar-w: 224px;
   --mail-list-w: 360px;
   --topbar-h: 52px;
+  --page-max: 1440px;
+  --page-pad: 28px;
 
   /* 顶部通栏 */
   --topbar-bg: var(--brand-600);

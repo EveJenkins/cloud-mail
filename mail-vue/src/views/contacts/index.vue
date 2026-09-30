@@ -187,9 +187,9 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 
 <style lang="scss" scoped>
 .contacts-page { height: 100%; overflow-y: auto; background: var(--bg); }
-.contacts-shell { width: min(1180px, 100%); margin: 0 auto; padding: 24px; }
+.contacts-shell { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: var(--page-pad); }
 .page-head { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-.page-head h1 { margin: 0; color: var(--text); font-size: 19px; line-height: 1.35; }
+.page-head h1 { margin: 0; color: var(--text); font-size: 21px; line-height: 1.35; }
 .page-head p { margin: 3px 0 0; color: var(--text-3); font-size: 13px; }
 .head-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .contact-search { width: 240px; height: 38px; padding: 0 11px; display: flex; align-items: center; gap: 8px; color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); }

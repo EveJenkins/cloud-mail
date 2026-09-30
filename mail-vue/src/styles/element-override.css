@@ -20,7 +20,7 @@
   --el-border-radius-small: 4px;
   --el-box-shadow-light: var(--sh-2);
   --el-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", Roboto, sans-serif;
-  --el-font-size-base: 13px;
+  --el-font-size-base: 14px;
   --el-component-size: 32px;
 }
 
@@ -36,10 +36,10 @@ html.dark {
   --el-color-primary-light-9: var(--brand-soft);
 }
 
-.el-button { height: 32px; padding: 0 14px; font-weight: 500; border-radius: var(--r-md); }
-.el-button--large { height: 38px; }
-.el-button--small { height: 26px; }
-.el-button.is-circle { width: 32px; padding: 0; }
+.el-button { height: 34px; padding: 0 16px; font-weight: 500; border-radius: var(--r-md); }
+.el-button--large { height: 40px; }
+.el-button--small { height: 28px; }
+.el-button.is-circle { width: 34px; padding: 0; }
 .el-button.is-circle.el-button--small { width: 26px; }
 .el-button.el-button--primary {
   color: #fff;

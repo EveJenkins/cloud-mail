@@ -238,11 +238,11 @@ function submitPwd() {
 </script>
 <style scoped lang="scss">
 .settings-page { height: 100%; overflow: auto; padding: 30px; color: var(--text); background: var(--surface-2); }
-.settings-heading { max-width: 980px; margin: 0 auto 20px; display: flex; align-items: center; gap: 13px; }
+.settings-heading { max-width: 1180px; margin: 0 auto 20px; display: flex; align-items: center; gap: 13px; }
 .heading-icon { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; color: #fff; background: var(--brand-600); border-radius: var(--r-md); }
-.settings-heading h1 { margin: 0; font-size: 22px; line-height: 1.35; letter-spacing: -.3px; }
+.settings-heading h1 { margin: 0; font-size: 24px; line-height: 1.35; letter-spacing: -.3px; }
 .settings-heading p { margin: 3px 0 0; color: var(--text-3); font-size: 12.5px; }
-.settings-grid { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.settings-grid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .settings-card { min-width: 0; overflow: hidden; padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .profile-card { grid-column: 1 / -1; }
 .card-title { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; color: var(--brand-700); }

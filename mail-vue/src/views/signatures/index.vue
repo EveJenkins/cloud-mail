@@ -109,18 +109,18 @@ function removeSignature(signature) {
 
 <style lang="scss" scoped>
 .signatures-page { height: 100%; overflow-y: auto; background: var(--bg); }
-.page-shell { width: min(1100px, 100%); margin: 0 auto; padding: 24px; }
+.page-shell { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: var(--page-pad); }
 .page-head, .heading-copy, .auto-note, .signature-card header, .card-actions { display: flex; align-items: center; }
 .page-head { gap: 16px; margin-bottom: 16px; }
 .heading-copy { min-width: 0; gap: 12px; }
 .heading-icon { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; color: #fff; border-radius: var(--r-md); background: var(--brand-600); }
-.page-head h1 { margin: 0; color: var(--text); font-size: 19px; }
-.page-head p { margin: 3px 0 0; color: var(--text-3); font-size: 12.5px; }
+.page-head h1 { margin: 0; color: var(--text); font-size: 21px; }
+.page-head p { margin: 4px 0 0; color: var(--text-3); font-size: 13px; }
 .primary-button { height: 38px; margin-left: auto; padding: 0 13px; display: inline-flex; align-items: center; gap: 6px; color: #fff; border: 0; border-radius: var(--r-sm); background: var(--brand-600); font-weight: 700; cursor: pointer; }
 .auto-note { gap: 11px; margin-bottom: 16px; padding: 14px 16px; color: var(--brand-600); border: 1px solid color-mix(in srgb, var(--brand-500) 25%, var(--border)); border-radius: var(--r-lg); background: var(--brand-soft); }
 .auto-note strong { color: var(--text); font-size: 13px; }.auto-note p { margin: 3px 0 0; color: var(--text-3); font-size: 11.5px; }
-.signature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.signature-card { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
+.signature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 16px; }
+.signature-card { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
 .signature-card header { gap: 6px; }.signature-card h2 { margin: 13px 0 9px; color: var(--text); font-size: 14px; }.language-list { min-width: 0; display: flex; flex-wrap: wrap; gap: 5px; }
 .language-badge, .fallback-badge, .default-badge { padding: 4px 7px; border: 0; border-radius: 6px; font-size: 10.5px; font-weight: 700; }.language-badge { color: var(--text-3); background: var(--surface-3); cursor: pointer; }.language-badge.active { color: var(--brand-700); background: var(--brand-soft); box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-500) 28%, transparent) inset; }.default-badge { color: #fff; background: var(--brand-600); }.fallback-badge { color: var(--text-3); background: var(--surface-3); }
 .card-actions { margin-left: auto; gap: 5px; }.card-actions button { width: 30px; height: 30px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; }.card-actions button:hover { color: var(--brand-600); background: var(--brand-soft); }.card-actions .danger:hover { color: var(--danger); }

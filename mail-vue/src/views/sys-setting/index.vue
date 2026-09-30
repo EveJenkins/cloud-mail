@@ -1842,7 +1842,7 @@ function editSetting(settingForm, refreshStatus = true) {
   box-shadow: var(--sh-1);
   transition: all var(--dur) var(--ease);
   overflow: hidden;
-  max-width: 900px;
+  max-width: 1080px;
   width: 100%;
 }
 

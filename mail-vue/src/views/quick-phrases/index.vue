@@ -129,12 +129,12 @@ async function copyPhrase(phrase) {
 
 <style lang="scss" scoped>
 .phrases-page { height: 100%; overflow-y: auto; background: var(--bg); }
-.phrases-shell { width: min(1180px, 100%); margin: 0 auto; padding: 24px; }
+.phrases-shell { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: var(--page-pad); }
 .page-head, .heading-copy, .head-actions, .summary-row, .label-cell, .row-actions { display: flex; align-items: center; }
 .page-head { gap: 18px; margin-bottom: 16px; }
 .heading-copy { min-width: 0; gap: 12px; }
 .heading-icon { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; color: #fff; border-radius: var(--r-md); background: var(--brand-600); }
-.page-head h1 { margin: 0; color: var(--text); font-size: 19px; }
+.page-head h1 { margin: 0; color: var(--text); font-size: 21px; }
 .page-head p { margin: 3px 0 0; color: var(--text-3); font-size: 12.5px; }
 .head-actions { margin-left: auto; gap: 8px; }
 .search-box { width: 220px; height: 38px; padding: 0 11px; display: flex; align-items: center; gap: 7px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); }
