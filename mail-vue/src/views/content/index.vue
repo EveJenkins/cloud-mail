@@ -10,10 +10,6 @@
         </button>
       </div>
       <div class="action-group action-group-right" v-perm="'email:send'">
-        <button class="detail-action ai-translate-action" :class="{ active: translationOpen }" @click="translationOpen = !translationOpen">
-          <Icon icon="solar:translation-2-linear" width="18" />
-          <span>Workers AI {{ settingStore.lang === 'zh' ? '翻译' : 'Translate' }}</span>
-        </button>
         <button v-if="emailStore.contentData.showReply" class="detail-action" @click="openReply"><Icon icon="la:reply" width="18" />{{ $t('reply') }}</button>
         <button v-if="emailStore.contentData.showReply" class="detail-action" @click="openForward"><Icon icon="iconoir:arrow-up-right" width="17" />{{ $t('forward') }}</button>
       </div>
@@ -21,6 +17,7 @@
     <div></div>
     <el-scrollbar class="scrollbar">
       <div class="container">
+      <div class="read-main">
         <div class="message-card">
         <div class="email-title">
           {{ email.subject }}
@@ -63,7 +60,18 @@
               <el-button type="primary" @click="copyCode"><Icon icon="solar:copy-linear" width="15" />{{ settingStore.lang === 'zh' ? '复制验证码' : 'Copy code' }}</el-button>
             </div>
           </div>
-          <section class="translation-card" v-if="translationOpen">
+          <div class="body-block">
+          <button class="translate-fab" type="button" :class="{ active: translationOpen }"
+                  :title="translationOpen ? (settingStore.lang === 'zh' ? '关闭翻译' : 'Close translation') : (settingStore.lang === 'zh' ? 'Workers AI 翻译正文' : 'Translate with Workers AI')"
+                  @click="translationOpen = !translationOpen">
+            <Icon :icon="translationOpen ? 'solar:close-circle-linear' : 'solar:translation-2-linear'" width="17" />
+          </button>
+          <el-scrollbar class="htm-scrollbar" :class="!email.attList?.length ? 'bottom-distance' : ''">
+            <ShadowHtml class="shadow-html" :html="displayBody.html" :fallback-text="displayBody.text" comfortable v-if="displayBody.html" />
+            <pre v-else-if="displayBody.text" class="email-text">{{ displayBody.text }}</pre>
+            <div v-else class="empty-email-body">{{ settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'This message has no displayable body content' }}</div>
+          </el-scrollbar>
+            <section class="translation-card" v-if="translationOpen">
             <div class="translation-heading">
               <div class="translation-title">
                 <span class="translation-mark"><Icon icon="solar:translation-2-linear" width="19" height="19" /></span>
@@ -97,11 +105,116 @@
               {{ settingStore.lang === 'zh' ? '选择目标语言后，点击“开始翻译”即可生成译文。' : 'Choose a language and select Translate to generate a translation.' }}
             </div>
           </section>
-          <el-scrollbar class="htm-scrollbar" :class="!email.attList?.length ? 'bottom-distance' : ''">
-            <ShadowHtml class="shadow-html" :html="displayBody.html" :fallback-text="displayBody.text" comfortable v-if="displayBody.html" />
-            <pre v-else-if="displayBody.text" class="email-text">{{ displayBody.text }}</pre>
-            <div v-else class="empty-email-body">{{ settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'This message has no displayable body content' }}</div>
-          </el-scrollbar>
+          </div>
+        </div>
+        </div>
+        <section class="conversation-thread" v-if="relatedThreadMessages.length">
+          <div class="conversation-heading">
+            <div>
+              <Icon icon="solar:chat-round-dots-linear" width="18" />
+              <strong>{{ settingStore.lang === 'zh' ? '会话记录' : 'Conversation' }}</strong>
+            </div>
+            <span>{{ relatedThreadMessages.length }} {{ settingStore.lang === 'zh' ? '封关联邮件' : 'related messages' }}</span>
+          </div>
+          <article class="thread-message" v-for="item in relatedThreadMessages" :key="item.emailId" :class="{ sent: item.type === 1, failed: threadStatus(item).failed }">
+            <header class="thread-message-head">
+              <span class="thread-avatar" :class="{ sent: item.type === 1 }">{{ threadInitial(item) }}</span>
+              <div class="thread-sender">
+                <div><strong>{{ item.type === 1 ? (settingStore.lang === 'zh' ? '我的回复' : 'My reply') : (item.name || item.sendEmail) }}</strong><span>{{ threadAddress(item) }}</span></div>
+                <small>{{ item.type === 1 ? (settingStore.lang === 'zh' ? '发送给客户' : 'Sent to customer') : (settingStore.lang === 'zh' ? '客户回复' : 'Customer reply') }} · {{ formatDetailDate(item.createTime) }}</small>
+              </div>
+              <div class="thread-actions">
+                <span class="thread-direction" :class="threadStatus(item).className"><Icon :icon="threadStatus(item).icon" width="15" />{{ threadStatus(item).label }}</span>
+                <button v-if="canRetryThreadMessage(item)" class="thread-retry" type="button" :disabled="isRetrying(item)" @click="retryThreadMessage(item)">
+                  <Icon :icon="isRetrying(item) ? 'svg-spinners:ring-resize' : 'solar:refresh-linear'" width="14" />
+                  {{ isRetrying(item) ? (settingStore.lang === 'zh' ? '重试中' : 'Retrying') : (settingStore.lang === 'zh' ? '重新发送' : 'Retry') }}
+                </button>
+              </div>
+            </header>
+            <div class="thread-subject" v-if="item.subject && item.subject !== email.subject">{{ item.subject }}</div>
+            <ShadowHtml v-if="threadDisplayParts(item).primary.html" class="thread-body" :html="threadDisplayParts(item).primary.html" comfortable />
+            <pre v-else class="thread-body thread-text">{{ threadDisplayParts(item).primary.text || (settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'No displayable message body') }}</pre>
+            <details class="quoted-content" v-if="threadDisplayParts(item).quoted.html || threadDisplayParts(item).quoted.text">
+              <summary><Icon icon="solar:history-linear" width="15" />{{ settingStore.lang === 'zh' ? '展开引用内容' : 'Show quoted message' }}</summary>
+              <ShadowHtml v-if="threadDisplayParts(item).quoted.html" class="thread-body quoted-body" :html="threadDisplayParts(item).quoted.html" comfortable />
+              <pre v-else class="thread-body thread-text quoted-body">{{ threadDisplayParts(item).quoted.text }}</pre>
+            </details>
+          </article>
+        </section>
+        <section class="system-notice" v-if="detectedCode">
+          <span class="notice-icon"><Icon icon="solar:shield-check-linear" width="18" /></span>
+          <div><strong>{{ settingStore.lang === 'zh' ? '系统通知类邮件，无需回复' : 'System notification — no reply needed' }}</strong><p>{{ settingStore.lang === 'zh' ? 'Workers AI 已识别为验证码通知，因此不会生成回复草稿；验证码可直接复制使用。' : 'Workers AI recognized a verification-code notice, so no reply draft is generated.' }}</p></div>
+        </section>
+        <section class="quick-reply" v-else-if="emailStore.contentData.showReply" v-perm="'email:send'">
+          <div class="quick-reply-heading">
+            <div class="reply-title">
+              <span class="reply-mark"><Icon icon="solar:chat-round-line-linear" width="17" height="17"/></span>
+              <strong>{{ settingStore.lang === 'zh' ? '快速回复' : 'Quick reply' }}</strong>
+              <span class="reply-recipient">{{ settingStore.lang === 'zh' ? `回复给 ${replyTargetLabel}` : `Reply to ${replyTargetLabel}` }}</span>
+            </div>
+            <div class="ai-draft">
+              <button class="ai-draft-btn" type="button" :class="{ active: aiPanelOpen }" @click="aiPanelOpen = !aiPanelOpen">
+                <Icon icon="solar:magic-stick-3-linear" width="15"/>{{ settingStore.lang === 'zh' ? 'AI 起草' : 'AI draft' }}
+                <Icon icon="mingcute:down-small-fill" width="15"/>
+              </button>
+              <div class="ai-panel" v-show="aiPanelOpen">
+                <div class="ai-panel-row">
+                  <span class="panel-label">{{ settingStore.lang === 'zh' ? '语气' : 'Tone' }}</span>
+                  <div class="tone-options">
+                    <button v-for="item in toneOptions" :key="item.value" type="button" :class="{ active: aiTone === item.value }" @click="aiTone = item.value">{{ item.label }}</button>
+                  </div>
+                </div>
+                <div class="ai-panel-row">
+                  <span class="panel-label">{{ settingStore.lang === 'zh' ? '语言' : 'Language' }}</span>
+                  <select v-model="aiLanguage" class="ai-panel-select">
+                    <option value="auto">{{ settingStore.lang === 'zh' ? '根据通讯录自动选择' : 'Auto from contact' }}</option>
+                    <option v-for="language in replyLanguages" :key="language.value" :value="language.value">{{ language.label }}</option>
+                  </select>
+                </div>
+                <p class="ai-panel-hint" :class="{ matched: replyAutoLanguage.contact }">
+                  <Icon :icon="replyAutoLanguage.contact ? 'solar:map-point-wave-linear' : 'solar:info-circle-linear'" width="13" />
+                  <span>{{ replyLanguageHint }}</span>
+                </p>
+                <button class="ai-generate" type="button" :disabled="aiGenerating" @click="generateAiReply(false)">
+                  <Icon :icon="aiGenerating ? 'svg-spinners:ring-resize' : 'solar:stars-minimalistic-bold'" width="15" height="15"/>
+                  {{ aiGenerating ? (settingStore.lang === 'zh' ? '正在起草…' : 'Drafting…') : (quickReply ? (settingStore.lang === 'zh' ? '重新起草' : 'Regenerate') : (settingStore.lang === 'zh' ? '生成草稿' : 'Generate draft')) }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="ai-insight" v-if="aiCategory || aiSummary">
+            <span v-if="aiCategory">{{ aiCategory }}</span>
+            <p v-if="aiSummary">{{ aiSummary }}</p>
+          </div>
+          <div class="quick-reply-editor" :class="{ focused: quickReplyFocused }">
+            <textarea
+                v-model="quickReply"
+                :placeholder="settingStore.lang === 'zh' ? '输入回复内容，或用右上角 AI 起草…' : 'Write your reply, or use AI draft…'"
+                rows="3"
+                @focus="quickReplyFocused = true"
+                @blur="quickReplyFocused = false"
+                @keydown.ctrl.enter.prevent="sendQuickReply"
+                @keydown.meta.enter.prevent="sendQuickReply"
+            ></textarea>
+            <div class="quick-reply-footer">
+              <button class="reply-tool" type="button" @click="openReplyWithDraft">
+                <Icon icon="solar:pen-new-square-linear" width="17" height="17"/>
+                <span>{{ settingStore.lang === 'zh' ? '在写信页打开' : 'Open in composer' }}</span>
+              </button>
+              <button v-if="quickReply" class="reply-tool" type="button" :disabled="aiGenerating" @click="generateAiReply(true)">
+                <Icon icon="solar:refresh-linear" width="16" height="16"/>
+                <span>{{ settingStore.lang === 'zh' ? '换一版' : 'Another version' }}</span>
+              </button>
+              <span class="reply-shortcut">Ctrl / ⌘ + Enter</span>
+              <button class="quick-send" type="button" :disabled="quickSending || !quickReply.trim()" @click="sendQuickReply">
+                <Icon icon="solar:plain-2-bold" width="16" height="16"/>
+                <span>{{ quickSending ? (settingStore.lang === 'zh' ? '发送中…' : 'Sending…') : (settingStore.lang === 'zh' ? '发送回复' : 'Send reply') }}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+      <aside class="read-side">
           <div class="att" v-if="email.attList?.length > 0">
             <div class="att-title">
               <span>{{$t('attachments')}} · Cloudflare R2</span>
@@ -148,108 +261,7 @@
               <span>{{ settingStore.lang === 'zh' ? 'Telegram 推送通道已启用' : 'Telegram push channel enabled' }}</span>
             </div>
           </div>
-        </div>
-        </div>
-        <section class="conversation-thread" v-if="relatedThreadMessages.length">
-          <div class="conversation-heading">
-            <div>
-              <Icon icon="solar:chat-round-dots-linear" width="18" />
-              <strong>{{ settingStore.lang === 'zh' ? '会话记录' : 'Conversation' }}</strong>
-            </div>
-            <span>{{ relatedThreadMessages.length }} {{ settingStore.lang === 'zh' ? '封关联邮件' : 'related messages' }}</span>
-          </div>
-          <article class="thread-message" v-for="item in relatedThreadMessages" :key="item.emailId" :class="{ sent: item.type === 1, failed: threadStatus(item).failed }">
-            <header class="thread-message-head">
-              <span class="thread-avatar" :class="{ sent: item.type === 1 }">{{ threadInitial(item) }}</span>
-              <div class="thread-sender">
-                <div><strong>{{ item.type === 1 ? (settingStore.lang === 'zh' ? '我的回复' : 'My reply') : (item.name || item.sendEmail) }}</strong><span>{{ threadAddress(item) }}</span></div>
-                <small>{{ item.type === 1 ? (settingStore.lang === 'zh' ? '发送给客户' : 'Sent to customer') : (settingStore.lang === 'zh' ? '客户回复' : 'Customer reply') }} · {{ formatDetailDate(item.createTime) }}</small>
-              </div>
-              <div class="thread-actions">
-                <span class="thread-direction" :class="threadStatus(item).className"><Icon :icon="threadStatus(item).icon" width="15" />{{ threadStatus(item).label }}</span>
-                <button v-if="canRetryThreadMessage(item)" class="thread-retry" type="button" :disabled="isRetrying(item)" @click="retryThreadMessage(item)">
-                  <Icon :icon="isRetrying(item) ? 'svg-spinners:ring-resize' : 'solar:refresh-linear'" width="14" />
-                  {{ isRetrying(item) ? (settingStore.lang === 'zh' ? '重试中' : 'Retrying') : (settingStore.lang === 'zh' ? '重新发送' : 'Retry') }}
-                </button>
-              </div>
-            </header>
-            <div class="thread-subject" v-if="item.subject && item.subject !== email.subject">{{ item.subject }}</div>
-            <ShadowHtml v-if="threadDisplayParts(item).primary.html" class="thread-body" :html="threadDisplayParts(item).primary.html" comfortable />
-            <pre v-else class="thread-body thread-text">{{ threadDisplayParts(item).primary.text || (settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'No displayable message body') }}</pre>
-            <details class="quoted-content" v-if="threadDisplayParts(item).quoted.html || threadDisplayParts(item).quoted.text">
-              <summary><Icon icon="solar:history-linear" width="15" />{{ settingStore.lang === 'zh' ? '展开引用内容' : 'Show quoted message' }}</summary>
-              <ShadowHtml v-if="threadDisplayParts(item).quoted.html" class="thread-body quoted-body" :html="threadDisplayParts(item).quoted.html" comfortable />
-              <pre v-else class="thread-body thread-text quoted-body">{{ threadDisplayParts(item).quoted.text }}</pre>
-            </details>
-          </article>
-        </section>
-        <section class="system-notice" v-if="detectedCode">
-          <span class="notice-icon"><Icon icon="solar:shield-check-linear" width="18" /></span>
-          <div><strong>{{ settingStore.lang === 'zh' ? '系统通知类邮件，无需回复' : 'System notification — no reply needed' }}</strong><p>{{ settingStore.lang === 'zh' ? 'Workers AI 已识别为验证码通知，因此不会生成回复草稿；验证码可直接复制使用。' : 'Workers AI recognized a verification-code notice, so no reply draft is generated.' }}</p></div>
-        </section>
-        <section class="quick-reply" v-else-if="emailStore.contentData.showReply" v-perm="'email:send'">
-          <div class="quick-reply-heading">
-            <div class="ai-reply-title">
-              <span class="ai-mark"><Icon icon="solar:magic-stick-3-linear" width="18" height="18"/></span>
-              <div>
-                <strong>Workers AI {{ settingStore.lang === 'zh' ? '智能回复' : 'Smart reply' }}</strong>
-                <small>{{ settingStore.lang === 'zh' ? '根据邮件上下文生成，可在发送前自由修改' : 'Context-aware draft, fully editable before sending' }}</small>
-              </div>
-            </div>
-            <span class="reply-recipient">{{ settingStore.lang === 'zh' ? `回复给 ${replyTargetLabel}` : `Reply to ${replyTargetLabel}` }}</span>
-          </div>
-          <div class="ai-controls">
-            <div class="tone-options">
-              <span class="control-label">{{ settingStore.lang === 'zh' ? '语气' : 'Tone' }}</span>
-              <button v-for="item in toneOptions" :key="item.value" type="button" :class="{ active: aiTone === item.value }" @click="aiTone = item.value">{{ item.label }}</button>
-            </div>
-            <label class="language-control">
-              <span>{{ settingStore.lang === 'zh' ? '语言' : 'Language' }}</span>
-              <select v-model="aiLanguage">
-                <option value="auto">{{ settingStore.lang === 'zh' ? '根据通讯录自动选择' : 'Auto from contact' }}</option>
-                <option v-for="language in replyLanguages" :key="language.value" :value="language.value">{{ language.label }}</option>
-              </select>
-            </label>
-            <button class="ai-generate" type="button" :disabled="aiGenerating" @click="generateAiReply(false)">
-              <Icon :icon="aiGenerating ? 'svg-spinners:ring-resize' : 'solar:stars-minimalistic-bold'" width="16" height="16"/>
-              {{ aiGenerating ? (settingStore.lang === 'zh' ? '正在起草…' : 'Drafting…') : (quickReply ? (settingStore.lang === 'zh' ? '重新起草' : 'Regenerate') : (settingStore.lang === 'zh' ? '起草回复' : 'Draft reply')) }}
-            </button>
-          </div>
-          <div v-if="aiLanguage === 'auto'" class="reply-language-hint" :class="{ matched: replyAutoLanguage.contact }">
-            <Icon :icon="replyAutoLanguage.contact ? 'solar:map-point-wave-linear' : 'solar:info-circle-linear'" width="14" />
-            <span>{{ replyLanguageHint }}</span>
-          </div>
-          <div class="ai-insight" v-if="aiCategory || aiSummary">
-            <span v-if="aiCategory">{{ aiCategory }}</span>
-            <p v-if="aiSummary">{{ aiSummary }}</p>
-          </div>
-          <div class="quick-reply-editor" :class="{ focused: quickReplyFocused }">
-            <textarea
-                v-model="quickReply"
-                :placeholder="settingStore.lang === 'zh' ? '点击“起草回复”交给 Workers AI，或直接输入回复内容…' : 'Let Workers AI draft a reply, or write your own…'"
-                rows="5"
-                @focus="quickReplyFocused = true"
-                @blur="quickReplyFocused = false"
-                @keydown.ctrl.enter.prevent="sendQuickReply"
-                @keydown.meta.enter.prevent="sendQuickReply"
-            ></textarea>
-            <div class="quick-reply-footer">
-              <button class="reply-tool" type="button" @click="openReplyWithDraft">
-                <Icon icon="solar:pen-new-square-linear" width="17" height="17"/>
-                <span>{{ settingStore.lang === 'zh' ? '在写信页打开' : 'Open in composer' }}</span>
-              </button>
-              <button v-if="quickReply" class="reply-tool" type="button" :disabled="aiGenerating" @click="generateAiReply(true)">
-                <Icon icon="solar:refresh-linear" width="16" height="16"/>
-                <span>{{ settingStore.lang === 'zh' ? '换一版' : 'Another version' }}</span>
-              </button>
-              <span class="reply-shortcut">Ctrl / ⌘ + Enter</span>
-              <button class="quick-send" type="button" :disabled="quickSending || !quickReply.trim()" @click="sendQuickReply">
-                <Icon icon="solar:plain-2-bold" width="16" height="16"/>
-                <span>{{ quickSending ? (settingStore.lang === 'zh' ? '发送中…' : 'Sending…') : (settingStore.lang === 'zh' ? '发送回复' : 'Send reply') }}</span>
-              </button>
-            </div>
-          </div>
-        </section>
+      </aside>
       </div>
     </el-scrollbar>
     <el-image-viewer
@@ -309,6 +321,7 @@ const showPreview = ref(false)
 const srcList = reactive([])
 const quickReply = ref('')
 const quickReplyFocused = ref(false)
+const aiPanelOpen = ref(false)
 const quickSending = ref(false)
 const aiGenerating = ref(false)
 const aiTone = ref('formal')
@@ -1001,10 +1014,15 @@ const handleDelete = () => {
 }
 
 .container {
-  max-width: 820px;
+  width: 100%;
+  max-width: var(--page-max);
   margin: 0 auto;
   font-size: 13px;
-  padding: 20px 20px 32px;
+  padding: 16px 24px 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 16px;
   @media (max-width: 1023px) {
     padding-left: 15px;
     padding-right: 15px;
@@ -1044,24 +1062,57 @@ const handleDelete = () => {
     gap: 12px;
   }
   .quick-reply-heading > div { display: flex; align-items: center; gap: 9px; color: var(--text); }
-  .quick-reply-heading strong { font-size: 13.5px; }
-  .quick-reply-heading > span { overflow: hidden; color: var(--text-3); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
-  .ai-reply-title small { display: block; margin-top: 2px; color: var(--text-3); font-size: 11.5px; font-weight: 400; }
-  .ai-mark { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; color: #fff; background: var(--brand-600); border-radius: var(--r-md); }
-  .ai-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 10px; }
+  .quick-reply-heading strong { font-size: 14px; font-weight: 600; }
+  .reply-title { min-width: 0; display: flex; align-items: center; gap: 8px; }
+  .reply-mark { width: 26px; height: 26px; flex: 0 0 26px; display: grid; place-items: center; color: var(--brand-600); background: var(--brand-soft); border-radius: var(--r-md); }
+  .reply-recipient { min-width: 0; overflow: hidden; color: var(--text-3); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* AI 起草：参数收进弹出面板 */
+  .ai-draft { position: relative; flex: none; }
+  .ai-draft-btn {
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 9px;
+    color: var(--text-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: 12px;
+    cursor: pointer;
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .ai-draft-btn:hover { color: var(--brand-600); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); }
+  .ai-draft-btn.active { color: var(--brand-600); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 44%, var(--border)); }
+  .ai-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 3;
+    width: 300px;
+    padding: 12px;
+    display: grid;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-3);
+  }
+  .ai-panel-row { display: flex; align-items: center; gap: 8px; }
+  .panel-label { flex: none; width: 30px; color: var(--text-3); font-size: 11.5px; }
+  .ai-panel-select { flex: 1; min-width: 0; height: 28px; padding: 0 8px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); outline: 0; font: inherit; font-size: 11.5px; }
+  .ai-panel-hint { margin: 0; display: flex; align-items: flex-start; gap: 5px; color: var(--text-3); font-size: 10.5px; line-height: 1.45; }
+  .ai-panel-hint.matched { color: var(--brand-600); }
+  .ai-panel-hint svg { flex: 0 0 auto; margin-top: 1px; }
   .tone-options { display: flex; align-items: center; gap: 5px; }
-  .control-label, .language-control > span { color: var(--text-3); font-size: 11.5px; }
   .tone-options button, .ai-generate { border: 0; font: inherit; cursor: pointer; }
-  .tone-options button { height: 28px; padding: 0 9px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 11.5px; }
+  .tone-options button { height: 26px; padding: 0 9px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 11.5px; }
   .tone-options button.active { color: var(--brand-600); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 44%, var(--border)); }
-  .language-control { display: flex; align-items: center; gap: 6px; }
-  .language-control select { height: 28px; padding: 0 27px 0 9px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); outline: 0; font: inherit; font-size: 11.5px; }
-  .reply-language-hint { margin: -2px 0 10px; display: flex; align-items: flex-start; gap: 5px; color: var(--text-3); font-size: 10.5px; line-height: 1.45; }
-  .reply-language-hint svg { flex: 0 0 auto; margin-top: 1px; }
-  .reply-language-hint.matched { color: var(--brand-600); }
-  .ai-generate { min-height: 32px; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; color: #fff; background: var(--brand-600); border-radius: var(--r-md); font-size: 12px; font-weight: 500; }
+  .ai-generate { height: 32px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 11px; color: #fff; background: var(--brand-600); border-radius: var(--r-md); font-size: 12px; font-weight: 500; }
+  .ai-generate:hover:not(:disabled) { background: var(--brand-hover); }
   .ai-generate:disabled { cursor: wait; opacity: .65; }
-  .ai-insight { display: flex; align-items: center; gap: 8px; margin: -1px 0 10px; color: var(--text-2); }
+  .ai-insight { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: var(--text-2); }
   .ai-insight span { flex: 0 0 auto; padding: 2px 6px; color: var(--brand-600); background: var(--brand-soft); border-radius: var(--r-sm); font-size: 10.5px; font-weight: 500; }
   .ai-insight p { margin: 0; overflow: hidden; font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -1078,7 +1129,7 @@ const handleDelete = () => {
   }
   .quick-reply-editor textarea {
     width: 100%;
-    min-height: 116px;
+    min-height: 76px;
     display: block;
     resize: vertical;
     padding: 13px 14px 8px;
@@ -1175,80 +1226,6 @@ const handleDelete = () => {
     display: flex;
     flex-direction: column;
 
-    .att {
-      margin-top: 16px;
-      margin-bottom: 16px;
-      border: 1px solid var(--border);
-      padding: 12px;
-      border-radius: var(--r-md);
-      width: 100%;
-      .att-box {
-        min-width: 0;
-        max-width: none;
-        display: grid;
-        gap: 12px;
-        grid-template-rows: 1fr;
-      }
-
-      .att-title {
-        margin-bottom: 8px;
-        display: flex;
-        justify-content: space-between;
-        span:first-child {
-          font-weight: bold;
-        }
-      }
-
-      .att-item {
-        cursor: pointer;
-        div {
-          align-self: center;
-        }
-        background: var(--light-ill);
-        padding: 10px 12px;
-        border: 1px solid var(--border);
-        border-radius: var(--r-sm);
-        align-self: start;
-        display: grid;
-        grid-template-columns: auto 1fr auto auto;
-        .att-icon {
-          display: grid;
-        }
-
-        .att-size {
-          color: var(--secondary-text-color);
-        }
-
-        .att-name {
-          margin-left: 8px;
-          margin-right: 8px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          word-break: break-all;
-        }
-
-        .att-image {
-          width: 60px;
-          height: 60px;
-          object-fit: contain;
-        }
-
-        .opt-icon {
-          padding-left: 10px;
-          color: var(--secondary-text-color);
-          align-items: center;
-          display: flex;
-          gap: 8px;
-          cursor: pointer;
-          a {
-            color: var(--secondary-text-color);
-            align-items: center;
-            display: flex;
-          }
-        }
-      }
-    }
 
     .email-info {
 
@@ -1317,6 +1294,80 @@ const handleDelete = () => {
       }
     }
   }
+
+  .att {
+    margin: 0;
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: var(--r-md);
+    width: 100%;
+    .att-box {
+    min-width: 0;
+    max-width: none;
+    display: grid;
+    gap: 12px;
+    grid-template-rows: 1fr;
+    }
+
+    .att-title {
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    span:first-child {
+      font-weight: bold;
+    }
+    }
+
+    .att-item {
+    cursor: pointer;
+    div {
+      align-self: center;
+    }
+    background: var(--light-ill);
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    align-self: start;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    .att-icon {
+      display: grid;
+    }
+
+    .att-size {
+      color: var(--secondary-text-color);
+    }
+
+    .att-name {
+      margin-left: 8px;
+      margin-right: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-all;
+    }
+
+    .att-image {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    .opt-icon {
+      padding-left: 10px;
+      color: var(--secondary-text-color);
+      align-items: center;
+      display: flex;
+      gap: 8px;
+      cursor: pointer;
+      a {
+      color: var(--secondary-text-color);
+      align-items: center;
+      display: flex;
+      }
+    }
+    }
+  }
 }
 
 .shadow-html::after  {
@@ -1362,7 +1413,27 @@ const handleDelete = () => {
 .code-card-body { margin-top: 10px; flex-wrap: wrap; }
 .code-card-body .el-button { margin-left: 0; }
 .ai-badge { padding: 3px 7px; color: var(--success); background: var(--surface); border-radius: 6px; font-size: 10.5px; font-weight: 750; }
-.ai-translate-action.active { color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, var(--border)); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+/* 正文区右上角的翻译图标 */
+.body-block { position: relative; }
+.translate-fab {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.translate-fab:hover { color: var(--brand-600); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); }
+.translate-fab.active { color: var(--success); background: color-mix(in srgb, var(--success) 10%, var(--surface)); border-color: color-mix(in srgb, var(--success) 35%, var(--border)); }
 .translation-card { margin-bottom: 12px; padding: 12px; border: 1px solid color-mix(in srgb, var(--success) 30%, var(--border)); border-radius: var(--r-lg); background: color-mix(in srgb, var(--success) 5%, var(--surface)); box-shadow: var(--sh-1); }
 .translation-heading, .translation-title, .translation-controls, .translation-controls label { display: flex; align-items: center; }
 .translation-heading { justify-content: space-between; gap: 14px; }
@@ -1386,8 +1457,18 @@ const handleDelete = () => {
 .container .htm-scrollbar .email-text { padding: 0; color: var(--text); background: transparent; }
 .empty-email-body { min-height: 76px; display: grid; place-items: center; color: var(--text-3); font-size: 12px; }
 .container .bottom-distance { margin-bottom: 0; }
-.container .content .att { margin: 16px 0 0; background: var(--surface); box-shadow: var(--sh-1); }
-.container .delivery-trace { margin-top: 16px; background: var(--surface); box-shadow: var(--sh-1); }
+.container .att { margin: 0; background: var(--surface); box-shadow: var(--sh-1); }
+.container .delivery-trace { margin: 0; background: var(--surface); box-shadow: var(--sh-1); }
+.translation-card { margin-bottom: 0; }
+
+/* 读信页两栏：左正文 + 右信息栏 */
+.read-main { min-width: 0; display: grid; gap: 12px; align-content: start; }
+.read-side { min-width: 0; display: grid; gap: 12px; align-content: start; position: sticky; top: 0; }
+/* 窗口宽 - 侧栏224 - 列表360 后正文不足 ~560px 时收成单栏 */
+@media (max-width: 1519px) {
+  .container { grid-template-columns: minmax(0, 1fr); }
+  .read-side { position: static; }
+}
 .conversation-thread { margin-top: 16px; display: grid; gap: 10px; }
 .conversation-heading { min-height: 38px; padding: 0 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .conversation-heading > div { display: flex; align-items: center; gap: 7px; color: var(--text); }
@@ -1428,23 +1509,20 @@ const handleDelete = () => {
 @media (max-width: 767px) {
   .header-actions { padding: 6px 10px; }
   .detail-action { padding: 0 9px; }
-  .ai-translate-action span { display: none; }
   .container { padding: 16px 12px 28px; }
   .container .message-card { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .container .email-title { font-size: 19px; }
   .container .code-card .el-button { width: 100%; margin-left: 0; }
-  .container .translation-card { padding: 13px; }
+  .container .translation-card { padding: 12px; margin-top: 12px; }
   .container .translation-title small { display: none; }
   .container .content .email-info .sender-secondary { white-space: normal; }
   .thread-message { padding: 12px; }
   .thread-direction { font-size: 0; }
   .container .quick-reply { padding: 10px; border-radius: var(--r-md); }
   .container .quick-reply-heading > span,
-  .container .ai-reply-title small,
   .container .reply-shortcut { display: none; }
-  .container .ai-controls { align-items: stretch; }
-  .container .tone-options { width: 100%; }
-  .container .ai-generate { margin-left: auto; }
+  .container .reply-recipient { display: none; }
+  .container .ai-panel { width: calc(100vw - 44px); }
   .container .reply-tool span { display: none; }
   .container .quick-reply-footer { gap: 7px; }
   .container .quick-send { margin-left: auto; }

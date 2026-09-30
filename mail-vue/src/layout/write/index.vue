@@ -1,7 +1,11 @@
 <template>
-  <div class="send" v-show="show">
-    <div ref="composeWindowRef" class="compose-window" :class="{ minimized }" :style="windowStyle">
-      <header class="compose-head" @mousedown="startDrag">
+  <div class="send" :class="{ 'full-width': !uiStore.asideShow }" v-show="show">
+    <div class="compose-page">
+      <header class="compose-head">
+        <button class="head-back" type="button" @click="close">
+          <Icon icon="solar:alt-arrow-left-linear" width="18" />
+          <span>{{ settingStore.lang === 'zh' ? '返回' : 'Back' }}</span>
+        </button>
         <span class="compose-head-title">
           <Icon icon="material-symbols:edit-outline" width="16" />
           <strong>{{ composeTitle }}</strong>
@@ -11,26 +15,17 @@
           </span>
         </span>
         <span class="compose-head-actions">
-          <button class="head-icon" type="button" :class="{ active: assistantOpen }" :title="settingStore.lang === 'zh' ? '写信助手' : 'Compose assistant'" @click="assistantOpen = !assistantOpen">
-            <Icon icon="solar:widget-5-linear" width="17"/>
+          <button class="secondary-button" type="button" @click="saveDraftNow">
+            <Icon icon="solar:diskette-outline" width="16"/><span>{{ settingStore.lang === 'zh' ? '存草稿' : 'Save draft' }}</span>
           </button>
-          <button class="head-icon" type="button" :title="settingStore.lang === 'zh' ? '存草稿' : 'Save draft'" @click="saveDraftNow">
-            <Icon icon="solar:diskette-outline" width="17"/>
-          </button>
-          <button class="head-icon" type="button" :title="settingStore.lang === 'zh' ? '预览' : 'Preview'" @click="previewMail">
-            <Icon icon="solar:eye-linear" width="17"/>
+          <button class="secondary-button" type="button" @click="previewMail">
+            <Icon icon="solar:eye-linear" width="16"/><span>{{ settingStore.lang === 'zh' ? '预览' : 'Preview' }}</span>
           </button>
           <button class="send-button" type="button" @click="sendEmail"><Icon icon="solar:plain-2-bold" width="15"/><span>{{ sendActionLabel }}</span></button>
-          <button class="head-icon" type="button" :title="minimized ? (settingStore.lang === 'zh' ? '展开' : 'Expand') : (settingStore.lang === 'zh' ? '最小化' : 'Minimize')" @click="minimized = !minimized">
-            <Icon :icon="minimized ? 'solar:maximize-square-2-linear' : 'solar:minimize-square-2-linear'" width="16"/>
-          </button>
-          <button class="head-icon" type="button" :title="settingStore.lang === 'zh' ? '关闭' : 'Close'" @click="close">
-            <Icon icon="material-symbols-light:close-rounded" width="19"/>
-          </button>
         </span>
       </header>
 
-      <div class="compose-body" v-show="!minimized">
+      <div class="compose-body">
       <div class="compose-grid">
         <main class="compose-main-card">
           <section class="message-meta">
@@ -85,11 +80,7 @@
           </section>
         </main>
 
-        <aside class="compose-assistant" :class="{ open: assistantOpen }">
-          <div class="assistant-head">
-            <strong>{{ settingStore.lang === 'zh' ? '写信助手' : 'Compose assistant' }}</strong>
-            <button class="head-icon" type="button" @click="assistantOpen = false"><Icon icon="material-symbols-light:close-rounded" width="18"/></button>
-          </div>
+        <aside class="compose-assistant">
           <div class="assistant-body">
           <section class="side-card recipient-insight">
             <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '收件人洞察' : 'Recipient insight' }}</span><small>{{ form.receiveEmail.length }} {{ settingStore.lang === 'zh' ? '位' : 'people' }}</small></div>
@@ -100,10 +91,6 @@
             <button class="contact-book-button" type="button" @click="openContacts"><Icon icon="solar:user-plus-linear" width="17"/>{{ settingStore.lang === 'zh' ? '从通讯录添加' : 'Add from contacts' }}</button>
           </section>
 
-          <section class="side-card preflight-card">
-            <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '发送前检查' : 'Pre-send checks' }}</span><small :class="{warning: composeChecks.some(item => !item.ok)}">{{ composeChecks.filter(item => !item.ok).length ? `${composeChecks.filter(item => !item.ok).length} ${settingStore.lang === 'zh' ? '项提醒' : 'warnings'}` : (settingStore.lang === 'zh' ? '已就绪' : 'Ready') }}</small></div>
-            <div class="check-list"><div v-for="item in composeChecks" :key="item.label" :class="['check-item', {ok:item.ok, warning:!item.ok}]"><Icon :icon="item.ok ? 'solar:check-circle-bold' : 'solar:danger-circle-linear'" width="15"/><div><strong>{{ item.label }}</strong><small>{{ item.detail }}</small></div></div></div>
-          </section>
 
           <section class="side-card">
             <div class="side-title phrase-title">
@@ -215,9 +202,8 @@ defineExpose({
   openForward,
   openDraft,
   focusCompose,
-  // getter 而非直接暴露，避免在 show/minimized 声明前触发 TDZ
-  get show() { return show.value },
-  get minimized() { return minimized.value }
+  // getter 而非直接暴露，避免在 show 声明前触发 TDZ
+  get show() { return show.value }
 })
 
 const {t} = useI18n()
@@ -230,58 +216,13 @@ const accountStore = useAccountStore()
 const editor = ref({})
 const userStore = useUserStore();
 const show = ref(false);
-const minimized = ref(false)
-const assistantOpen = ref(false)
-const composeWindowRef = ref(null)
-const windowPos = ref({ left: null, top: null })
-let dragState = null
-
-const windowStyle = computed(() => windowPos.value.left === null ? {} : {
-  left: `${windowPos.value.left}px`,
-  top: `${windowPos.value.top}px`,
-  right: 'auto',
-  bottom: 'auto',
-})
-
 // 顶栏「写邮件」按钮据此显示按下态
 watch(show, value => { uiStore.composeOpen = value })
 
-// 浮窗已打开时再点「写邮件」：拉回右下角默认位置、取消最小化并聚焦正文
+// 写信页已打开时再点顶栏「写邮件」：聚焦正文
 function focusCompose() {
   if (!show.value) return
-  minimized.value = false
-  windowPos.value = { left: null, top: null }
   nextTick(() => editor.value?.focus?.())
-}
-
-function startDrag(event) {
-  if (event.button !== 0) return
-  if (event.target.closest('button')) return
-  if (window.innerWidth < 900) return
-  const el = composeWindowRef.value
-  if (!el) return
-  const rect = el.getBoundingClientRect()
-  dragState = { dx: event.clientX - rect.left, dy: event.clientY - rect.top }
-  window.addEventListener('mousemove', onDragMove)
-  window.addEventListener('mouseup', endDrag)
-  event.preventDefault()
-}
-
-function onDragMove(event) {
-  const el = composeWindowRef.value
-  if (!dragState || !el) return
-  const maxLeft = window.innerWidth - el.offsetWidth - 8
-  const maxTop = window.innerHeight - el.offsetHeight - 8
-  windowPos.value = {
-    left: Math.min(Math.max(8, event.clientX - dragState.dx), Math.max(8, maxLeft)),
-    top: Math.min(Math.max(8, event.clientY - dragState.dy), Math.max(8, maxTop)),
-  }
-}
-
-function endDrag() {
-  dragState = null
-  window.removeEventListener('mousemove', onDragMove)
-  window.removeEventListener('mouseup', endDrag)
 }
 
 const percent = ref(0)
@@ -418,12 +359,6 @@ const activeSignature = computed(() => {
   return signature ? {...signature, language, content: signature.translations?.[language] || ''} : null
 })
 const signatureLanguageName = code => translationLanguages.find(item => item.value === code)?.label || code
-const composeChecks = computed(() => [
-  { label: settingStore.lang === 'zh' ? '收件人' : 'Recipients', detail: form.receiveEmail.length ? `${form.receiveEmail.length} ${settingStore.lang === 'zh' ? '位' : 'people'}` : (settingStore.lang === 'zh' ? '尚未添加' : 'Not added'), ok: form.receiveEmail.length > 0 },
-  { label: settingStore.lang === 'zh' ? '邮件主题' : 'Subject', detail: form.subject.trim() ? (settingStore.lang === 'zh' ? '已填写' : 'Complete') : (settingStore.lang === 'zh' ? '尚未填写' : 'Missing'), ok: Boolean(form.subject.trim()) },
-  { label: settingStore.lang === 'zh' ? '正文内容' : 'Message body', detail: form.text.trim() ? `${contentStats.value.characters} ${settingStore.lang === 'zh' ? '字' : 'characters'}` : (settingStore.lang === 'zh' ? '正文为空' : 'Empty'), ok: Boolean(form.text.trim()) },
-  { label: settingStore.lang === 'zh' ? '附件大小' : 'Attachment size', detail: attachmentBytes.value ? attachmentTotal.value : (settingStore.lang === 'zh' ? '无附件' : 'No attachments'), ok: attachmentBytes.value <= 25 * 1024 * 1024 },
-])
 const defaultQuickPhrases = computed(() => settingStore.lang === 'zh' ? [
   {label:'报价有效期', text:'本报价自发出之日起 30 天内有效。'},
   {label:'交期说明', text:'具体交付时间将在订单确认后另行通知。'},
@@ -998,8 +933,6 @@ async function open() {
     form.name = accountStore.currentAccount.name;
   }
   autoSaveReady = false
-  minimized.value = false
-  windowPos.value = { left: null, top: null }
   show.value = true;
   await nextTick()
   setTimeout(() => {
@@ -1027,8 +960,6 @@ async function openDraft(draft) {
     lastSavedFingerprint = draftFingerprint()
     autoSaveReady = true
   }, 100)
-  minimized.value = false
-  windowPos.value = { left: null, top: null }
   show.value = true;
   await nextTick()
   editor.value?.focus?.()
@@ -1172,62 +1103,55 @@ async function saveDraftNow() {
 <style scoped lang="scss">
 .send {
   position: fixed;
-  inset: 0;
-  z-index: 1900;
-  pointer-events: none;
+  top: var(--topbar-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  background: var(--surface-2);
 }
+.send.full-width { left: 0; }
 
-.compose-window {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
-  width: min(680px, calc(100vw - 40px));
-  height: min(660px, calc(100vh - 40px));
+.compose-page {
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  pointer-events: auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, .22);
 }
 
 .compose-head {
   flex: none;
-  height: 42px;
+  height: 52px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 8px 0 12px;
+  gap: 12px;
+  padding: 0 16px;
   color: var(--text);
-  background: var(--surface-2);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
-  cursor: move;
-  user-select: none;
 }
-.compose-head-title { min-width: 0; flex: 1; display: flex; align-items: center; gap: 7px; }
-.compose-head-title strong { overflow: hidden; font-size: 13.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.compose-head-actions { flex: none; display: flex; align-items: center; gap: 4px; }
-.head-icon {
-  width: 28px;
-  height: 28px;
+.head-back {
+  flex: none;
+  height: 32px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
+  padding: 0 10px 0 6px;
   color: var(--text-2);
-  border: 0;
+  border: 1px solid var(--border);
   border-radius: var(--r-md);
-  background: transparent;
+  background: var(--surface);
+  font-size: 12.5px;
   cursor: pointer;
-  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.head-icon:hover { color: var(--text); background: var(--surface-3); }
-.head-icon.active { color: var(--brand-600); background: var(--brand-soft); }
-.compose-head .send-button { height: 28px; min-width: 68px; padding: 0 12px; margin: 0 2px; border-radius: var(--r-md); font-size: 12.5px; }
+.head-back:hover { color: var(--brand-600); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); }
+.compose-head-title { min-width: 0; flex: 1; display: flex; align-items: center; gap: 8px; }
+.compose-head-title strong { overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.compose-head-actions { flex: none; display: flex; align-items: center; gap: 8px; }
+.compose-head .send-button { min-width: 84px; }
 
 .compose-body { flex: 1; min-height: 0; display: flex; }
-.compose-window.minimized { height: 42px; }
 
 
 .compose-header {
@@ -1532,8 +1456,17 @@ async function saveDraftNow() {
 .back-button, .secondary-button, .inline-link, .add-attachment, .contact-book-button, .phrase-list button, .phrase-add, .phrase-empty, .dialog-delete, .translate-row button { border: 0; font: inherit; cursor: pointer; }
 .back-button, .secondary-button { height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 12.5px; font-weight: 500; }
 .back-button:hover, .secondary-button:hover { color: var(--brand-700); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); background: var(--brand-soft); }
-.compose-grid { position: relative; flex: 1; min-width: 0; display: flex; }
-.compose-main-card { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); }
+.compose-grid {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  padding: 16px 20px 20px;
+  align-items: stretch;
+}
+.compose-main-card { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .compose-main-card .message-meta { flex: none; overflow: visible; border: 0; border-radius: 0; background: var(--surface); }
 .compose-main-card .field-row { min-height: 40px; padding: 5px 14px; border-bottom: 1px solid var(--border); }
 .compose-main-card .field-row > label { width: 64px; flex-basis: 64px; color: var(--text-2); font-size: 12.5px; font-weight: 700; }
@@ -1560,26 +1493,9 @@ async function saveDraftNow() {
 .add-attachment { height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 0 9px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 11.5px; }
 .empty-attachments { min-height: 32px; margin-top: 8px; display: flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 11.5px; }
 .compose-main-card .att-list { max-height: 84px; overflow-y: auto; }
-/* 写信助手：窗内滑出面板 */
-.compose-assistant {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 300px;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-2);
-  border-left: 1px solid var(--border);
-  box-shadow: -8px 0 24px rgba(15, 23, 42, .08);
-  transform: translateX(102%);
-  transition: transform var(--dur) var(--ease);
-}
-.compose-assistant.open { transform: translateX(0); }
-.assistant-head { flex: none; height: 40px; padding: 0 8px 0 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
-.assistant-head strong { color: var(--text); font-size: 12.5px; font-weight: 600; }
-.assistant-body { flex: 1; min-height: 0; padding: 12px; display: grid; gap: 10px; align-content: start; overflow-y: auto; }
+/* 写信助手：右侧常驻栏 */
+.compose-assistant { min-width: 0; min-height: 0; overflow-y: auto; }
+.assistant-body { display: grid; gap: 12px; align-content: start; padding-right: 2px; }
 .side-card { min-width: 0; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .side-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .side-title > span { color: var(--text-3); font-size: 11.5px; font-weight: 750; }
@@ -1594,13 +1510,6 @@ async function saveDraftNow() {
 .insight-person small { color: var(--text-3); font-size: 10.5px; }
 .side-empty { padding: 10px; color: var(--text-3); background: var(--surface-2); border-radius: 8px; font-size: 11.5px; line-height: 1.55; }
 .contact-book-button { width: 100%; height: 32px; margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--brand-600); background: var(--brand-soft); border-radius: var(--r-md); font-size: 12px; font-weight: 500; }
-.check-list { display: grid; gap: 6px; }
-.check-item { min-height: 52px; padding: 8px 9px; display: flex; align-items: flex-start; gap: 7px; border-radius: 8px; }
-.check-item.ok { color: var(--success); background: color-mix(in srgb, var(--success) 9%, var(--surface)); }
-.check-item.warning { color: #b45309; background: color-mix(in srgb, #f59e0b 11%, var(--surface)); }
-.check-item > div { display: grid; gap: 2px; }
-.check-item strong { font-size: 11.5px; }
-.check-item small { color: var(--text-3); font-size: 10.5px; }
 .phrase-title { align-items: center; }
 .phrase-add { padding: 3px 6px; display: inline-flex; align-items: center; gap: 3px; color: var(--brand-700); border-radius: 6px; background: var(--brand-soft); font-size: 10px; font-weight: 700; }
 .phrase-hint { margin: 5px 0 9px !important; }
@@ -1640,24 +1549,22 @@ async function saveDraftNow() {
 .preview-message h2 { margin: 13px 0 18px; color: var(--text); font-size: 18px; }
 .preview-body { min-height: 240px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text); line-height: 1.75; }
 
-@media (max-width: 1024px) {
-  .compose-window { right: 12px; bottom: 12px; width: min(640px, calc(100vw - 24px)); height: min(640px, calc(100vh - 24px)); }
+@media (max-width: 1279px) {
+  .send { left: 0; }
+}
+@media (max-width: 1180px) {
+  .compose-page { overflow-y: auto; }
+  .compose-grid { grid-template-columns: minmax(0, 1fr); }
+  .compose-main-card { min-height: 60vh; }
+  .compose-assistant { overflow: visible; }
 }
 @media (max-width: 767px) {
-  .compose-window {
-    right: 0;
-    bottom: 0;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100%;
-    height: 100%;
-    border: 0;
-    border-radius: 0;
-  }
-  .compose-head { cursor: default; }
+  .send { top: 48px; bottom: 0; }
+  .compose-head { height: auto; min-height: 52px; flex-wrap: wrap; padding: 8px 10px; gap: 8px; }
   .draft-save-status { display: none; }
-  .compose-head .send-button { min-width: 62px; padding: 0 10px; }
-  .compose-assistant { width: 100%; }
+  .compose-head-actions .secondary-button span { display: none; }
+  .compose-grid { padding: 10px; gap: 12px; }
+  .compose-main-card { min-height: auto; border: 0; border-radius: 0; box-shadow: none; }
   .compose-main-card .field-row { align-items: flex-start; flex-direction: column; gap: 5px; padding: 8px 11px; }
   .compose-main-card .field-row > label { width: auto; flex-basis: auto; }
   .recipient-control { width: 100%; flex-wrap: wrap; }
