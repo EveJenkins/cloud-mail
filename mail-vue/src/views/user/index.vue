@@ -1,12 +1,18 @@
 <template>
   <div class="user-box">
+    <div class="workspace-heading">
+      <div><h1>{{ locale === 'zh' ? '用户管理' : 'User management' }}</h1><p>{{ locale === 'zh' ? '管理邮箱用户、权限身份与发送配额' : 'Manage mailbox users, roles and sending quotas' }}</p></div>
+      <el-button type="primary" @click="openAdd"><Icon icon="ion:add-outline" width="18"/>{{ $t('addUser') }}</el-button>
+    </div>
     <div class="header-actions">
-      <Icon class="icon" icon="ion:add-outline" width="23" height="23" @click="openAdd"/>
       <div class="search">
         <el-input
             v-model="params.email"
             class="search-input"
             :placeholder="$t('searchByEmail')"
+            clearable
+            @keyup.enter="search"
+            @clear="search"
         >
         </el-input>
       </div>
@@ -17,13 +23,10 @@
         <el-option :key="1" :label="$t('banned')" :value="1"/>
         <el-option :key="-2" :label="$t('deleted')" :value="-2"/>
       </el-select>
-      <Icon class="icon" icon="iconoir:search" @click="search" width="20" height="20"/>
-      <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
-            v-if="params.timeSort === 1" width="28" height="28"/>
-      <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else width="28"
-            height="28"/>
-      <Icon class="icon" icon="ion:reload" width="18" height="18" @click="refresh"/>
-      <Icon class="icon" icon="uiw:delete" width="16" height="16" @click="delUser"/>
+      <el-button @click="search"><Icon icon="iconoir:search" width="18"/>{{ locale === 'zh' ? '搜索' : 'Search' }}</el-button>
+      <el-button @click="changeTimeSort"><Icon :icon="params.timeSort === 1 ? 'material-symbols-light:timer-arrow-down-outline' : 'material-symbols-light:timer-arrow-up-outline'" width="20"/>{{ locale === 'zh' ? '注册时间' : 'Registration date' }}</el-button>
+      <el-button @click="refresh" :disabled="tableLoading"><Icon icon="ion:reload" width="16"/>{{ locale === 'zh' ? '刷新' : 'Refresh' }}</el-button>
+      <el-button type="danger" plain @click="delUser" :disabled="selectedCount === 0">{{ $t('delete') }}<span v-if="selectedCount"> ({{ selectedCount }})</span></el-button>
     </div>
     <el-scrollbar ref="scrollbarRef" class="scrollbar">
       <div>
@@ -33,6 +36,7 @@
         </div>
         <el-table
             @filter-change="tableFilter"
+            @selection-change="rows => selectedCount = rows.length"
             :empty-text="first ? '' : null"
             :data="users"
             :preserve-expanded-content="preserveExpanded"
@@ -432,6 +436,7 @@ function oauthPlatform(row) {
 const filteredValue = ['normal', 'del']
 const filters = [{text: t('active'), value: 'normal'}, {text: t('deleted'), value: 'del'}]
 const preserveExpanded = ref(false)
+const selectedCount = ref(0)
 const emailWidth = ref(230)
 const expandWidth = ref(40)
 const settingWidth = ref(null)
@@ -1118,6 +1123,8 @@ function adjustWidth() {
 }
 
 .user-box {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   height: 100%;
 }
@@ -1141,12 +1148,13 @@ function adjustWidth() {
 }
 
 .header-actions {
-  padding: 9px 15px;
+  padding: 16px 24px;
   display: flex;
-  gap: 15px;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
-  box-shadow: var(--header-actions-border);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
   font-size: 18px;
 
   .search-input {
@@ -1155,11 +1163,11 @@ function adjustWidth() {
 
   .search {
     :deep(.el-input-group) {
-      height: 28px;
+      height: 36px;
     }
 
     :deep(.el-input__inner) {
-      height: 28px;
+      height: 36px;
     }
   }
 
@@ -1185,6 +1193,8 @@ function adjustWidth() {
 }
 
 .scrollbar {
+  flex: 1;
+  min-height: 0;
   width: 100%;
   overflow: auto;
   height: calc(100% - 50px);

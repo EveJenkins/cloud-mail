@@ -1,8 +1,11 @@
 <template>
   <div class="perm-box">
+    <div class="workspace-heading">
+      <div><h1>{{ locale === 'zh' ? '权限管理' : 'Role management' }}</h1><p>{{ locale === 'zh' ? '为不同团队设置邮箱权限和使用配额' : 'Configure mailbox permissions and quotas for each team' }}</p></div>
+      <el-button type="primary" @click="openAddRole"><Icon icon="ion:add-outline" width="18"/>{{ $t('add') }}</el-button>
+    </div>
     <div class="header-actions">
-      <Icon class="icon" icon="ion:add-outline" width="23" height="23" @click="openAddRole"/>
-      <Icon class="icon" icon="ion:reload" width="18" height="18" @click="refresh"/>
+      <el-button @click="refresh" :disabled="tableLoading"><Icon icon="ion:reload" width="18"/>{{ locale === 'zh' ? '刷新' : 'Refresh' }}</el-button>
     </div>
     <el-scrollbar class="perm-scrollbar">
       <div class="loading" :class="tableLoading ? 'loading-show' : 'loading-hide'"
@@ -420,12 +423,15 @@ onBeforeUnmount(() => window.removeEventListener('resize', handleWindowResize))
 <style scoped lang="scss">
 
 .perm-box {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
   width: 100%;
 
   .perm-scrollbar {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
   }
 }
 
@@ -443,11 +449,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', handleWindowResize))
 }
 
 .header-actions {
-  padding: 9px 15px;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  box-shadow: var(--header-actions-border);
+  gap: 8px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
   font-size: 18px;
 
   .search {

@@ -51,3 +51,25 @@ html.dark .el-button.el-button--primary { box-shadow: none; }
 .el-table { --el-table-header-bg-color: var(--surface-2); --el-table-row-hover-bg-color: var(--surface-2); }
 .el-dialog { border: 1px solid var(--border); }
 .el-tag { border-radius: 6px; font-weight: 600; }
+
+/* Shared administrator workspace: keep actions readable in either theme. */
+:is(.user-box, .perm-box) .workspace-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+:is(.user-box, .perm-box) .workspace-heading h1 { margin: 0; font-size: 22px; font-weight: 600; color: var(--text); }
+:is(.user-box, .perm-box) .workspace-heading p { margin: 6px 0 0; font-size: 13px; color: var(--text-3); line-height: 1.7; }
+:is(.user-box, .perm-box) .header-actions { padding: 16px 24px; gap: 8px; background: var(--surface-2); border-bottom: 1px solid var(--border); box-shadow: none; }
+:is(.user-box, .perm-box) .el-button { margin-left: 0; gap: 6px; }
+:is(.user-box, .perm-box) .el-table th.el-table__cell { font-weight: 600; }
+:is(.user-box, .perm-box) .el-table .el-table__cell { padding: 12px 0; }
+@media (max-width: 640px) {
+  :is(.user-box, .perm-box) .workspace-heading { padding: 16px; }
+  :is(.user-box, .perm-box) .workspace-heading h1 { font-size: 18px; }
+  :is(.user-box, .perm-box) .header-actions { padding: 12px 16px; }
+}
