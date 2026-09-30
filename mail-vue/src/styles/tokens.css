@@ -45,11 +45,26 @@
   --ease: cubic-bezier(.22, .61, .36, 1);
 
   /* 布局尺寸（紧凑） */
-  --sidebar-w: 224px;
-  --mail-list-w: 360px;
   --topbar-h: 52px;
   --page-max: 1440px;
   --page-pad: 28px;
+  --sidebar-w: 232px;
+  --mail-list-w: 384px;
+
+  /* ── 分区字号：各区域独立可调，互不影响 ─────────────
+     只改这里就能单独放大/缩小某一块 */
+  --font-base: 15px;          /* 全局正文、设置页、管理页 */
+  --font-nav: 14px;           /* 侧栏菜单 */
+  --font-list-sender: 14px;   /* 邮件列表 · 发件人 */
+  --font-list-subject: 14.5px;/* 邮件列表 · 主题 */
+  --font-list-snippet: 12.5px;/* 邮件列表 · 摘要 */
+  --font-list-meta: 12px;     /* 邮件列表 · 时间/标签 */
+  --list-row-h: 112px;        /* 邮件列表行高（改这里同时要改 email-scroll 的 JS 兜底值） */
+  --font-read-title: 20px;    /* 读信页 · 标题 */
+  --font-read-body: 14.5px;   /* 读信页 · 正文 */
+  --font-read-meta: 13px;     /* 读信页 · 发件人信息 */
+  --font-page-title: 20px;    /* 内容页主标题 */
+  --font-card-title: 15px;    /* 卡片标题 */
 
   /* 顶部通栏 */
   --topbar-bg: var(--brand-600);

@@ -33,7 +33,7 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", Roboto, sans-serif;
     line-height: 1.5;
     color: var(--el-text-color-primary);
-    font-size: 14px;
+    font-size: var(--font-base);
     -webkit-font-smoothing: antialiased;
 }
 

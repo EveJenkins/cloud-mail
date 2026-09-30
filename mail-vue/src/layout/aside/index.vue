@@ -187,7 +187,7 @@ const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
 .mailbox-card {
   width: 100%;
   margin: 0;
-  padding: 7px 8px;
+  padding: 9px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -200,24 +200,24 @@ const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
 }
 .mailbox-card:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); background: var(--surface); }
 .mailbox-card.open { border-color: var(--brand-500); background: var(--surface); }
-.mailbox-avatar { width: 26px; height: 26px; flex: none; display: grid; place-items: center; color: #fff; border-radius: var(--r-sm); background: var(--brand-600); font-size: 11px; font-weight: 600; }
+.mailbox-avatar { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: #fff; border-radius: var(--r-sm); background: var(--brand-600); font-size: 11px; font-weight: 600; }
 .mailbox-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; text-align: left; }
-.mailbox-copy strong { overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
-.mailbox-copy small { margin-top: 1px; overflow: hidden; color: var(--text-3); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-copy strong { overflow: hidden; font-size: var(--font-nav); text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-copy small { margin-top: 1px; overflow: hidden; color: var(--text-3); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 
 .scroll { flex: 1; min-height: 0; padding: 0 8px; }
-.group-title { padding: 12px 8px 4px; color: var(--text-3); font-size: 11px; font-weight: 500; letter-spacing: .06em; }
+.group-title { padding: 13px 8px 5px; color: var(--text-3); font-size: 13px; font-weight: 500; letter-spacing: .06em; }
 
 .el-menu { width: 100%; padding-bottom: 12px; border-right: 0; background: transparent; }
 .el-menu-item {
-  height: 34px;
-  line-height: 34px;
+  height: 38px;
+  line-height: 38px;
   margin: 1px 0 !important;
   padding: 0 8px !important;
   gap: 9px;
   border-radius: var(--r-md);
   color: var(--text-2) !important;
-  font-size: 13px;
+  font-size: var(--font-nav);
   background: transparent !important;
   transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
@@ -240,5 +240,5 @@ const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
   font-variant-numeric: tabular-nums;
 }
 
-.compliance-note { flex: none; margin: 0; padding: 9px 14px calc(9px + env(safe-area-inset-bottom)); color: var(--text-3); border-top: 1px solid var(--border); font-size: 10.5px; line-height: 1.5; }
+.compliance-note { flex: none; margin: 0; padding: 9px 14px calc(9px + env(safe-area-inset-bottom)); color: var(--text-3); border-top: 1px solid var(--border); font-size: 13.5px; line-height: 1.5; }
 </style>

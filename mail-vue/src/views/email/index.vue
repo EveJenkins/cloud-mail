@@ -17,7 +17,6 @@
                :empty-title="settingStore.lang === 'zh' ? '收件箱是空的' : 'Your inbox is empty'"
                :empty-description="settingStore.lang === 'zh' ? '新邮件同步后会出现在这里' : 'New messages will appear here after syncing'"
                :selected-id="selectedEmailId"
-               :row-height="isDesktop ? 100 : (isPhone ? 100 : 0)"
                actionLeft="4px"
                @jump="jumpContent"
                @filters-reset="clearRouteSearch"

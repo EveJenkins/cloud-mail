@@ -1859,7 +1859,7 @@ function editSetting(settingForm, refreshStatus = true) {
 
 
 .card-title {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: bold;
   padding: 15px 20px 12px;
   border-bottom: 1px solid var(--el-border-color);
@@ -1874,10 +1874,10 @@ function editSetting(settingForm, refreshStatus = true) {
 
 .setting-item {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  min-height: 38px;
+  min-height: 42px;
   font-weight: normal;
 
   > div:first-child {
@@ -1885,7 +1885,7 @@ function editSetting(settingForm, refreshStatus = true) {
     align-items: center;
     gap: 5px;
     color: var(--text-2);
-    font-size: 13px;
+    font-size: var(--font-base);
   }
 
   > div:last-child {
@@ -2347,7 +2347,7 @@ form .el-button {
   box-shadow: var(--sh-1);
 }
 .nav-item {
-  height: 36px;
+  height: 38px;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -2356,7 +2356,7 @@ form .el-button {
   border: 0;
   border-radius: var(--r-md);
   background: transparent;
-  font-size: 13px;
+  font-size: var(--font-nav);
   text-align: left;
   cursor: pointer;
   transition: color var(--dur) var(--ease), background var(--dur) var(--ease);

@@ -483,12 +483,12 @@ function formatName(email) {
   align-items: center;
   gap: 14px;
   padding: 0 10px;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .brand { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .brand-mark { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: var(--brand-600); border-radius: var(--r-md); background: #fff; }
-.brand-title { max-width: 190px; overflow: hidden; color: var(--topbar-fg); font-size: 14px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.brand-title { max-width: 240px; overflow: hidden; color: var(--topbar-fg); font-size: 17px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
 
 .header-btn {
   display: inline-flex;
@@ -508,7 +508,7 @@ function formatName(email) {
 .global-search {
   width: 100%;
   max-width: 560px;
-  height: 34px;
+  height: 36px;
   justify-self: start;
   position: relative;
   display: flex;
@@ -518,7 +518,7 @@ function formatName(email) {
   .search-icon { position: absolute; left: 10px; color: var(--topbar-fg-dim); pointer-events: none; transition: color var(--dur) var(--ease); }
   input {
     width: 100%;
-    height: 34px;
+    height: 36px;
     padding: 0 62px 0 32px;
     color: var(--topbar-fg);
     background: var(--topbar-field);
@@ -553,7 +553,7 @@ function formatName(email) {
   gap: 6px;
 
   .compose-btn {
-    height: 32px;
+    height: 38px;
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -563,7 +563,7 @@ function formatName(email) {
     background: #fff;
     border: 0;
     border-radius: var(--r-md);
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
@@ -610,8 +610,8 @@ function formatName(email) {
   .avatar:hover { background: var(--topbar-hover); }
 
   .avatar .avatar-text {
-    height: 26px;
-    width: 26px;
+    height: 28px;
+    width: 28px;
     flex: none;
     display: flex;
     justify-content: center;
@@ -632,8 +632,8 @@ function formatName(email) {
     align-items: flex-start;
     line-height: 1.2;
   }
-  .avatar .avatar-identity strong { max-width: 100px; overflow: hidden; color: var(--topbar-fg); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
-  .avatar .avatar-identity span { max-width: 100px; margin-top: 1px; overflow: hidden; color: var(--topbar-fg-dim); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+  .avatar .avatar-identity strong { max-width: 120px; overflow: hidden; color: var(--topbar-fg); font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
+  .avatar .avatar-identity span { max-width: 120px; margin-top: 1px; overflow: hidden; color: var(--topbar-fg-dim); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 @media (max-width: 1024px) {

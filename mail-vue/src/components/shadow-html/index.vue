@@ -66,7 +66,7 @@ function updateContent() {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
                     'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', 'Source Han Sans SC',
                     'Noto Sans CJK SC', Arial, sans-serif;
-        font-size: ${props.comfortable ? '14.5px' : '14px'};
+        font-size: var(--font-read-body, ${props.comfortable ? '14.5px' : '14px'});
         line-height: ${props.comfortable ? '1.85' : '1.5'};
         color: #13181D;
         word-break: break-word;

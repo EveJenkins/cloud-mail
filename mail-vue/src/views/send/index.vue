@@ -20,7 +20,6 @@
                :empty-description="settingStore.lang === 'zh' ? '发送成功的邮件会出现在这里' : 'Successfully sent messages will appear here'"
                empty-icon="solar:plain-2-linear"
                :selected-id="selectedEmailId"
-               :row-height="isDesktop ? 100 : (isPhone ? 100 : 0)"
   >
     <template #first>
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"

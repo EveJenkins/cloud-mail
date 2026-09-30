@@ -1147,7 +1147,7 @@ async function saveDraftNow() {
 }
 .head-back:hover { color: var(--brand-600); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); }
 .compose-head-title { min-width: 0; flex: 1; display: flex; align-items: center; gap: 8px; }
-.compose-head-title strong { overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.compose-head-title strong { overflow: hidden; font-size: var(--font-card-title); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .compose-head-actions { flex: none; display: flex; align-items: center; gap: 8px; }
 .compose-head .send-button { min-width: 84px; }
 
@@ -1468,8 +1468,8 @@ async function saveDraftNow() {
 }
 .compose-main-card { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .compose-main-card .message-meta { flex: none; overflow: visible; border: 0; border-radius: 0; background: var(--surface); }
-.compose-main-card .field-row { min-height: 40px; padding: 5px 14px; border-bottom: 1px solid var(--border); }
-.compose-main-card .field-row > label { width: 64px; flex-basis: 64px; color: var(--text-2); font-size: 12.5px; font-weight: 700; }
+.compose-main-card .field-row { min-height: 42px; padding: 6px 14px; border-bottom: 1px solid var(--border); }
+.compose-main-card .field-row > label { width: 74px; flex-basis: 74px; color: var(--text-2); font-size: var(--font-nav); font-weight: 600; }
 .recipient-control { gap: 7px; }
 .recipient-control :deep(.el-input-tag__wrapper) { min-height: 30px; }
 .inline-link { flex: 0 0 auto; padding: 4px 0; color: var(--brand-700); background: transparent; font-size: 12px; font-weight: 700; }
@@ -1483,7 +1483,7 @@ async function saveDraftNow() {
 .compose-main-card .editor-shell :deep(.tox-editor-header) { padding: 0 8px !important; background: var(--surface-2) !important; border-bottom: 1px solid var(--border) !important; }
 .compose-main-card .editor-shell :deep(.tox-toolbar-overlord), .compose-main-card .editor-shell :deep(.tox-toolbar__primary) { background: var(--surface-2) !important; }
 .compose-main-card .editor-shell :deep(.tox-edit-area) { background: var(--surface); }
-.editor-status { flex: none; min-height: 30px; padding: 6px 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--text-3); background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 10.5px; }
+.editor-status { flex: none; min-height: 32px; padding: 7px 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--text-3); background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 14.5px; }
 .editor-status .compatibility { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
 .attachment-zone { flex: none; padding: 10px 14px; background: var(--surface-2); }
 .attachment-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -1496,9 +1496,9 @@ async function saveDraftNow() {
 /* 写信助手：右侧常驻栏 */
 .compose-assistant { min-width: 0; min-height: 0; overflow-y: auto; }
 .assistant-body { display: grid; gap: 12px; align-content: start; padding-right: 2px; }
-.side-card { min-width: 0; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
+.side-card { min-width: 0; padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .side-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.side-title > span { color: var(--text-3); font-size: 11.5px; font-weight: 750; }
+.side-title > span { color: var(--text-3); font-size: 15px; font-weight: 600; }
 .side-title small { margin-left: auto; padding: 3px 7px; color: var(--text-3); background: var(--surface-2); border-radius: 7px; font-size: 10.5px; }
 .side-title small.warning { color: var(--warning); background: color-mix(in srgb, var(--warning) 14%, var(--surface)); }
 .insight-list { display: grid; gap: 8px; }

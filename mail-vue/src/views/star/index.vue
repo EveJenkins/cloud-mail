@@ -18,7 +18,6 @@
                :empty-description="settingStore.lang === 'zh' ? '加星的邮件会集中显示在这里' : 'Starred messages will appear here'"
                empty-icon="solar:star-fall-minimalistic-2-linear"
                :selected-id="selectedEmailId"
-               :row-height="isDesktop ? 100 : (isPhone ? 100 : 0)"
       >
         <template #empty-actions>
           <button class="primary" type="button" @click="router.push({name: 'email'})"><Icon icon="hugeicons:mailbox-01" width="15" />{{ settingStore.lang === 'zh' ? '返回收件箱' : 'Go to inbox' }}</button>

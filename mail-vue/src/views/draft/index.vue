@@ -20,7 +20,6 @@
                :empty-description="settingStore.lang === 'zh' ? '未完成的邮件会保存在这里' : 'Unfinished messages will be saved here'"
                empty-icon="solar:document-add-linear"
                :selected-id="selectedDraft?.draftId"
-               :row-height="isDesktop ? 100 : (isPhone ? 100 : 0)"
   >
     <template #name="props">
       <span class="send-email">{{ props.email.receiveEmail?.join(',') || '(' + $t('noRecipient') + ')' }}</span>
