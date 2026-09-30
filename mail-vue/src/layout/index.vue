@@ -102,7 +102,7 @@ onBeforeUnmount(() => {
 }
 
 .el-header {
-  height: 56px;
+  height: 52px;
   background: var(--topbar-surface);
   border-bottom: solid 1px var(--border);
   padding: 0 0 0 0;
@@ -126,7 +126,7 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 767px) {
-  .main-container { padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
-  .el-header { height: 52px; }
+  .main-container { padding-bottom: calc(54px + env(safe-area-inset-bottom)); }
+  .el-header { height: 48px; }
 }
 </style>

@@ -155,7 +155,7 @@ const filteredContacts = computed(() => {
 
 function emailName(email) { return String(email || '').split('@')[0] || (zh.value ? '联系人' : 'Contact') }
 function initials(contact) { return String(contact.name || emailName(contact.email)).split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(item => item[0]).join('').toUpperCase() || 'C' }
-function avatarColor(value) { const colors = ['#0ea5e9', '#25d366', '#8b5cf6', '#f59e0b', '#f6821f', '#6366f1']; const score = Array.from(String(value || '')).reduce((sum, char) => sum + char.charCodeAt(0), 0); return colors[score % colors.length] }
+function avatarColor(value) { const colors = ['#1677FF', '#722ED1', '#13A8A8', '#D46B08', '#C41D7F', '#2F54EB']; const score = Array.from(String(value || '')).reduce((sum, char) => sum + char.charCodeAt(0), 0); return colors[score % colors.length] }
 function typeClass(contact) { if (contact.type === '供应商') return 'supplier'; if (contact.type === '物流') return 'logistics'; if (activeTab.value === 'team') return 'team'; return 'customer' }
 function resetForm() { Object.assign(form, { name: '', email: '', company: '', type: '客户', country: '' }); editingId.value = '' }
 function openCreate() { resetForm(); dialogOpen.value = true }
@@ -200,7 +200,7 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .primary-button { height: 38px; padding: 0 13px; display: inline-flex; align-items: center; gap: 6px; color: #fff; background: var(--brand-600); border-radius: var(--r-sm); font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .primary-button:hover { background: var(--brand-700); }
 .contact-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
-.contact-tabs button { height: 28px; padding: 0 10px; color: var(--text-2); background: var(--surface-3); border-radius: 99px; font-size: 12.5px; cursor: pointer; }
+.contact-tabs button { height: 26px; padding: 0 10px; color: var(--text-2); background: var(--surface-3); border-radius: var(--r-md); font-size: 12.5px; cursor: pointer; }
 .contact-tabs button.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 700; }
 .contact-card { overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .table-head, .contact-row { display: grid; grid-template-columns: 1.35fr 1.5fr .7fr 160px; align-items: center; gap: 14px; }
@@ -210,7 +210,7 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .contact-row { min-height: 66px; padding: 10px 16px; color: var(--text-2); font-size: 13px; }
 .contact-row:hover { background: var(--surface-2); }
 .person-cell { min-width: 0; display: flex; align-items: center; gap: 10px; }
-.contact-avatar { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: #fff; border-radius: 50%; font-size: 11px; font-weight: 800; }
+.contact-avatar { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: #fff; border-radius: 50%; font-size: 11px; font-weight: 600; }
 .person-cell div { min-width: 0; }
 .person-cell strong, .person-cell small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .person-cell strong { color: var(--text); font-size: 13.5px; }
@@ -226,11 +226,11 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .row-actions .icon-button { width: 32px; padding: 0; display: grid; place-items: center; }
 .row-actions .danger:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
 .empty-state { min-height: 300px; padding: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
-.empty-state .empty-icon { width: 56px; height: 56px; display: grid; place-items: center; color: var(--brand-600); border-radius: 17px; background: var(--brand-soft); }
+.empty-state .empty-icon { width: 52px; height: 52px; display: grid; place-items: center; color: var(--brand-600); border-radius: var(--r-lg); background: var(--brand-soft); }
 .empty-state strong { margin-top: 12px; color: var(--text-2); font-size: 14px; }
 .empty-state > span:not(.empty-icon) { max-width: 430px; margin-top: 5px; font-size: 12.5px; line-height: 1.65; }
 .empty-actions { margin-top: 15px; display: flex; gap: 8px; }
-.empty-actions button { min-height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12px; font-weight: 650; cursor: pointer; }
+.empty-actions button { min-height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 12px; font-weight: 650; cursor: pointer; }
 .empty-actions button.primary { color: #fff; border-color: var(--brand-600); background: var(--brand-600); }
 .team-note { margin-top: 16px; padding: 16px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); font-size: 13px; }
 .team-note strong { color: var(--text); }

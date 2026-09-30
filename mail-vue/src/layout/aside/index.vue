@@ -3,7 +3,7 @@
     <div class="title">
       <span class="brand-mark"><Icon icon="mdi:email-outline" width="19" height="19" /></span>
       <div class="brand-text">
-        <strong>{{ settingStore.settings.title || 'STAR MUSTANG' }}</strong>
+        <strong>{{ settingStore.settings.title || (settingStore.lang === 'zh' ? '企业邮箱' : 'Mail') }}</strong>
         <span>{{ currentDomain }}</span>
       </div>
       <span class="role-badge">{{ userStore.user.role?.name || (settingStore.lang === 'zh' ? '成员' : 'Member') }}</span>
@@ -138,10 +138,10 @@ const route = useRoute()
 const currentEmail = computed(() => accountStore.currentAccount?.email || userStore.user.email || '')
 const currentDomain = computed(() => {
   const domain = currentEmail.value.split('@')[1] || settingStore.domainList?.[0]?.replace(/^@/, '')
-  return domain ? `@${domain}` : '@star-mustang.com'
+  return domain ? `@${domain}` : ''
 })
-const currentMailbox = computed(() => currentEmail.value.split('@')[0] ? `${currentEmail.value.split('@')[0]}@` : 'alex.chen@')
-const mailboxInitial = computed(() => (userStore.user.name || currentMailbox.value || 'S').trim().charAt(0).toUpperCase())
+const currentMailbox = computed(() => (currentEmail.value.split('@')[0] ? `${currentEmail.value.split('@')[0]}@` : ''))
+const mailboxInitial = computed(() => (userStore.user.name || currentMailbox.value || 'M').trim().charAt(0).toUpperCase())
 
 const quotaMax = computed(() => Number(userStore.user.role?.sendCount) || 0)
 const quotaUsed = computed(() => Number(userStore.user.sendCount) || 0)
@@ -167,60 +167,62 @@ function openWriter() {
 }
 
 .title {
-  height: 56px;
-  padding: 0 16px;
+  height: 52px;
+  padding: 0 14px;
   flex: none;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   color: var(--text);
-  font-size: 15.5px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
 
 }
 
-.brand-mark { width: 32px; height: 32px; flex: none; display: grid; place-items: center; color: #04121f; border-radius: 10px; background: linear-gradient(135deg, #25d366, #0ea5e9); }
+.brand-mark { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: #fff; border-radius: var(--r-md); background: var(--brand-600); }
 .brand-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
-.brand-text strong { overflow: hidden; color: var(--text); font-size: 14px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.brand-text span { margin-top: 2px; overflow: hidden; color: var(--text-3); font-size: 10.5px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.role-badge { margin-left: auto; max-width: 62px; overflow: hidden; text-overflow: ellipsis; padding: 3px 7px; border-radius: 6px; color: var(--brand-600); background: var(--brand-soft); font-size: 10px; font-weight: 700; }
-.compose-wrap { padding: 0 16px 12px; }
-.compose-btn { width: 100%; height: 40px; display: flex; gap: 7px; }
+.brand-text strong { overflow: hidden; color: var(--text); font-size: 13.5px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.brand-text span { margin-top: 1px; overflow: hidden; color: var(--text-3); font-size: 10.5px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.role-badge { margin-left: auto; max-width: 62px; overflow: hidden; text-overflow: ellipsis; padding: 2px 6px; border-radius: var(--r-sm); color: var(--brand-600); background: var(--brand-soft); font-size: 10px; font-weight: 600; }
+.compose-wrap { padding: 0 14px 10px; }
+.compose-btn { width: 100%; height: 36px; display: flex; gap: 6px; }
 :global(html.dark) .compose-btn { border: 1px solid rgba(255, 255, 255, .10); box-shadow: none; }
-.mailbox-card { width: calc(100% - 32px); margin: 3px 16px 8px; padding: 8px 10px; display: flex; align-items: center; gap: 10px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); cursor: pointer; }
+.mailbox-card { width: calc(100% - 28px); margin: 2px 14px 8px; padding: 6px 8px; display: flex; align-items: center; gap: 8px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); cursor: pointer; }
 .mailbox-card:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); }
-.mailbox-avatar { width: 28px; height: 28px; flex: none; display: grid; place-items: center; color: #fff; border-radius: 50%; background: linear-gradient(135deg, #0ea5e9, #0284c7); font-size: 11px; font-weight: 750; }
+.mailbox-avatar { width: 26px; height: 26px; flex: none; display: grid; place-items: center; color: #fff; border-radius: var(--r-sm); background: var(--brand-600); font-size: 11px; font-weight: 600; }
 .mailbox-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; text-align: left; }
 .mailbox-copy strong { overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
 .mailbox-copy small { margin-top: 1px; color: var(--text-3); font-size: 10.5px; }
-.scroll { flex: 1; min-height: 0; padding: 0 16px; }
-.group-title, .other-title, .manage-title { padding: 8px 12px 6px; color: var(--text-3); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
-.other-title, .manage-title { padding-top: 22px; }
+.scroll { flex: 1; min-height: 0; padding: 0 14px; }
+.group-title, .other-title, .manage-title { padding: 6px 10px 4px; color: var(--text-3); font-size: 11px; font-weight: 500; letter-spacing: .06em; }
+.other-title, .manage-title { padding-top: 16px; }
 
-.el-menu { width: 100%; padding-bottom: 24px; border-right: 0; background: transparent; }
+.el-menu { width: 100%; padding-bottom: 20px; border-right: 0; background: transparent; }
 .el-menu-item {
-  height: 40px;
-  margin: 3px 0 !important;
-  padding: 0 12px !important;
-  gap: 11px;
-  border-radius: var(--r-sm);
+  height: 36px;
+  line-height: 36px;
+  margin: 2px 0 !important;
+  padding: 0 10px !important;
+  gap: 10px;
+  border-radius: var(--r-md);
   color: var(--text-2) !important;
+  font-size: 13px;
   background: transparent !important;
   transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .el-menu-item:hover { color: var(--text) !important; background: var(--surface-3) !important; }
-.el-menu-item.choose-item { position: relative; color: var(--brand-600) !important; background: var(--brand-soft) !important; font-weight: 650; }
-.el-menu-item.choose-item::before { content: ""; position: absolute; left: -12px; top: 50%; width: 3px; height: 18px; border-radius: 99px; background: var(--brand-600); transform: translateY(-50%); }
+.el-menu-item.choose-item { position: relative; color: var(--brand-600) !important; background: var(--brand-soft) !important; font-weight: 600; }
+.el-menu-item.choose-item::before { content: ""; position: absolute; left: -14px; top: 50%; width: 2px; height: 16px; border-radius: 99px; background: var(--brand-600); transform: translateY(-50%); }
 .menu-name { margin-left: 0; user-select: none; }
 
-.quota-card { flex: none; margin: 12px; padding: 12px; border-radius: var(--r-md); background: var(--surface-2); }
+.quota-card { flex: none; margin: 10px 14px 12px; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); }
 .quota-head, .quota-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
-.quota-head { color: var(--text-2); font-weight: 600; }
+.quota-head { color: var(--text-2); font-weight: 500; }
 .quota-head span:last-child { color: var(--text-3); font-variant-numeric: tabular-nums; }
-.quota-track { height: 6px; margin: 9px 0 8px; overflow: hidden; border-radius: 99px; background: var(--border); }
+.quota-track { height: 4px; margin: 8px 0 6px; overflow: hidden; border-radius: 99px; background: var(--border); }
 .quota-track span { display: block; height: 100%; min-width: 4px; border-radius: inherit; background: var(--brand-600); transition: width var(--dur) var(--ease); }
 .quota-foot { justify-content: flex-start; color: var(--success); font-size: 11.5px; }
 .quota-foot svg { margin-left: auto; }
 .quota-foot.warning { color: var(--warning); }
-.compliance-note { margin: 10px -1px -1px; padding-top: 9px; color: var(--text-3); border-top: 1px solid var(--border); font-size: 10.5px; line-height: 1.5; }
+.compliance-note { margin: 8px -1px -1px; padding-top: 8px; color: var(--text-3); border-top: 1px solid var(--border); font-size: 10.5px; line-height: 1.5; }
 </style>

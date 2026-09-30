@@ -63,8 +63,9 @@ function updateContent() {
         all: initial;
         width: 100%;
         height: 100%;
-        font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
-                    'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                    'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', 'Source Han Sans SC',
+                    'Noto Sans CJK SC', Arial, sans-serif;
         font-size: ${props.comfortable ? '14.5px' : '14px'};
         line-height: ${props.comfortable ? '1.85' : '1.5'};
         color: #13181D;
@@ -84,7 +85,7 @@ function updateContent() {
 
       a {
         text-decoration: none;
-        color: #0E70DF;
+        color: #1677FF;
       }
 
       .shadow-content {

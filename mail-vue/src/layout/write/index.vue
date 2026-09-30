@@ -24,7 +24,7 @@
                 <el-input-tag @add-tag="addTagChange" tag-type="primary" @input="inputChange" size="default" v-model="form.receiveEmail" :placeholder="settingStore.lang === 'zh' ? '继续输入，回车分隔…' : 'Type and press Enter…'">
                   <template #prefix>
                     <el-select ref="mySelect" class="write-select" popper-class="write-select" :show-arrow="false" :no-match-text="' '" :no-data-text="' '" @visible-change="selectStatusChange" @change="selectChange">
-                      <el-option v-for="item in selectRecipientList" :key="item" :label="item" :value="item" style="color:#999896" />
+                      <el-option v-for="item in selectRecipientList" :key="item" :label="item" :value="item" style="color:var(--text-3)" />
                     </el-select>
                   </template>
                 </el-input-tag>
@@ -1093,7 +1093,7 @@ async function saveDraftNow() {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: color-mix(in srgb, #07110d 58%, transparent);
+  background: rgba(0, 0, 0, .45);
   backdrop-filter: blur(8px);
 
   .write-box {
@@ -1104,8 +1104,8 @@ async function saveDraftNow() {
     overflow: hidden;
     background: var(--el-bg-color);
     border: 1px solid var(--el-border-color-light);
-    border-radius: 18px;
-    box-shadow: 0 24px 64px rgba(3, 20, 12, .28);
+    border-radius: var(--r-xl);
+    box-shadow: var(--sh-3);
     transition: var(--el-transition-duration);
 
     .container {
@@ -1141,15 +1141,15 @@ async function saveDraftNow() {
 
 .compose-heading { min-width: 0; gap: 12px; }
 .compose-icon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   display: grid;
   place-items: center;
   color: #fff;
-  background: linear-gradient(145deg, #11a861, #08723f);
-  border-radius: 12px;
-  box-shadow: 0 7px 18px rgba(16, 139, 80, .24);
+  background: var(--brand-600);
+  border-radius: var(--r-md);
+  
 }
 .compose-title-copy { min-width: 0; display: grid; gap: 2px; }
 .compose-title-copy strong { color: var(--el-text-color-primary); font-size: 17px; line-height: 1.25; }
@@ -1175,7 +1175,7 @@ async function saveDraftNow() {
   color: var(--el-text-color-regular);
   background: var(--el-fill-color-light);
   border: 1px solid var(--el-border-color-light);
-  border-radius: 9px;
+  border-radius: var(--r-md);
 }
 .draft-button:hover { color: #0a8c4d; border-color: color-mix(in srgb, #0a8c4d 45%, var(--el-border-color)); }
 .close-button {
@@ -1185,7 +1185,7 @@ async function saveDraftNow() {
   place-items: center;
   color: var(--el-text-color-secondary);
   background: transparent;
-  border-radius: 9px;
+  border-radius: var(--r-md);
 }
 .close-button:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
 
@@ -1193,7 +1193,7 @@ async function saveDraftNow() {
   overflow: hidden;
   background: var(--el-bg-color-overlay);
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 13px;
+  border-radius: var(--r-lg);
 }
 .sender-row,
 .field-row {
@@ -1209,11 +1209,11 @@ async function saveDraftNow() {
   flex: 0 0 30px;
   display: grid;
   place-items: center;
-  color: #08703e;
+  color: var(--brand-600);
   font-size: 12px;
   font-weight: 800;
-  background: #dff7e9;
-  border: 1px solid #bde9cf;
+  background: var(--brand-soft);
+  border: 1px solid color-mix(in srgb, var(--brand-500) 28%, transparent);
   border-radius: 50%;
 }
 .meta-label,
@@ -1244,8 +1244,8 @@ async function saveDraftNow() {
   align-items: center;
   gap: 6px;
   padding: 0 9px;
-  color: #087b45;
-  background: color-mix(in srgb, #12a861 10%, var(--el-bg-color));
+  color: var(--brand-600);
+  background: var(--brand-soft);
   border-radius: 8px;
   white-space: nowrap;
 }
@@ -1255,7 +1255,7 @@ async function saveDraftNow() {
   overflow: hidden;
   background: var(--el-bg-color-overlay);
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 13px;
+  border-radius: var(--r-lg);
 }
 .editor-shell :deep(.tox-tinymce) { border: 0 !important; }
 .editor-shell :deep(.tox-editor-header) { border-bottom: 1px solid var(--el-border-color-lighter) !important; box-shadow: none !important; }
@@ -1270,7 +1270,7 @@ async function saveDraftNow() {
   padding: 12px;
   background: var(--el-fill-color-extra-light);
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 13px;
+  border-radius: var(--r-lg);
 }
 .attachment-zone { min-width: 0; }
 .footer-tools { min-width: 0; gap: 8px; }
@@ -1280,14 +1280,14 @@ async function saveDraftNow() {
   align-items: center;
   gap: 6px;
   padding: 0 10px;
-  color: #087b45;
+  color: var(--brand-600);
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   white-space: nowrap;
 }
 .tool-button-muted { color: var(--el-text-color-regular); }
-.tool-button:hover { border-color: #23a667; }
+.tool-button:hover { border-color: var(--brand-500); }
 .drop-tip {
   min-width: 0;
   display: flex;
@@ -1321,7 +1321,7 @@ async function saveDraftNow() {
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
 }
-.attachment-icon { display: flex; color: #129154; }
+.attachment-icon { display: flex; color: var(--brand-600); }
 .att-filename { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .att-size { color: var(--el-text-color-secondary); font-size: 11px; white-space: nowrap; }
 .remove-attachment {
@@ -1333,7 +1333,7 @@ async function saveDraftNow() {
   background: transparent;
   border-radius: 6px;
 }
-.remove-attachment:hover { color: #d14343; background: color-mix(in srgb, #d14343 9%, transparent); }
+.remove-attachment:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, transparent); }
 .send-button {
   height: 42px;
   min-width: 104px;
@@ -1344,11 +1344,10 @@ async function saveDraftNow() {
   padding: 0 20px;
   color: #fff;
   font-weight: 700;
-  background: linear-gradient(135deg, #16a762, #087940);
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(9, 132, 71, .22);
+  background: var(--brand-600);
+  border-radius: var(--r-md);
 }
-.send-button:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.send-button:hover { background: var(--brand-hover); }
 
 .email-row {
   white-space: nowrap;
@@ -1393,7 +1392,7 @@ async function saveDraftNow() {
     border-radius: 0 !important;
   }
   .compose-header { min-height: 60px; padding: 9px 10px 9px 13px; }
-  .compose-icon { width: 36px; height: 36px; flex-basis: 36px; border-radius: 10px; }
+  .compose-icon { width: 32px; height: 32px; flex-basis: 32px; border-radius: var(--r-md); }
   .compose-title-copy span { display: none; }
   .draft-button { padding: 0 10px; }
   .write-box .container { gap: 9px !important; padding: 10px !important; }
@@ -1426,21 +1425,21 @@ async function saveDraftNow() {
   background: var(--surface-2);
   backdrop-filter: none;
 }
-.compose-workspace { width: min(1320px, calc(100% - 40px)); min-height: 100%; margin: 0 auto; padding: 24px 0 36px; }
+.compose-workspace { width: min(1320px, calc(100% - 40px)); min-height: 100%; margin: 0 auto; padding: 18px 0 28px; }
 .compose-topbar { height: 42px; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.compose-topbar h1 { margin: 0; color: var(--text); font-size: 17px; font-weight: 800; letter-spacing: -.25px; }
+.compose-topbar h1 { margin: 0; color: var(--text); font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
 .draft-save-status { min-width: 0; display: inline-flex; align-items: center; gap: 5px; color: var(--text-3); font-size: 11.5px; white-space: nowrap; }
 .draft-save-status.saved { color: var(--brand-600); }
 .draft-save-status.error { color: var(--danger); }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .back-button, .secondary-button, .inline-link, .add-attachment, .contact-book-button, .phrase-list button, .phrase-add, .phrase-empty, .dialog-delete, .translate-row button { border: 0; font: inherit; cursor: pointer; }
-.back-button, .secondary-button { height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 11px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 9px; font-size: 12.5px; font-weight: 650; }
+.back-button, .secondary-button { height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 12.5px; font-weight: 500; }
 .back-button:hover, .secondary-button:hover { color: var(--brand-700); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); background: var(--brand-soft); }
-.topbar-actions .send-button { height: 38px; min-width: 80px; padding: 0 14px; border-radius: 9px; font-size: 12.5px; }
+.topbar-actions .send-button { height: 32px; min-width: 76px; padding: 0 14px; border-radius: var(--r-md); font-size: 12.5px; }
 .compose-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 16px; }
 .compose-main-card { min-width: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .compose-main-card .message-meta { overflow: visible; border: 0; border-radius: 0; background: var(--surface); }
-.compose-main-card .field-row { min-height: 46px; padding: 7px 16px; border-bottom: 1px solid var(--border); }
+.compose-main-card .field-row { min-height: 40px; padding: 5px 14px; border-bottom: 1px solid var(--border); }
 .compose-main-card .field-row > label { width: 64px; flex-basis: 64px; color: var(--text-2); font-size: 12.5px; font-weight: 700; }
 .recipient-control { gap: 7px; }
 .recipient-control :deep(.el-input-tag__wrapper) { min-height: 30px; }
@@ -1470,16 +1469,16 @@ async function saveDraftNow() {
 .side-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .side-title > span { color: var(--text-3); font-size: 11.5px; font-weight: 750; }
 .side-title small { margin-left: auto; padding: 3px 7px; color: var(--text-3); background: var(--surface-2); border-radius: 7px; font-size: 10.5px; }
-.side-title small.warning { color: #b45309; background: #fff3dd; }
+.side-title small.warning { color: var(--warning); background: color-mix(in srgb, var(--warning) 14%, var(--surface)); }
 .insight-list { display: grid; gap: 8px; }
 .insight-person { min-width: 0; display: flex; align-items: center; gap: 9px; }
-.insight-person > span { width: 32px; height: 32px; flex: 0 0 32px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #f59e0b, #f97316); border-radius: 50%; font-size: 11px; font-weight: 800; }
+.insight-person > span { width: 32px; height: 32px; flex: 0 0 32px; display: grid; place-items: center; color: #fff; background: var(--avatar-4); border-radius: 50%; font-size: 11px; font-weight: 800; }
 .insight-person > div { min-width: 0; display: grid; gap: 2px; }
 .insight-person strong, .insight-person small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .insight-person strong { color: var(--text); font-size: 11.5px; }
 .insight-person small { color: var(--text-3); font-size: 10.5px; }
 .side-empty { padding: 10px; color: var(--text-3); background: var(--surface-2); border-radius: 8px; font-size: 11.5px; line-height: 1.55; }
-.contact-book-button { width: 100%; height: 36px; margin-top: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--brand-700); background: var(--brand-soft); border-radius: 8px; font-size: 12px; font-weight: 750; }
+.contact-book-button { width: 100%; height: 32px; margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--brand-600); background: var(--brand-soft); border-radius: var(--r-md); font-size: 12px; font-weight: 500; }
 .check-list { display: grid; gap: 6px; }
 .check-item { min-height: 52px; padding: 8px 9px; display: flex; align-items: flex-start; gap: 7px; border-radius: 8px; }
 .check-item.ok { color: var(--success); background: color-mix(in srgb, var(--success) 9%, var(--surface)); }
@@ -1518,7 +1517,7 @@ async function saveDraftNow() {
 .signature-apply { width: 100%; height: 32px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--brand-700); border: 1px solid color-mix(in srgb, var(--brand-500) 25%, var(--border)); border-radius: 8px; background: var(--brand-soft); font-size: 10.5px; font-weight: 700; cursor: pointer; }
 .signature-apply:disabled { opacity: .48; cursor: not-allowed; }
 .side-card > p { margin: 8px 0 0; color: var(--text-3); font-size: 10.5px; line-height: 1.55; }
-:global(.mail-preview-dialog) { width: min(760px, calc(100vw - 28px)) !important; border-radius: 14px !important; }
+:global(.mail-preview-dialog) { width: min(760px, calc(100vw - 28px)) !important; border-radius: var(--r-lg) !important; }
 :global(.mail-preview-dialog .el-dialog__body) { padding-top: 8px; }
 .preview-message { padding: 4px 6px 12px; }
 .preview-meta { display: flex; flex-wrap: wrap; gap: 7px 20px; color: var(--text-3); font-size: 11.5px; }

@@ -329,7 +329,7 @@ function switchDark(nextIsDark, root) {
   root.setAttribute('class', nextIsDark ? 'dark' : '')
   const metaTag = document.getElementById('theme-color-meta');
   const isMobile =  !window.matchMedia("(pointer: fine) and (hover: hover)").matches;
-  metaTag.setAttribute('content', nextIsDark ? '#0E1114' : (isMobile ? '#F6F8FB' : '#FFFFFF'));
+  metaTag.setAttribute('content', nextIsDark ? '#0E1114' : (isMobile ? '#F5F7FA' : '#FFFFFF'));
   uiStore.dark = nextIsDark
 }
 
@@ -451,7 +451,7 @@ function formatName(email) {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
+    border-radius: var(--r-md);
   }
 }
 
@@ -472,16 +472,17 @@ function formatName(email) {
 
 .global-search {
   width: 100%;
-  height: 38px;
+  height: 34px;
   position: relative;
   display: flex;
   align-items: center;
+  font-size: 13px;
 
-  .search-icon { position: absolute; left: 11px; color: var(--text-3); pointer-events: none; }
+  .search-icon { position: absolute; left: 10px; color: var(--text-3); pointer-events: none; }
   input {
     width: 100%;
-    height: 38px;
-    padding: 0 64px 0 36px;
+    height: 34px;
+    padding: 0 64px 0 34px;
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
     outline: none;
@@ -513,9 +514,9 @@ function formatName(email) {
   margin-left: 5px;
 
   .writer {
-    width: 36px;
-    height: 36px;
-    border-radius: 11px;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-md);
     color: #ffffff;
     background: var(--enterprise-gradient);
     box-shadow: none;
@@ -540,18 +541,19 @@ function formatName(email) {
 }
 
 @media (max-width: 767px) {
-  .header { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 6px; padding: 0 8px; }
-  .header.not-send { grid-template-columns: 38px minmax(0, 1fr) auto; }
-  .header.mobile-search-open, .header.not-send.mobile-search-open { grid-template-columns: 38px minmax(0, 1fr); }
+  .header { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 6px; padding: 0 8px; }
+  .header.not-send { grid-template-columns: 34px minmax(0, 1fr) auto; }
+  .header.mobile-search-open, .header.not-send.mobile-search-open { grid-template-columns: 34px minmax(0, 1fr); }
   .header-btn { display: inline-flex; }
-  .global-search { height: 38px; }
+  .global-search { height: 36px; }
+  .global-search input { height: 36px; }
   .global-search:not(.open) .search-icon,
   .global-search:not(.open) input,
   .global-search kbd { display: none; }
   .mobile-context {
     width: 100%;
     min-width: 0;
-    height: 38px;
+    height: 36px;
     padding: 0 4px;
     display: flex;
     flex-direction: column;
@@ -572,8 +574,8 @@ function formatName(email) {
 }
 
 .breadcrumb-item {
-  font-weight: 650;
-  font-size: 15px;
+  font-weight: 600;
+  font-size: 14px;
   color: var(--el-text-color-primary);
   overflow: hidden;
   white-space: nowrap;
@@ -582,7 +584,7 @@ function formatName(email) {
 
 @media (min-width: 768px) and (max-width: 1024px) {
   .header,
-  .header.not-send { grid-template-columns: 38px minmax(240px, 560px) 1fr; }
+  .header.not-send { grid-template-columns: 34px minmax(240px, 560px) 1fr; }
   .header-btn { display: inline-flex; }
 }
 
@@ -596,10 +598,10 @@ function formatName(email) {
 
   .icon-item {
     align-self: center;
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     border: 1px solid var(--border);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: var(--surface);
     display: flex;
     align-items: center;
@@ -614,16 +616,16 @@ function formatName(email) {
   }
 
   .notice {
-    font-size: 22px;
+    font-size: 20px;
     margin-right: 4px;
   }
 
   .dark-icon {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .sun-icon {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .avatar {
@@ -634,12 +636,12 @@ function formatName(email) {
     .avatar-text {
       background: var(--el-bg-color);
       color: var(--el-text-color-primary);
-      height: 30px;
-      width: 30px;
+      height: 28px;
+      width: 28px;
       display: flex;
       justify-content: center;
       align-items: center;
-      border-radius: 9px;
+      border-radius: var(--r-md);
       border: 1px solid var(--el-border-color);
       font-weight: 650;
       background: var(--el-color-primary-light-9);

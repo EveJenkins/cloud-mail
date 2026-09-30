@@ -1,38 +1,66 @@
 :root {
-  --brand-50: #ecfdf3;
-  --brand-100: #d1fae5;
-  --brand-500: #25d366;
-  --brand-600: #15803d;
-  --brand-700: #166534;
-  --brand-soft: rgba(21, 128, 61, .10);
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --danger: #dc2626;
-  --info: #0891b2;
-  --bg: #f6f8fb;
+  /* 品牌色：商务蓝（Ant Design 蓝阶） */
+  --brand-50: #e6f4ff;
+  --brand-100: #bae0ff;
+  --brand-500: #4096ff;
+  --brand-600: #1677ff;
+  --brand-700: #0958d9;
+  --brand-hover: #4096ff;
+  --brand-soft: rgba(22, 119, 255, .10);
+
+  /* 语义色 */
+  --success: #52c41a;
+  --warning: #faad14;
+  --danger: #ff4d4f;
+  --danger-text: #cf1322;
+  --info: #1677ff;
+
+  /* 表面 */
+  --bg: #f5f7fa;
   --surface: #ffffff;
-  --surface-2: #f8fafc;
-  --surface-3: #f1f5f9;
+  --surface-2: #f7f9fc;
+  --surface-3: #f0f2f5;
   --sidebar-surface: #ffffff;
   --mail-list-surface: #ffffff;
-  --reading-surface: #f6f8fb;
+  --reading-surface: #f5f7fa;
   --topbar-surface: #ffffff;
-  --border: #e6ebf2;
-  --border-strong: #d5dde8;
-  --text: #0f172a;
-  --text-2: #475569;
-  --text-3: #94a3b8;
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 22px;
-  --sh-1: 0 1px 2px rgba(15, 23, 42, .06);
-  --sh-2: 0 4px 16px rgba(15, 23, 42, .08);
-  --sh-3: 0 18px 48px rgba(15, 23, 42, .14);
+
+  /* 边框与文字 */
+  --border: #e5e6eb;
+  --border-strong: #d9dce3;
+  --text: #1d2129;
+  --text-2: #4e5969;
+  --text-3: #86909c;
+
+  /* 紧凑圆角 */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 10px;
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, .03);
+  --sh-2: 0 4px 12px rgba(0, 0, 0, .08);
+  --sh-3: 0 10px 30px rgba(0, 0, 0, .12);
   --dur: 180ms;
   --ease: cubic-bezier(.22, .61, .36, 1);
-  --sidebar-w: 248px;
-  --mail-list-w: 392px;
+
+  /* 布局尺寸（紧凑） */
+  --sidebar-w: 224px;
+  --mail-list-w: 360px;
+
+  /* 头像与图表调色板 */
+  --avatar-1: #1677ff;
+  --avatar-2: #722ed1;
+  --avatar-3: #13a8a8;
+  --avatar-4: #d46b08;
+  --avatar-5: #c41d7f;
+  --avatar-6: #2f54eb;
+  --chart-1: #1677ff;
+  --chart-2: #13c2c2;
+  --chart-3: #722ed1;
+  --chart-4: #faad14;
+  --chart-5: #eb2f96;
+  --chart-6: #2f54eb;
 }
 
 html.dark {
@@ -49,10 +77,21 @@ html.dark {
   --text: #ffffff;
   --text-2: rgba(255, 255, 255, .72);
   --text-3: rgba(255, 255, 255, .55);
-  --brand-500: #62c98d;
-  --brand-600: #2fb36c;
-  --brand-700: #48bd7a;
-  --brand-soft: rgba(47, 179, 108, .13);
+
+  --brand-50: #111a2c;
+  --brand-100: #112545;
+  --brand-500: #69b1ff;
+  --brand-600: #4096ff;
+  --brand-700: #69b1ff;
+  --brand-hover: #69b1ff;
+  --brand-soft: rgba(64, 150, 255, .16);
+
+  --success: #73d13d;
+  --warning: #ffc53d;
+  --danger: #ff7875;
+  --danger-text: #ff7875;
+  --info: #4096ff;
+
   --sh-1: none;
   --sh-2: none;
   --sh-3: none;

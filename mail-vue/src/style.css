@@ -30,11 +30,16 @@ html, body {
 }
 
 body {
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", Roboto, sans-serif;
     line-height: 1.5;
     color: var(--el-text-color-primary);
-    font-size: 14px;
+    font-size: 13px;
     -webkit-font-smoothing: antialiased;
+}
+
+/* 数字/时间对齐：列表、表格、统计里的等宽数字 */
+table, .el-table, .el-pagination, time, .tabular-nums {
+    font-variant-numeric: tabular-nums;
 }
 
 html, body {
@@ -110,32 +115,24 @@ button, input, select, textarea {
 }
 
 :root {
-    --enterprise-gradient: linear-gradient(135deg, #45bc7c 0%, var(--brand-600) 100%);
-    --enterprise-shadow: 0 12px 32px rgba(15, 23, 42, .08);
+    --enterprise-gradient: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-600) 100%);
 
     --extra-light-fill: #FAFCFF;
     --settings-page-background: var(--bg);
     --light-ill: #F5F7FA;
     --light-border: #E4E7ED;
     --header-actions-border: inset 0 -1px 0 0 var(--el-border-color-lighter);
-    --aside-backgound: var(--surface);
-    --aside-menu-active-background: var(--brand-soft);
     --loadding-background: rgba(255, 255, 255, 0.8);
     --dark-border: #CDD0D6;
-    --base-fill: #F0F2F5;
     --regular-text-color: #585d69;
     --light-border-color: #e7e9ec;
-    --aside-right-border: 4px 0 16px rgba(15, 23, 42, .08);
     --choose-account-background: var(--brand-soft);
     --el-text-color-regular: var(--el-text-color-primary);
     --email-scroll-content-color: var(--text-3);
     --email-hover-background: var(--surface-2);
-    --email-right-click-background: #FDF6EC;
-    --login-border: none;
+    --email-right-click-background: var(--brand-50);
     --form-desc-color: var(--text-3);
     --login-switch-color: var(--brand-600);
-    --scrollbar-track-color: #A8ABB2;
-    --base-border-color: #DCDFE6;
     --secondary-text-color: #909399;
     --message-block-color: rgba(0, 0, 0, 0);
     --loading-hide-transition: all 200ms;
@@ -145,29 +142,22 @@ button, input, select, textarea {
     --vt-easing: ease-out;
 }
 
-.dark {
+html.dark {
     --extra-light-fill: #191919;
     --settings-page-background: var(--extra-light-fill);
     --light-ill: #262727;
     --light-border: #414243;
-    --aside-backgound: var(--surface);
-    --aside-menu-active-background: var(--brand-soft);
     --header-actions-border: inset 0 -1px 0 0 var(--el-border-color-lighter);
     --loadding-background: rgba(0, 0, 0, 0.3);
     --dark-border: #636466;
-    --base-fill: #303030;
     --regular-text-color: #bfbdbc;
     --light-border-color: #414243;
-    --aside-right-border: 3px 0 5px #0A0A0A;
     --choose-account-background: var(--brand-soft);
     --email-scroll-content-color: rgba(255, 255, 255, 0.3);
     --email-hover-background: var(--surface-2);
     --email-right-click-background: var(--email-hover-background);
-    --login-border: none;
     --form-desc-color: #8D9095;
-    --login-switch-color: rgb(102, 177, 255);
-    --scrollbar-track-color: #8D9095;
-    --base-border-color: #4C4D4F;
+    --login-switch-color: #69b1ff;
     --secondary-text-color: #A3A6AD;
     --message-block-color: rgba(30, 30, 30, 0.2);
     --el-border-color: #414243 !important;
@@ -175,19 +165,11 @@ button, input, select, textarea {
 
 /* Enterprise component finish */
 .el-button {
-    border-radius: 9px;
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease;
 }
 
 .el-button--primary {
     border: 1px solid transparent;
-    background: var(--brand-600);
-    box-shadow: 0 2px 10px var(--brand-soft);
-}
-
-html.dark .el-button--primary {
-    border-color: rgba(255, 255, 255, .10);
-    box-shadow: none;
 }
 
 html.dark .el-dialog,
@@ -197,8 +179,8 @@ html.dark .el-notification {
     box-shadow: none !important;
 }
 
-@media (hover: hover) {
-    .el-button--primary:hover { background: var(--brand-700); box-shadow: 0 4px 14px var(--brand-soft); }
+html.dark .el-button--primary {
+    border-color: rgba(255, 255, 255, .10);
 }
 
 .el-dialog,
@@ -230,8 +212,8 @@ html.dark .el-notification {
 /* Prototype-aligned workspace surfaces */
 .main-view > .header-actions,
 .main-view .user-box > .header-actions {
-    min-height: 50px;
-    padding: 6px 16px;
+    min-height: 44px;
+    padding: 6px 12px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     box-shadow: none !important;
@@ -244,8 +226,8 @@ html.dark .el-notification {
     background: var(--surface);
 }
 
-.main-view .el-table th.el-table__cell { height: 48px; color: var(--text-2); font-size: 12.5px; }
-.main-view .el-table td.el-table__cell { height: 54px; }
+.main-view .el-table th.el-table__cell { height: 40px; color: var(--text-2); font-size: 12.5px; }
+.main-view .el-table td.el-table__cell { height: 44px; }
 
 .el-empty__description p { color: var(--text-3); }
 .el-pagination button,

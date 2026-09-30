@@ -133,7 +133,7 @@ async function copyPhrase(phrase) {
 .page-head, .heading-copy, .head-actions, .summary-row, .label-cell, .row-actions { display: flex; align-items: center; }
 .page-head { gap: 18px; margin-bottom: 16px; }
 .heading-copy { min-width: 0; gap: 12px; }
-.heading-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; color: #fff; border-radius: 11px; background: linear-gradient(135deg, var(--brand-600), #0ea5e9); box-shadow: 0 8px 18px color-mix(in srgb, var(--brand-600) 20%, transparent); }
+.heading-icon { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; color: #fff; border-radius: var(--r-md); background: var(--brand-600); }
 .page-head h1 { margin: 0; color: var(--text); font-size: 19px; }
 .page-head p { margin: 3px 0 0; color: var(--text-3); font-size: 12.5px; }
 .head-actions { margin-left: auto; gap: 8px; }
@@ -168,7 +168,7 @@ async function copyPhrase(phrase) {
 .row-actions .danger { width: 32px; padding: 0; justify-content: center; }
 .row-actions .danger:hover { color: var(--danger); }
 .empty-state { min-height: 320px; padding: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
-.empty-state .empty-icon { width: 56px; height: 56px; display: grid; place-items: center; color: var(--brand-600); border-radius: 17px; background: var(--brand-soft); }
+.empty-state .empty-icon { width: 52px; height: 52px; display: grid; place-items: center; color: var(--brand-600); border-radius: var(--r-lg); background: var(--brand-soft); }
 .empty-state strong { margin-top: 12px; color: var(--text-2); }
 .empty-state > span:not(.empty-icon) { margin-top: 4px; font-size: 12px; }
 .empty-state button { margin-top: 14px; padding: 8px 12px; color: #fff; border: 0; border-radius: 8px; background: var(--brand-600); cursor: pointer; }

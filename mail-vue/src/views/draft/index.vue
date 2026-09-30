@@ -20,7 +20,7 @@
                :empty-description="settingStore.lang === 'zh' ? '未完成的邮件会保存在这里' : 'Unfinished messages will be saved here'"
                empty-icon="solar:document-add-linear"
                :selected-id="selectedDraft?.draftId"
-               :row-height="isDesktop ? 118 : (isPhone ? 118 : 0)"
+               :row-height="isDesktop ? 100 : (isPhone ? 100 : 0)"
   >
     <template #name="props">
       <span class="send-email">{{ props.email.receiveEmail?.join(',') || '(' + $t('noRecipient') + ')' }}</span>
@@ -221,7 +221,7 @@ function editSelectedDraft() {
 .mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
 .draft-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
 .draft-header-actions { min-height: 50px; padding: 6px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
-.draft-detail-action { height: 36px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+.draft-detail-action { height: 36px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
 .draft-detail-action:hover { color: var(--brand-700); border-color: color-mix(in srgb, var(--brand-500) 42%, var(--border)); background: var(--brand-soft); }
 .draft-detail-action.icon-only { width: 36px; padding: 0; }
 .draft-preview-scroll { height: calc(100% - 50px); overflow-y: auto; }

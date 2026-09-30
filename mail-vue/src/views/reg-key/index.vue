@@ -43,7 +43,7 @@
             </div>
             <div class="info-right">
               <el-dropdown class="setting">
-                <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"/>
+                <Icon icon="fluent:settings-24-filled" width="21" height="21" color="var(--text-3)"/>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item @click="copyCode(item.code)">{{ $t('copy') }}</el-dropdown-item>
@@ -529,7 +529,7 @@ function openAdd() {
 }
 
 .gen-code {
-  color: #606266;
+  color: var(--text-2);
   cursor: pointer;
 }
 

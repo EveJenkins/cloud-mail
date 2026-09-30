@@ -88,7 +88,7 @@
                 <Icon v-else icon="solar:star-line-duotone" width="18" height="18"/>
               </div>
               <div v-if="!showStar && !props.showInboxSummary"></div>
-              <div class="sender-avatar" :style="{ background: avatarGradient(item.name || item.sendEmail) }">
+              <div class="sender-avatar" :style="{ background: avatarColor(item.name || item.sendEmail) }">
                 {{ senderInitials(item.name || item.sendEmail) }}
               </div>
               <div class="title" :class="accountShow ? 'title-column' : 'title-column'">
@@ -134,7 +134,8 @@
                     </span>
                     <span class="email-content">{{ item.listText || item.text || '\u200B' }}</span>
                   </div>
-                  <div class="row-tags" v-if="props.showInboxSummary && (item.hasReply || mailCategory(item) || extractVerificationCode(item) || item.attList?.length)">
+                  <!-- 固定行高的虚拟列表要求每行占位一致，标签区始终保留高度 -->
+                  <div class="row-tags" v-if="props.showInboxSummary">
                     <span class="mail-badge replied" v-if="item.hasReply"><Icon icon="solar:reply-2-linear" width="12" />{{ settingStore.lang === 'zh' ? '已回复' : 'Replied' }}</span>
                     <span class="mail-badge category" v-if="mailCategory(item)">{{ mailCategory(item) }}</span>
                     <span class="mail-badge code" v-if="extractVerificationCode(item)"><Icon icon="solar:check-circle-bold" width="11" />{{ settingStore.lang === 'zh' ? '含验证码' : 'Code detected' }}</span>
@@ -434,14 +435,13 @@ function senderInitials(value = '') {
   return parts.slice(0, 2).map(part => part[0]).join('').toUpperCase()
 }
 
-function avatarGradient(value = '') {
+function avatarColor(value = '') {
   const palettes = [
-    ['#3b82f6', '#6366f1'], ['#f59e0b', '#ef4444'], ['#25d366', '#0ea5e9'],
-    ['#8b5cf6', '#ec4899'], ['#64748b', '#334155']
+    'var(--avatar-1)', 'var(--avatar-2)', 'var(--avatar-3)',
+    'var(--avatar-4)', 'var(--avatar-5)', 'var(--avatar-6)'
   ]
   const score = Array.from(String(value)).reduce((sum, char) => sum + char.charCodeAt(0), 0)
-  const [from, to] = palettes[score % palettes.length]
-  return `linear-gradient(135deg, ${from}, ${to})`
+  return palettes[score % palettes.length]
 }
 
 function extractVerificationCode(item = {}) {
@@ -585,11 +585,12 @@ const filteredEmails = computed(() => {
 
 const itemHeight = computed(() => {
     if (props.rowHeight > 0) return props.rowHeight;
+    // 与 .email-row / .email-container.has-summary 的 min-height 保持严格一致，
+    // 否则虚拟列表定位会与实际行高错位
     if (props.type === 'all-email') {
-      return isMobile.value ? 132 : 65;
-    } else  {
-      return isMobile.value ? 83 : 48;
+      return isMobile.value ? 110 : 72;
     }
+    return 100;
 })
 
 watch(emailList, () => {
@@ -1059,14 +1060,14 @@ function handleList(list) {
     email.formatCreateTime = fromNow(email.createTime);
     email.test = t('received')
     const statusIconMap = {
-      0: { icon: 'ic:round-mark-email-read', color: '#51C76B', content: t('received') },
-      1: { icon: 'bi:send-arrow-up-fill',  color: '#51C76B', content: t('sent') },
-      2: { icon: 'bi:send-check-fill',     color: '#51C76B', content: t('delivered') },
-      3: { icon: 'bi:send-x-fill',         color: '#F56C6C', content: t('bounced') },
-      8: { icon: 'bi:send-x-fill',         color: '#F56C6C', content: t('bounced') },
-      4: { icon: 'bi:send-exclamation-fill', color: '#FBBD08', content: t('complained') },
-      5: { icon: 'bi:send-arrow-up-fill',  color: '#FBBD08', content: t('delayed') },
-      7: { icon: 'ic:round-mark-email-read', color: '#FBBD08', content: t('noRecipient') },
+      0: { icon: 'ic:round-mark-email-read', color: 'var(--success)', content: t('received') },
+      1: { icon: 'bi:send-arrow-up-fill',  color: 'var(--success)', content: t('sent') },
+      2: { icon: 'bi:send-check-fill',     color: 'var(--success)', content: t('delivered') },
+      3: { icon: 'bi:send-x-fill',         color: 'var(--danger)', content: t('bounced') },
+      8: { icon: 'bi:send-x-fill',         color: 'var(--danger)', content: t('bounced') },
+      4: { icon: 'bi:send-exclamation-fill', color: 'var(--warning)', content: t('complained') },
+      5: { icon: 'bi:send-arrow-up-fill',  color: 'var(--warning)', content: t('delayed') },
+      7: { icon: 'ic:round-mark-email-read', color: 'var(--warning)', content: t('noRecipient') },
     };
 
     if (email.isDel) {
@@ -1139,7 +1140,7 @@ function loadData() {
       place-items: center;
       color: var(--brand-500);
       border: 1px solid var(--border);
-      border-radius: 13px;
+      border-radius: var(--r-lg);
       background: var(--surface-2);
     }
 
@@ -1151,7 +1152,7 @@ function loadData() {
       padding: 7px 12px;
       color: var(--brand-600);
       border: 1px solid var(--border);
-      border-radius: 9px;
+      border-radius: var(--r-md);
       background: var(--surface);
       cursor: pointer;
     }
@@ -1167,7 +1168,7 @@ function loadData() {
       gap: 6px;
       color: var(--text-2);
       border: 1px solid var(--border);
-      border-radius: 9px;
+      border-radius: var(--r-md);
       background: var(--surface);
       font-size: 12px;
       font-weight: 600;
@@ -1218,17 +1219,17 @@ function loadData() {
 
 :deep(.email-row) {
   display: flex;
-  padding: 11px 16px 11px 0;
+  padding: 9px 14px 9px 0;
   justify-content: space-between;
   box-shadow: var(--header-actions-border);
   cursor: pointer;
   align-items: center;
   position: relative;
   transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
-  min-height: 72px;
+  min-height: 64px;
   height: auto;
   @media (max-width: 1366px) {
-    min-height: 88px;
+    min-height: 72px;
   }
 
   @media (pointer: coarse) {
@@ -1236,10 +1237,10 @@ function loadData() {
     user-select: none;
   }
   &.all-email {
-    min-height: 82px;
+    min-height: 72px;
     height: auto;
     @media (max-width: 1366px) {
-      height: 132px;
+      height: 110px;
     }
   }
   .user-info {
@@ -1479,7 +1480,7 @@ function loadData() {
   &:hover {
     background-color: var(--email-hover-background);
     z-index: 0;
-    box-shadow: inset 3px 0 0 var(--el-color-primary);
+    box-shadow: inset 2px 0 0 var(--brand-500);
   }
 
   &.right-checked,
@@ -1490,7 +1491,7 @@ function loadData() {
   &.mail-selected,
   &.mail-selected:hover {
     background: var(--brand-soft);
-    box-shadow: inset 3px 0 0 var(--brand-600);
+    box-shadow: inset 2px 0 0 var(--brand-600);
   }
 
   /*&[data-checked="true"] {
@@ -1516,7 +1517,7 @@ function loadData() {
 .summary-refresh:disabled { cursor: wait; opacity: .6; }
 .summary-refresh .spinning { animation: summary-spin .75s linear infinite; }
 @keyframes summary-spin { to { transform: rotate(360deg); } }
-.inbox-search { height: 38px; margin-top: 10px; padding: 0 12px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
+.inbox-search { height: 34px; margin-top: 8px; padding: 0 10px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
 .inbox-search:focus-within { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
 .inbox-search input { min-width: 0; flex: 1; color: var(--text); background: transparent; font-size: 12.5px; }
 .inbox-search input::placeholder { color: var(--text-3); }
@@ -1525,7 +1526,7 @@ function loadData() {
 .inbox-summary {
   display: flex;
   gap: 6px;
-  padding: 8px 16px 10px;
+  padding: 8px 14px;
   overflow-x: auto;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
@@ -1533,60 +1534,62 @@ function loadData() {
 }
 .inbox-summary::-webkit-scrollbar { display: none; }
 .summary-chip {
-  border: 0;
+  border: 1px solid transparent;
   flex: 0 0 auto;
-  height: 26px;
+  height: 24px;
   padding: 0 9px;
-  border-radius: 999px;
-  color: var(--text-3);
+  border-radius: var(--r-md);
+  color: var(--text-2);
   background: var(--surface-3);
-  font-size: 12.5px;
-  line-height: 26px;
+  font-size: 12px;
+  line-height: 22px;
   white-space: nowrap;
   cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.summary-chip.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 600; }
+.summary-chip:hover { color: var(--brand-600); }
+.summary-chip.active { color: var(--brand-600); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 32%, transparent); font-weight: 500; }
 .summary-chip small { margin-left: 3px; font-size: 10.5px; opacity: .72; }
 
 :deep(.sender-avatar) {
-  width: 36px;
-  height: 36px;
-  margin-right: 12px;
-  flex: 0 0 36px;
+  width: 32px;
+  height: 32px;
+  margin-right: 10px;
+  flex: 0 0 32px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   color: #fff;
-  font-size: 12.5px;
-  font-weight: 750;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: .02em;
 }
 
 :deep(.row-tags) { min-height: 20px; margin-top: 7px; display: flex; align-items: center; gap: 6px; overflow: hidden; }
-:deep(.mail-badge) { height: 20px; padding: 0 7px; display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); border-radius: 6px; background: var(--surface-3); font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+:deep(.mail-badge) { height: 20px; padding: 0 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); border-radius: var(--r-sm); background: var(--surface-3); font-size: 10.5px; font-weight: 500; white-space: nowrap; }
 :deep(.mail-badge.code) { color: var(--brand-700); background: var(--brand-soft); }
 :deep(.mail-badge.category) { color: var(--success); background: color-mix(in srgb, var(--success) 11%, var(--surface)); }
 :deep(.mail-badge.replied) { color: var(--brand-700); background: var(--brand-soft); }
 
 .email-container.has-summary :deep(.email-row) {
   align-items: flex-start;
-  min-height: 118px;
-  padding: 12px 16px;
+  min-height: 100px;
+  padding: 8px 14px;
 }
 .email-container.has-summary :deep(.sender-avatar) { margin-top: 1px; }
 .email-container.has-summary :deep(.title) { min-width: 0; display: block; }
 .email-container.has-summary :deep(.email-sender) { display: flex; align-items: center; gap: 6px; }
 .email-container.has-summary :deep(.email-sender .name) { min-width: 0; flex: 1; display: block; }
-.email-container.has-summary :deep(.email-sender .name > span:first-child) { display: block; color: var(--text); font-size: 14px; line-height: 20px; }
+.email-container.has-summary :deep(.email-sender .name > span:first-child) { display: block; color: var(--text); font-size: 13px; line-height: 19px; }
 .email-container.has-summary :deep(.email-sender .name > span:last-child) { display: none; }
-.email-container.has-summary :deep(.phone-time) { display: block !important; flex: none; color: var(--text-3); font-size: 12px; line-height: 20px; }
-.email-container.has-summary :deep(.summary-star) { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
+.email-container.has-summary :deep(.phone-time) { display: block !important; flex: none; color: var(--text-3); font-size: 11.5px; line-height: 19px; }
+.email-container.has-summary :deep(.summary-star) { width: 18px; height: 18px; flex: 0 0 18px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: var(--r-sm); cursor: pointer; }
 .email-container.has-summary :deep(.summary-star:hover) { background: var(--surface-3); }
 .email-container.has-summary :deep(.email-text) { display: block; min-width: 0; }
-.email-container.has-summary :deep(.email-subject) { display: block; margin-top: 1px; padding: 0; color: var(--text); font-size: 14px; line-height: 20px; }
-.email-container.has-summary :deep(.email-content) { display: block; margin-top: 3px; padding: 0; color: var(--text-3); font-size: 12.5px; line-height: 19px; }
-.email-container.has-summary :deep(.row-tags) { margin-top: 7px; }
-.email-container.has-summary :deep(.mail-badge) { height: 22px; padding: 0 8px; font-size: 11.5px; }
+.email-container.has-summary :deep(.email-subject) { display: block; margin-top: 1px; padding: 0; color: var(--text); font-size: 13.5px; line-height: 19px; }
+.email-container.has-summary :deep(.email-content) { display: block; margin-top: 2px; padding: 0; color: var(--text-3); font-size: 12px; line-height: 17px; }
+.email-container.has-summary :deep(.row-tags) { margin-top: 5px; }
+.email-container.has-summary :deep(.mail-badge) { height: 20px; padding: 0 7px; font-size: 11px; }
 .email-container.has-summary :deep(.email-right) { display: none; }
 .email-container.has-summary :deep(.email-row.mail-selected) { background: var(--brand-soft); }
 .email-container.has-summary :deep(.email-row:focus-visible) { outline: 2px solid var(--brand-500); outline-offset: -2px; }

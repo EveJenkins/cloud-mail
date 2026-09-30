@@ -1,39 +1,21 @@
 <template>
-  <div id="login-box" :style=" background ? 'background: var(--el-bg-color)' : ''" v-loading="oauthLoading" element-loading-text="登录中...">
+  <div id="login-box" :style=" background ? 'background: var(--el-bg-color)' : ''" v-loading="oauthLoading" :element-loading-text="$t('loggingIn')">
     <div class="login-backdrop" :class="{ 'custom-backdrop': settingStore.settings.background }" :style="background"></div>
-    <section class="brand-panel" aria-label="Product introduction">
-      <div class="brand-lockup">
-        <div class="brand-mark"><Icon icon="mdi:email-outline" width="21" height="21" /></div>
-        <div class="brand-copy">
-          <strong>{{ settingStore.settings.title || 'STAR MUSTANG' }}</strong>
-          <span>企业邮箱系统 · Internal Mail</span>
-        </div>
-        <span class="platform-badge">全球商务邮箱</span>
-      </div>
-      <div class="brand-message">
-        <h1>公司统一邮箱，<br/>一个入口处理全部业务往来</h1>
-        <p>海外客户询盘、供应商报价、物流单据全部归集到企业邮箱；大附件走云存储、AI 自动识别验证码，对外发送按策略管控，用公司域名做全球商务往来。</p>
-        <div class="brand-stats">
-          <div><strong>46</strong><span>在职员工邮箱</span></div>
-          <div><strong>4</strong><span>共享邮箱</span></div>
-          <div><strong>99.9%</strong><span>海外送达率</span></div>
-        </div>
-        <div class="brand-features">
-          <span><Icon icon="solar:check-circle-bold" /> 全球收发直达</span>
-          <span><Icon icon="solar:check-circle-bold" /> 大附件云存储</span>
-          <span><Icon icon="solar:check-circle-bold" /> AI 识别验证码</span>
-        </div>
-      </div>
-      <div class="brand-footnote">STAR MUSTANG · CONSTRUCTION MACHINERY PARTS</div>
-    </section>
     <div class="form-wrapper">
       <div class="container">
-        <div class="form-mobile-brand">
-          <div class="form-brand-mark"><Icon icon="mdi:email-outline" width="21" height="21" /></div>
-          <div><strong>{{ settingStore.settings.title || 'STAR MUSTANG' }}</strong><span>企业邮箱系统</span></div>
+        <div class="form-brand">
+          <div class="brand-mark"><Icon icon="mdi:email-outline" width="22" height="22" /></div>
+          <div class="brand-copy">
+            <strong>{{ settingStore.settings.title || (settingStore.lang === 'zh' ? '企业邮箱' : 'Mail') }}</strong>
+            <span>{{ $t('brandSlogan') }}</span>
+          </div>
         </div>
-        <span class="form-title">{{ show === 'login' ? (settingStore.lang === 'zh' ? '登录企业邮箱' : 'Sign in to corporate mail') : $t('regTitle') }}</span>
-        <span class="form-desc" v-if="show === 'login'">{{ settingStore.lang === 'zh' ? '使用公司分配的邮箱账号登录' : 'Use your company mailbox account' }}</span>
+        <div class="form-tabs" v-if="settingStore.settings.register === 0">
+          <button type="button" :class="{ active: show === 'login' }" @click="show = 'login'">{{ $t('loginBtn') }}</button>
+          <button type="button" :class="{ active: show !== 'login' }" @click="show = 'register'">{{ $t('regBtn') }}</button>
+        </div>
+        <span class="form-title">{{ show === 'login' ? $t('loginHeadline') : $t('regTitle') }}</span>
+        <span class="form-desc" v-if="show === 'login'">{{ $t('loginSubtitle') }}</span>
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
         <div v-show="show === 'login'">
           <label class="field-label">{{ settingStore.lang === 'zh' ? '企业邮箱' : 'Corporate email' }}</label>
@@ -73,9 +55,9 @@
             <Icon v-else :icon="p.icon" width="18" height="18" style="margin-right: 10px" />
             {{ p.label }}
           </el-button>
-          <div class="enterprise-note" v-if="settingStore.lang === 'zh'">
-            <Icon icon="solar:info-circle-linear" width="18" />
-            <span>账号由企业管理员统一开通，首次登录后请及时修改初始密码。</span>
+          <div class="enterprise-note">
+            <Icon icon="solar:info-circle-linear" width="16" />
+            <span>{{ $t('adminNote') }}</span>
           </div>
         </div>
         <div v-show="show !== 'login'">
@@ -119,7 +101,7 @@
                data-after-interactive-callback="loadAfter"
                data-before-interactive-callback="loadBefore"
           >
-            <span style="font-size: 12px;color: #F56C6C" v-if="botJsError">{{ $t('verifyModuleFailed') }}</span>
+            <span style="font-size: 12px;color: var(--danger)" v-if="botJsError">{{ $t('verifyModuleFailed') }}</span>
           </div>
           <el-button class="btn" style="margin: 0" type="primary" @click="submitRegister" :loading="registerLoading"
           >{{ $t('regBtn') }}
@@ -130,19 +112,9 @@
             {{ p.label }}
           </el-button>
         </div>
-        <template v-if="settingStore.settings.register === 0">
-          <div class="switch" @click="show = 'register'" v-if="show === 'login'">{{ $t('noAccount') }}
-            <span>{{ $t('regSwitch') }}</span></div>
-          <div class="switch" @click="show = 'login'" v-else>{{ $t('hasAccount') }} <span>{{ $t('loginSwitch') }}</span>
-          </div>
-        </template>
-        <div class="form-foot" v-if="show === 'login'">
-          <strong>STAR MUSTANG</strong>
-          <span>支持全球收发 · 附件云存储 · AI 验证码识别</span>
-        </div>
       </div>
     </div>
-    <el-dialog class="bind-dialog" v-model="showBindForm"  title="注册邮箱" >
+    <el-dialog class="bind-dialog" v-model="showBindForm"  :title="settingStore.lang === 'zh' ? '绑定邮箱' : 'Bind mailbox'" >
       <div class="bind-container">
         <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="bindForm.email" type="text" :placeholder="$t('emailAccount')" autocomplete="off" @keyup.enter="bind">
           <template #append v-if="!hideLoginDomain">
@@ -177,7 +149,7 @@
       </div>
     </el-dialog>
     <a v-show="settingStore.settings.projectLink" class="github" href="https://github.com/maillab/cloud-mail">
-      <Icon icon="mingcute:github-line" color="#1890ff" width="20" height="20" />
+      <Icon icon="mingcute:github-line" color="var(--text-3)" width="20" height="20" />
     </a>
   </div>
 </template>
@@ -665,109 +637,104 @@ function submitRegister() {
 <style lang="scss" scoped>
 
 .form-wrapper {
-  position: fixed;
-  right: 0;
-  width: 47.5vw;
-  height: 100%;
+  position: relative;
   z-index: 10;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  @media (max-width: 767px) {
-    width: 100%;
-  }
+  padding: 24px;
+  overflow-y: auto;
 }
 
 .container {
   background: v-bind(loginOpacity);
-  padding: 28px 28px 0;
+  padding: 32px 32px 28px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: min(400px, calc(100% - 48px));
+  width: min(400px, 100%);
   height: auto;
   min-height: 0;
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--sh-3);
   backdrop-filter: blur(18px) saturate(130%);
-  @media (max-width: 1024px) {
-    padding: 36px 28px;
-    width: calc(100% - 48px);
-    margin: 0 24px;
-  }
   @media (max-width: 767px) {
-    border: 1px solid rgba(255, 255, 255, .66);
-    padding: 32px 24px;
-    border-radius: 20px;
-    height: fit-content;
+    padding: 24px 20px 20px;
     width: 100%;
-    margin-right: 18px;
-    margin-left: 18px;
   }
 
   .btn {
-    height: 44px;
+    height: 40px;
     width: 100%;
-    border-radius: 10px;
-    font-weight: 600;
-    letter-spacing: .2px;
+    border-radius: var(--r-md);
+    font-weight: 500;
   }
 
   .form-desc {
     margin-top: 6px;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
     color: var(--form-desc-color);
+    font-size: 12.5px;
   }
 
   .form-title {
-    font-weight: 700;
-    font-size: 22px !important;
-    letter-spacing: -.3px;
-  }
-
-  .form-brand-mark {
-    display: none;
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    background: linear-gradient(135deg, var(--brand-500), #25d366);
-    @media (max-width: 767px) { display: flex; }
-  }
-
-  .switch {
-    margin-top: 20px;
-    text-align: center;
-
-    span {
-      color: var(--login-switch-color);
-      cursor: pointer;
-    }
+    font-weight: 600;
+    font-size: 19px !important;
+    letter-spacing: -.2px;
   }
 
   :deep(.el-input__wrapper) {
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: var(--el-bg-color);
     box-shadow: 0 0 0 1px var(--el-border-color) inset;
   }
 
   .email-input :deep(.el-input__wrapper) {
-    border-radius: 6px 0 0 6px;
+    border-radius: var(--r-md) 0 0 var(--r-md);
     background: var(--el-bg-color);
   }
 
   .el-input {
-    height: 44px;
+    height: 40px;
     width: 100%;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
 
     :deep(.el-input__inner) {
-      height: 42px;
+      height: 38px;
     }
   }
+}
+
+.form-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+.form-brand .brand-mark { width: 38px; height: 38px; flex: none; display: grid; place-items: center; color: #fff; border-radius: var(--r-md); background: var(--brand-600); }
+.form-brand .brand-copy { min-width: 0; display: flex; flex-direction: column; }
+.form-brand .brand-copy strong { overflow: hidden; color: var(--text); font-size: 15px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.form-brand .brand-copy span { margin-top: 2px; color: var(--text-3); font-size: 11.5px; }
+
+.form-tabs {
+  margin-bottom: 20px;
+  padding: 3px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+
+  button {
+    height: 30px;
+    color: var(--text-2);
+    border-radius: calc(var(--r-md) - 2px);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+
+  button:hover { color: var(--text); }
+  button.active { color: var(--brand-600); background: var(--surface); font-weight: 600; }
 }
 
 :deep(.el-select-dropdown__item) {
@@ -848,91 +815,38 @@ function submitRegister() {
 
 #login-box {
   position: relative;
-  background: #eef3fb;
-  font: 100% Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
   height: 100%;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  display: grid;
-  grid-template-columns: 1.05fr .95fr;
+  display: block;
 }
 
 .login-backdrop {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background:
-    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
-    radial-gradient(1100px 600px at 14% 20%, rgba(37,211,102,.28), transparent 60%),
-    radial-gradient(900px 520px at 86% 14%, rgba(14,165,233,.20), transparent 62%),
-    radial-gradient(1000px 700px at 68% 92%, rgba(16,185,129,.22), transparent 60%),
-    linear-gradient(160deg,#08111c 0%, #0d1a26 55%, #070f18 100%);
-  background-size: 44px 44px, 44px 44px, auto, auto, auto, auto;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(880px 460px at 50% -12%, color-mix(in srgb, var(--brand-500) 16%, transparent), transparent 62%),
+    radial-gradient(680px 420px at 92% 104%, color-mix(in srgb, var(--info) 9%, transparent), transparent 60%);
 }
 
 .custom-backdrop::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(4, 16, 37, .76), rgba(4, 16, 37, .28) 58%, rgba(244, 247, 252, .2));
+  background: radial-gradient(720px 620px at 50% 50%, rgba(4, 16, 37, .52), rgba(4, 16, 37, .28));
 }
 
-.brand-panel {
-  position: relative;
-  z-index: 2;
-  min-width: 0;
-  height: 100%;
-  padding: 48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: white;
-}
-
-.brand-lockup { display: flex; align-items: center; gap: 11px; }
-.brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 15px; color: #04121f; background: linear-gradient(135deg, #25d366, #0ea5e9); }
-.brand-copy { display: flex; flex-direction: column; }
-.brand-copy strong { font-size: 18px; line-height: 1.15; }
-.brand-copy span { margin-top: 3px; color: rgba(255,255,255,.55); font-size: 12.5px; font-weight: 400; }
-.platform-badge { margin-left: 7px; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,.12); color: #a7f3d0; font-size: 10.5px; font-weight: 650; }
-.brand-message { max-width: 540px; }
-.brand-message h1 { font-size: clamp(36px, 3.3vw, 48px); line-height: 1.14; letter-spacing: -1.5px; font-weight: 800; }
-.brand-message p { max-width: 530px; margin-top: 20px; color: rgba(255,255,255,.7); font-size: 15px; line-height: 1.85; }
-.brand-stats { max-width: 520px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 32px; }
-.brand-stats > div { padding: 16px; border: 1px solid rgba(255,255,255,.12); border-radius: var(--r-lg); background: rgba(255,255,255,.07); }
-.brand-stats strong { display: block; font-size: 24px; line-height: 1.1; }
-.brand-stats span { display: block; margin-top: 6px; color: rgba(255,255,255,.6); font-size: 13px; }
-.brand-features { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 30px; color: rgba(255,255,255,.58); }
-.brand-features span { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
-.brand-features svg { color: #25d366; font-size: 14px; }
-.brand-footnote { color: rgba(255,255,255,.4); font-size: 10px; letter-spacing: 1.7px; }
-
-.form-mobile-brand { display: none; align-items: center; gap: 11px; margin-bottom: 24px; }
-.form-mobile-brand > div:last-child { display: flex; flex-direction: column; }
-.form-mobile-brand strong { color: var(--text); font-size: 16px; line-height: 1.2; }
-.form-mobile-brand span { margin-top: 2px; color: var(--text-3); font-size: 12px; }
-.field-label { display: block; margin: 0 0 7px; color: var(--text-2); font-size: 13px; font-weight: 650; }
-.enterprise-note { margin-top: 16px; padding: 13px; display: flex; align-items: flex-start; gap: 9px; color: var(--text-2); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); font-size: 12.5px; line-height: 1.65; }
+.field-label { display: block; margin: 0 0 6px; color: var(--text-2); font-size: 12.5px; font-weight: 500; }
+.enterprise-note { margin-top: 14px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); font-size: 11.5px; line-height: 1.6; }
 .enterprise-note svg { flex: none; margin-top: 1px; }
-.form-foot { margin: 24px -28px 0; padding: 14px 28px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px 12px; color: var(--text-3); border-top: 1px solid var(--border); border-radius: 0 0 var(--r-xl) var(--r-xl); background: var(--surface-2); font-size: 11.5px; }
-.form-foot strong { font-size: 11px; letter-spacing: .04em; }
 
 @media (max-width: 767px) {
-  #login-box { grid-template-columns: 1fr; background: #071610; }
-  .login-backdrop { background: radial-gradient(circle at 18% 6%, rgba(37,211,102,.28), transparent 34%), radial-gradient(circle at 92% 88%, rgba(14,165,233,.18), transparent 38%), linear-gradient(160deg, #071610, #0b2b22); }
-  .brand-panel { display: none; }
-  .form-wrapper { width: 100%; padding: 24px 0; overflow-y: auto; }
-  .container { min-height: auto; background: rgba(255,255,255,.96); }
-  .form-mobile-brand { display: flex; }
-  :global(.dark) .container { background: rgba(18,25,38,.94); border-color: rgba(255,255,255,.1); }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  #login-box { grid-template-columns: 1fr; }
-  .brand-panel { display: none; }
-  .form-wrapper { width: 100%; }
+  .form-wrapper { padding: 20px 16px; }
+  .container { min-height: auto; }
 }
 
 </style>

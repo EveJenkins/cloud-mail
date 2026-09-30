@@ -450,7 +450,7 @@
                   <el-button @click="jump('https://github.com/maillab/cloud-mail/releases')">
                     {{ currentVersion }}
                     <template #icon>
-                      <Icon icon="qlementine-icons:version-control-16" style="font-size: 20px" color="#1890FF"/>
+                      <Icon icon="qlementine-icons:version-control-16" style="font-size: 20px" color="var(--brand-600)"/>
                     </template>
                   </el-button>
                 </el-badge>
@@ -477,7 +477,7 @@
                 <el-button @click="jump('https://doc.skymail.ink/support.html')">
                   {{ t('supportDesc') }}
                   <template #icon>
-                    <Icon color="#79D6B5" icon="simple-icons:buymeacoffee" width="20" height="20"/>
+                    <Icon color="var(--brand-500)" icon="simple-icons:buymeacoffee" width="20" height="20"/>
                   </template>
                 </el-button>
               </div>
@@ -486,7 +486,7 @@
                 <el-button @click="jump('https://doc.skymail.ink')">
                   {{ t('document') }}
                   <template #icon>
-                    <Icon color="#79D6B5" icon="fluent-color:document-32" width="18" height="18"/>
+                    <Icon color="var(--brand-500)" icon="fluent-color:document-32" width="18" height="18"/>
                   </template>
                 </el-button>
               </div>
@@ -1919,7 +1919,7 @@ function editSetting(settingForm, refreshStatus = true) {
 
 .cropper {
   border-radius: 4px;
-  border: 1px solid #D4D7DE;
+  border: 1px solid var(--border);
   height: 397px;
   width: 705px;
   @media (max-width: 767px) {

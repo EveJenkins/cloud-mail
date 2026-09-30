@@ -40,13 +40,13 @@ const compose = () => uiStore.writerRef?.open?.()
     left: 0;
     right: 0;
     bottom: 0;
-    height: calc(58px + env(safe-area-inset-bottom));
+    height: calc(54px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     display: flex;
     align-items: stretch;
     background: var(--surface);
     border-top: 1px solid var(--border);
-    box-shadow: 0 -8px 24px rgba(15, 23, 42, .06);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, .04);
   }
   button {
     flex: 1;
@@ -63,7 +63,7 @@ const compose = () => uiStore.writerRef?.open?.()
   button svg { width: 20px; height: 20px; }
   button.active { color: var(--brand-600); font-weight: 650; }
   .compose-tab { color: var(--brand-700); font-weight: 650; }
-  .compose-icon { width: 38px; height: 28px; display: grid; place-items: center; color: #fff; border-radius: 11px; background: var(--brand-600); box-shadow: 0 5px 14px color-mix(in srgb, var(--brand-600) 24%, transparent); transform: translateY(-2px); }
+  .compose-icon { width: 36px; height: 26px; display: grid; place-items: center; color: #fff; border-radius: var(--r-md); background: var(--brand-600); transform: translateY(-2px); }
   .compose-tab svg { width: 18px; height: 18px; }
 }
 </style>

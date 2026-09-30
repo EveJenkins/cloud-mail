@@ -37,13 +37,13 @@ defineProps({
 
 .preview-state__main { display: flex; flex-direction: column; align-items: center; }
 .preview-state__icon {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
   color: var(--brand-600);
   border: 1px solid color-mix(in srgb, var(--brand-500) 18%, var(--border));
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: var(--brand-soft);
 }
 .preview-state strong { margin-top: 16px; color: var(--text-2); font-size: 15px; font-weight: 650; }
@@ -59,7 +59,7 @@ defineProps({
   gap: 7px;
   color: var(--text-2);
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: var(--surface);
   font-size: 12.5px;
   font-weight: 600;

@@ -186,15 +186,15 @@ const emailColumnData = {
 }
 
 const topic = computed(() => ({
-  color: uiStore.dark ? '#E5EAF3' : '#303133',
-  background: uiStore.dark ? '#141414' : '#FFFFFF',
-  borderColor: uiStore.dark ? '#141414' : '#FFFFFF',
+  color: uiStore.dark ? '#E5EAF3' : '#1D2129',
+  background: uiStore.dark ? '#1C2228' : '#FFFFFF',
+  borderColor: uiStore.dark ? '#1C2228' : '#FFFFFF',
   scaleLineColor: uiStore.dark ? '#636466' : '#CDD0D6',
   crossColor: uiStore.dark ? '#8D9095' : '#A8ABB2',
-  axisColor: uiStore.dark ? '#A3A6AD' : '#909399',
+  axisColor: uiStore.dark ? '#A3A6AD' : '#86909C',
   splitLineColor: uiStore.dark ? '#58585B' : '#D4D7DE',
   gaugeSplitLine: uiStore.dark ? '#CFD3DC' : '#606266',
-  containerBackground: uiStore.dark ? '#6C6E72' : '#E6EBF8'
+  containerBackground: uiStore.dark ? '#6C6E72' : '#E6F4FF'
 }))
 let daySendTotal = 0
 let leaveWidth = 0
@@ -368,7 +368,7 @@ function createSenderPie() {
           show: false,
           position: 'outside', // 标签显示在外部
           formatter: '{d}%',  // 显示名称和占比
-          color: '#333',
+          color: '#1D2129',
           fontSize: 14  // 设置字体大小
         },
         emphasis: {
@@ -381,7 +381,7 @@ function createSenderPie() {
         labelLine: {
           show: true
         },
-        color: ['#3CB2FF', '#13DEB9', '#FBBF24', '#FF7F50', '#BAE6FD', '#C084FC'] // 添加符合主题的配色
+        color: ['#1677FF', '#13C2C2', '#722ED1', '#FAAD14', '#EB2F96', '#2F54EB'] // 与 tokens.css 的 --chart-1..6 保持一致（canvas 无法解析 CSS 变量）
       }
     ]
   }
@@ -508,7 +508,7 @@ function createIncreaseLine() {
         smooth: 0.1,
         symbol: 'none',
         lineStyle: {
-          color: '#1D84FF',
+          color: '#1677FF',
           width: 2.5
         },
         areaStyle: {
@@ -523,7 +523,7 @@ function createIncreaseLine() {
             }
           ])
         },
-        color: ['#1D84FF'],
+        color: ['#1677FF'],
       }
     ]
   };
@@ -631,7 +631,7 @@ function createEmailColumnChart() {
         },
         data: emailColumnData.receiveData,
         itemStyle: {
-          color: '#3CB2FF',
+          color: '#1677FF',
         }
       },
       {
@@ -646,7 +646,7 @@ function createEmailColumnChart() {
         },
         data: emailColumnData.sendData,
         itemStyle: {
-          color: '#13deb9',
+          color: '#13C2C2',
         }
       }
     ]
@@ -676,13 +676,13 @@ function createSendGauge() {
         show: true,
         roundCap: true,
         itemStyle: {
-          color: '#3CB2FF'
+          color: '#1677FF'
         }
       },
       // 指针颜色（新增）
       pointer: {
         itemStyle: {
-          color: '#3CB2FF'
+          color: '#1677FF'
         }
       },
       axisLabel: {
@@ -721,7 +721,7 @@ function createSendGauge() {
         }
       }]
     }],
-    color: ['#3CB2FF']
+    color: ['#1677FF']
   };
   sendGauge.setOption(option);
 }
