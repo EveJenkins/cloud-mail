@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode dev",
+    "test": "node --test tests/*.test.js",
     "remote": "vite --mode remote",
     "build": "vite build --mode release",
     "eo": "vite build --mode eo",

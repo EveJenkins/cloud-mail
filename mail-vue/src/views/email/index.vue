@@ -15,7 +15,7 @@
                :unread-badge="true"
                :search-query="typeof route.query.q === 'string' ? route.query.q : ''"
                :empty-title="settingStore.lang === 'zh' ? '收件箱是空的' : 'Your inbox is empty'"
-               :empty-description="settingStore.lang === 'zh' ? '新邮件同步后会出现在这里' : 'New messages will appear here after syncing'"
+               :empty-description="settingStore.lang === 'zh' ? '收到的邮件会显示在这里。你可以先写一封邮件，或同步检查新邮件。' : 'Incoming messages will appear here. Compose a message or sync to check for new mail.'"
                :selected-id="selectedEmailId"
                actionLeft="4px"
                @jump="jumpContent"
@@ -28,8 +28,8 @@
             width="28" height="28"/>
     </template>
     <template #empty-actions>
-      <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
-      <button type="button" @click="syncInbox"><Icon icon="solar:refresh-linear" width="15" />{{ settingStore.lang === 'zh' ? '重新同步' : 'Sync again' }}</button>
+      <button v-perm="'email:send'" class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
+      <button type="button" :disabled="scroll?.loading" @click="syncInbox"><Icon icon="solar:refresh-linear" width="15" />{{ settingStore.lang === 'zh' ? '重新同步' : 'Sync again' }}</button>
     </template>
 
       </emailScroll>
@@ -48,8 +48,8 @@
           :description="settingStore.lang === 'zh' ? '正文、附件和会话记录将在这里显示' : 'The message, attachments and conversation history will appear here'"
       >
         <template #actions>
-          <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="16" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
-          <button type="button" @click="syncInbox"><Icon icon="solar:refresh-linear" width="16" />{{ settingStore.lang === 'zh' ? '同步邮件' : 'Sync mail' }}</button>
+          <button v-perm="'email:send'" class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="16" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
+          <button type="button" :disabled="scroll?.loading" @click="syncInbox"><Icon icon="solar:refresh-linear" width="16" />{{ settingStore.lang === 'zh' ? '同步邮件' : 'Sync mail' }}</button>
         </template>
         <template #meta><span><i></i>{{ syncedTimeLabel }}</span><span><kbd>Ctrl K</kbd>{{ settingStore.lang === 'zh' ? '全局搜索' : 'Global search' }}</span></template>
       </MailPreviewEmpty>
@@ -91,9 +91,11 @@ const isPhone = ref(window.innerWidth < 768)
 const selectedEmailId = ref(null)
 const switchingInbox = ref(false)
 let refreshLoopActive = true
-const syncedAt = ref(new Date())
 const syncedTimeLabel = computed(() => {
-  const time = new Intl.DateTimeFormat(settingStore.lang === 'zh' ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit', hour12: false}).format(syncedAt.value)
+  if (scroll.value?.loading) return settingStore.lang === 'zh' ? '正在同步…' : 'Syncing…'
+  if (scroll.value?.loadError) return settingStore.lang === 'zh' ? '同步失败，请重试' : 'Sync failed. Try again'
+  if (!scroll.value?.lastSyncedAt) return settingStore.lang === 'zh' ? '尚未同步' : 'Not synced yet'
+  const time = new Intl.DateTimeFormat(settingStore.lang === 'zh' ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit', hour12: false}).format(scroll.value.lastSyncedAt)
   return settingStore.lang === 'zh' ? `已同步 · ${time}` : `Synced · ${time}`
 })
 
@@ -171,8 +173,8 @@ function changeTimeSort() {
 }
 
 function syncInbox() {
-  scroll.value.refreshList?.()
-  syncedAt.value = new Date()
+  if (scroll.value?.loading) return
+  return scroll.value.refreshList?.()
 }
 
 function clearRouteSearch() {

@@ -8,7 +8,7 @@
         </div>
         <div class="summary-status">
           <span v-if="total">{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
-          <span v-else class="sync-status"><i></i>{{ lastSyncedLabel }}</span>
+          <span class="sync-status" :class="{ failed: loadError }" role="status"><i></i>{{ lastSyncedLabel }}</span>
           <button type="button" class="summary-refresh" :disabled="loading" :title="settingStore.lang === 'zh' ? '同步邮件' : 'Sync messages'" @click="refresh">
             <Icon icon="solar:refresh-linear" width="16" height="16" :class="{ spinning: loading }" />
           </button>
@@ -56,7 +56,7 @@
       <button class="summary-chip" :class="{ active: activeFilter === 'code' }" @click="activeFilter = 'code'">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }} <small>{{ codeCount }}</small></button>
     </div>
 
-    <div ref="scroll" class="scroll">
+    <div ref="scroll" class="scroll" :aria-busy="loading">
       <UseVirtualList ref="scrollbarRef"
                         @scroll="onScroll"
                         :list="list"
@@ -169,12 +169,15 @@
                            :showStatus="showStatus"
                            :showUserInfo="showUserInfo"
                            :type="type"/>
+            <div class="noLoading" v-else-if="item.expand === 'retry'">
+              <button class="retry-load" type="button" @click="getEmailList()">{{ settingStore.lang === 'zh' ? '加载失败，点击重试' : 'Could not load more. Retry' }}</button>
+            </div>
             <div class="noLoading" v-else-if="item.expand === 'noMoreData'">
               <div>{{ $t('noMoreData') }}</div>
             </div>
           </template>
         </UseVirtualList>
-      <skeletonBlock v-if="firstLoad && showFirstLoading"
+      <skeletonBlock v-if="firstLoad && showFirstLoading && !loading && !loadError"
                        :rows="20"
                        :showStar="showStar"
                        :accountShow="accountShow"
@@ -188,8 +191,14 @@
                        :showStatus="showStatus"
                        :showUserInfo="showUserInfo"
                        :type="type"/>
-      <div class="empty" v-if="noLoading && list.length === 0 && !loading">
-        <div v-if="isFiltering" class="compact-empty">
+      <div class="empty" v-if="!firstLoad && list.length === 0 && !loading" role="status">
+        <div v-if="loadError" class="compact-empty">
+          <span><Icon icon="solar:cloud-cross-linear" width="28" height="28" /></span>
+          <strong>{{ settingStore.lang === 'zh' ? '邮件暂时无法加载' : 'Could not load your mail' }}</strong>
+          <p>{{ settingStore.lang === 'zh' ? '请检查网络连接，再试一次。' : 'Check your connection and try again.' }}</p>
+          <button type="button" class="clear-filter" @click="refresh">{{ settingStore.lang === 'zh' ? '重新加载' : 'Try again' }}</button>
+        </div>
+        <div v-else-if="isFiltering" class="compact-empty">
           <span><Icon icon="solar:magnifer-linear" width="24" height="24" /></span>
           <strong>{{ settingStore.lang === 'zh' ? '未找到匹配邮件' : 'No matching messages' }}</strong>
           <p>{{ settingStore.lang === 'zh' ? '请调整关键词或筛选条件' : 'Try another keyword or filter' }}</p>
@@ -303,6 +312,7 @@ import {computed, onActivated, reactive, ref, watch, nextTick, onMounted, onUnmo
 import {useEmailStore} from "@/store/email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useSettingStore} from "@/store/setting.js";
+import {mailListRows} from '@/utils/mail-list-state.js';
 import {useAccountStore} from "@/store/account.js";
 import {sleep} from "@/utils/time-utils.js"
 import {fromNow} from "@/utils/day.js";
@@ -407,7 +417,7 @@ const loading = ref(false);
 const followLoading = ref(false);
 const noLoading = ref(false);
 const emailList = reactive([])
-const expandList = reactive([])
+const loadError = ref(false)
 const total = ref(0);
 const lastSyncedAt = ref(null);
 const checkAll = ref(false);
@@ -420,7 +430,7 @@ const latestEmail = ref(null)
 const scrollbarRef = ref(null)
 let reqLock = false
 let isMobile = ref(innerWidth < 1367)
-let skeletonRows = 0
+let skeletonRows = 6
 const timePaddingRight = ref('');
 const keyCount = ref(0);
 const dropdownRef = ref(null);
@@ -492,8 +502,12 @@ const queryParam = reactive({
 
 // 切换邮箱身份时同步清空，避免旧邮箱的邮件在刷新返回前闪现
 function resetList() {
+  requestVersion++
+  lastSyncedAt.value = null
+  noLoading.value = false
+  followLoading.value = false
   emailList.length = 0
-  expandList.length = 0
+  loadError.value = false
   total.value = 0
   latestEmail.value = null
   firstLoad.value = true
@@ -510,7 +524,10 @@ defineExpose({
   firstLoad,
   latestEmail,
   noLoading,
-  total
+  total,
+  loading,
+  loadError,
+  lastSyncedAt
 })
 
 onActivated(() => {
@@ -551,7 +568,7 @@ const { arrivedState } = useScroll(scrollbarRef, {
 
 const list = computed(() => {
   const source = props.showInboxSummary ? filteredEmails.value : emailList
-  return [...source, ...expandList]
+  return mailListRows(source, { loadingMore: followLoading.value, exhausted: noLoading.value, failed: loadError.value })
 })
 const unreadCount = computed(() => emailList.filter(item => item.unread === EmailUnreadEnum.UNREAD).length)
 
@@ -560,7 +577,7 @@ watch(unreadCount, value => {
   if (props.unreadBadge) uiStore.asideCount.email = Number(value) || 0
 }, { immediate: true, flush: 'post' })
 const attachmentCount = computed(() => emailList.filter(item => item.attList?.length > 0).length)
-const codeCount = computed(() => emailList.filter(item => item.code).length)
+const codeCount = computed(() => emailList.filter(item => extractVerificationCode(item)).length)
 const searchKeyword = ref('')
 const activeFilter = ref('all')
 const isFiltering = computed(() => Boolean(searchKeyword.value) || activeFilter.value !== 'all')
@@ -586,7 +603,9 @@ function resetSearchOnly() {
 }
 const currentAccountLabel = computed(() => accountStore.currentAccount?.email || '')
 const lastSyncedLabel = computed(() => {
-  if (!lastSyncedAt.value) return settingStore.lang === 'zh' ? '正在同步' : 'Syncing'
+  if (loading.value) return settingStore.lang === 'zh' ? '正在同步…' : 'Syncing…'
+  if (loadError.value) return settingStore.lang === 'zh' ? '同步失败' : 'Sync failed'
+  if (!lastSyncedAt.value) return settingStore.lang === 'zh' ? '尚未同步' : 'Not synced yet'
   const time = new Intl.DateTimeFormat(settingStore.lang === 'zh' ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit', hour12: false}).format(lastSyncedAt.value)
   return settingStore.lang === 'zh' ? `已同步 · ${time}` : `Synced · ${time}`
 })
@@ -633,34 +652,9 @@ watch(itemHeight, () => {
   keyCount.value ++
 })
 
-watch(followLoading, (isFollowLoading) => {
-  if (isFollowLoading) {
-    expandList.push({
-      emailId: 0,
-      expand: 'loading'
-    })
-  } else {
-    const index = expandList.findIndex(item => item.expand === 'loading')
-    expandList.splice(index, 1);
-  }
-});
-
-watch(noLoading, (isNoLoading) => {
-  if (isNoLoading) {
-    expandList.push({
-      emailId: 0,
-      expand: 'noMoreData'
-    })
-  } else {
-    const index = expandList.findIndex(item => item.expand === 'noMoreData')
-    expandList.splice(index, 1);
-  }
-})
-
-
 // 监听是否到达底部
 watch(() => arrivedState.bottom, (isBottom) => {
-  if (isBottom && !loading.value) {
+  if (isBottom && !loading.value && !loadError.value) {
     loadData();
   }
 });
@@ -1035,7 +1029,7 @@ function getEmailList(refresh = false) {
     scrollTop = 0
     // 立即清空，避免刷新/切换邮箱期间仍渲染上一个邮箱的邮件
     emailList.length = 0
-    expandList.length = 0
+    loadError.value = false
   }
 
   if (emailList.length === 0) {
@@ -1043,6 +1037,7 @@ function getEmailList(refresh = false) {
   } else {
     followLoading.value = !refresh;
   }
+  loadError.value = false
   let start = Date.now();
 
   return props.getEmailList(emailId, queryParam.size).then(async data => {
@@ -1066,13 +1061,20 @@ function getEmailList(refresh = false) {
     handleList(list);
     emailList.push(...list);
     emit('list-loaded', emailList)
-    if (refresh) scrollbarRef.value?.setScrollTop(0);
+    if (refresh) scrollbarRef.value?.scrollTo(0);
 
     noLoading.value = data.list.length < queryParam.size;
     followLoading.value = data.list.length >= queryParam.size;
 
     total.value = data.total;
     lastSyncedAt.value = new Date();
+    return true
+  }).catch(() => {
+    if (version !== requestVersion) return false
+    firstLoad.value = false
+    followLoading.value = false
+    loadError.value = true
+    return false
   }).finally(() => {
     if (version === requestVersion) {
       loading.value = false
@@ -1106,9 +1108,9 @@ function handleList(list) {
 function refresh() {
   emit('refresh-before')
   if (props.skeleton) {
-    scrollbarRef.value.setScrollTop(0)
+    scrollbarRef.value?.scrollTo(0)
   }
-  refreshList()
+  return refreshList()
 }
 
 function refreshList() {
@@ -1126,7 +1128,7 @@ function loadData() {
 
 .email-container {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   padding: 0;
   font-size: 14px;
   color: var(--el-text-color-primary);
@@ -1135,6 +1137,7 @@ function loadData() {
 }
 
 .scroll {
+  min-height: 0;
   margin: 0;
   height: 100%;
   overflow: hidden;
@@ -1152,7 +1155,7 @@ function loadData() {
   }
 
   .compact-empty {
-    width: min(250px, calc(100% - 40px));
+    width: min(340px, calc(100% - 40px));
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1170,8 +1173,8 @@ function loadData() {
       background: var(--surface-2);
     }
 
-    strong { margin-top: 12px; color: var(--text-2); font-size: 14px; font-weight: 600; }
-    p { margin-top: 5px; font-size: 12px; line-height: 1.7; opacity: .72; }
+    strong { margin-top: 18px; color: var(--text); font-size: 18px; font-weight: 600; }
+    p { margin: 8px 0 0; color: var(--text-2); font-size: 14px; line-height: 1.7; }
 
     .clear-filter {
       margin-top: 12px;
@@ -1524,18 +1527,21 @@ function loadData() {
     background-color: #c2dbff;
   }*/
 }
-.email-container.has-summary { grid-template-rows: auto auto 1fr; }
+.email-container.has-summary { grid-template-rows: auto auto minmax(0, 1fr); }
 
 .inbox-panel-head {
   padding: 12px 16px 10px;
   background: var(--surface);
 }
-.inbox-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.inbox-title-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
 .inbox-title-row > div:first-child { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
-.inbox-title-row strong { color: var(--text); font-size: 17px; font-weight: 600; }
+.inbox-title-row strong { flex: none; white-space: nowrap; color: var(--text); font-size: 17px; font-weight: 600; }
 .inbox-title-row > div:first-child span { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; overflow: hidden; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.summary-status { flex: none; display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 15px; }
-.sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; }
+.summary-status { margin-left: auto; flex: none; display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 15px; }
+.retry-load { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); color: var(--brand-600); cursor: pointer; }
+.sync-status.failed { color: var(--danger); }
+.sync-status.failed i { background: var(--danger); box-shadow: none; }
+.sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
 .sync-status i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-600); box-shadow: 0 0 0 3px var(--brand-soft); }
 .summary-refresh, .search-clear { display: grid; place-items: center; padding: 0; color: var(--text-3); border: 0; background: transparent; cursor: pointer; }
 .summary-refresh { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 8px; }

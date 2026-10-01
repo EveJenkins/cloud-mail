@@ -15,10 +15,10 @@
           </span>
         </span>
         <span class="compose-head-actions">
-          <button class="secondary-button" type="button" @click="saveDraftNow">
+          <button class="secondary-button" type="button" :aria-label="settingStore.lang === 'zh' ? '存草稿' : 'Save draft'" @click="saveDraftNow">
             <Icon icon="solar:diskette-outline" width="16"/><span>{{ settingStore.lang === 'zh' ? '存草稿' : 'Save draft' }}</span>
           </button>
-          <button class="secondary-button" type="button" @click="previewMail">
+          <button class="secondary-button" type="button" :aria-label="settingStore.lang === 'zh' ? '预览邮件' : 'Preview email'" @click="previewMail">
             <Icon icon="solar:eye-linear" width="16"/><span>{{ settingStore.lang === 'zh' ? '预览' : 'Preview' }}</span>
           </button>
           <button class="send-button" type="button" @click="sendEmail"><Icon icon="solar:plain-2-bold" width="15"/><span>{{ sendActionLabel }}</span></button>

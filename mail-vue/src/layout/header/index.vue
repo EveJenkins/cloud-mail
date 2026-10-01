@@ -28,7 +28,7 @@
     </div>
     <div class="toolbar">
       <button v-if="hasPerm('email:send')" class="compose-btn" :class="{ active: composeOpen }" type="button"
-              :aria-pressed="composeOpen" @click="openSend">
+              :aria-pressed="composeOpen" :aria-label="settingStore.lang === 'zh' ? '写邮件' : 'Compose'" @click="openSend">
         <Icon icon="material-symbols:edit-outline" width="17" height="17" />
         <span>{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</span>
       </button>
