@@ -1,19 +1,11 @@
 <template>
   <div class="aside-shell">
-    <div class="mailbox-switch" ref="switchRef">
-      <button class="mailbox-card" type="button" :class="{ open: canSwitch && uiStore.accountShow }" :title="currentEmail" :aria-expanded="canSwitch ? uiStore.accountShow : undefined" :disabled="!canSwitch" @click="toggleSwitch">
-        <span class="mailbox-avatar">{{ mailboxInitial }}</span>
-        <span class="mailbox-copy">
-          <strong>{{ currentMailbox }}</strong>
-          <small>{{ currentEmail }}</small>
-        </span>
-        <Icon v-if="canSwitch" icon="mingcute:down-small-fill" width="16" height="16" />
-      </button>
-      <transition name="mailbox-pop">
-        <div class="mailbox-pop" v-show="canSwitch && uiStore.accountShow">
-          <account />
-        </div>
-      </transition>
+    <div class="company-card">
+      <span class="company-mark" aria-hidden="true">{{ companyInitials }}</span>
+      <span class="company-copy">
+        <strong>{{ companyName }}</strong>
+        <small>{{ settingStore.lang === 'zh' ? '企业邮件中心' : 'Business mail' }}</small>
+      </span>
     </div>
 
     <el-scrollbar class="scroll">
@@ -102,54 +94,18 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import router from '@/router/index.js'
 import { useSettingStore } from '@/store/setting.js'
 import { useUiStore } from '@/store/ui.js'
-import { useUserStore } from '@/store/user.js'
-import { useAccountStore } from '@/store/account.js'
-import { hasPerm } from '@/perm/perm.js'
-import account from '@/layout/account/index.vue'
 
 const settingStore = useSettingStore()
 const uiStore = useUiStore()
-const userStore = useUserStore()
-const accountStore = useAccountStore()
 const route = useRoute()
-
-const switchRef = ref(null)
-const canSwitch = computed(() => hasPerm('account:query') && settingStore.settings.manyEmail === 0)
-
-function toggleSwitch() {
-  if (!canSwitch.value) return
-  uiStore.accountShow = !uiStore.accountShow
-}
-
-function closeOnOutside(event) {
-  if (!uiStore.accountShow) return
-  if (switchRef.value?.contains(event.target)) return
-  uiStore.accountShow = false
-}
-
-function closeOnEsc(event) {
-  if (event.key === 'Escape') uiStore.accountShow = false
-}
-
-onMounted(() => {
-  document.addEventListener('click', closeOnOutside)
-  window.addEventListener('keydown', closeOnEsc)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', closeOnOutside)
-  window.removeEventListener('keydown', closeOnEsc)
-})
-
-const currentEmail = computed(() => accountStore.currentAccount?.email || userStore.user.email || '')
-const currentMailbox = computed(() => accountStore.currentAccount?.name || currentEmail.value.split('@')[0] || (settingStore.lang === 'zh' ? '我的邮箱' : 'My mailbox'))
-const mailboxInitial = computed(() => (userStore.user.name || currentMailbox.value || 'M').trim().charAt(0).toUpperCase())
+const companyName = computed(() => settingStore.settings.title || (settingStore.lang === 'zh' ? '企业邮箱' : 'Business mail'))
+const companyInitials = computed(() => companyName.value.trim().split(/\s+/).slice(0, 2).map(word => word.charAt(0)).join('').toUpperCase())
 const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
 </script>
 
@@ -162,46 +118,23 @@ const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
   background: var(--sidebar-surface);
 }
 
-.mailbox-switch {
-  position: relative;
+.company-card {
   flex: none;
   margin: 10px 10px 6px;
-  z-index: 20;
-}
-
-.mailbox-pop {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  width: min(356px, calc(100vw - 24px));
-  z-index: 30;
-}
-
-.mailbox-pop-enter-active, .mailbox-pop-leave-active { transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
-.mailbox-pop-enter-from, .mailbox-pop-leave-to { opacity: 0; transform: translateY(-4px); }
-
-.mailbox-card {
-  width: 100%;
-  margin: 0;
-  padding: 9px 10px;
+  min-height: 66px;
+  padding: 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface-2);
-  cursor: pointer;
-  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-.mailbox-card:disabled { cursor: default; opacity: 1; }
-.mailbox-card:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
-.mailbox-card:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); background: var(--surface); }
-.mailbox-card.open { border-color: var(--brand-500); background: var(--surface); }
-.mailbox-avatar { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: #fff; border-radius: var(--r-sm); background: var(--brand-600); font-size: 11px; font-weight: 600; }
-.mailbox-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; text-align: left; }
-.mailbox-copy strong { overflow: hidden; font-size: var(--font-nav); text-overflow: ellipsis; white-space: nowrap; }
-.mailbox-copy small { margin-top: 1px; overflow: hidden; color: var(--text-3); font-size: 12px; overflow-wrap: anywhere; line-height: 1.5; }
+.company-mark { width: 40px; height: 40px; flex: none; display: grid; place-items: center; color: #fff; border-radius: var(--r-md); background: linear-gradient(135deg, var(--brand-500), var(--brand-700)); font-size: 13px; font-weight: 750; letter-spacing: .02em; }
+.company-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.company-copy strong { overflow: hidden; color: var(--text); font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.company-copy small { overflow: hidden; color: var(--text-3); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 
 .scroll { flex: 1; min-height: 0; padding: 0 8px; }
 .group-title { padding: 13px 8px 5px; color: var(--text-3); font-size: 13px; font-weight: 500; letter-spacing: .06em; }

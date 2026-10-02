@@ -1,5 +1,5 @@
 <template>
-  <div class="header" :class="[{ 'not-send': !hasPerm('email:send'), 'mobile-search-open': mobileSearchOpen }]">
+  <div class="header" :class="[{ 'not-send': !hasPerm('email:send'), 'mobile-search-open': mobileSearchOpen, 'has-switcher': canSwitch }]">
     <div class="brand">
       <button class="header-btn" type="button" :aria-label="settingStore.lang === 'zh' ? '收起或展开菜单' : 'Toggle menu'" @click="changeAside">
         <hanburger />
@@ -25,6 +25,16 @@
       <button class="mobile-search-close" type="button" :aria-label="settingStore.lang === 'zh' ? '关闭搜索' : 'Close search'" @click="closeMobileSearch">
         <Icon icon="solar:close-circle-linear" width="19" height="19" />
       </button>
+    </div>
+    <div v-if="canSwitch" class="mailbox-switcher" ref="mailboxSwitchRef">
+      <button class="mailbox-trigger" type="button" :aria-label="settingStore.lang === 'zh' ? `切换邮箱，当前为 ${currentMailboxEmail}` : `Switch mailbox, current ${currentMailboxEmail}`" :aria-expanded="uiStore.accountShow" @click="toggleMailbox">
+        <span class="mailbox-initial">{{ currentMailboxName.charAt(0).toUpperCase() }}</span>
+        <span class="mailbox-label"><strong>{{ currentMailboxName }}</strong><small>{{ currentMailboxEmail }}</small></span>
+        <Icon class="mailbox-chevron" icon="mingcute:down-small-fill" width="17" />
+      </button>
+      <transition name="mailbox-pop">
+        <div v-show="uiStore.accountShow" class="mailbox-pop"><AccountSwitcher /></div>
+      </transition>
     </div>
     <div class="toolbar">
       <button v-if="hasPerm('email:send')" class="compose-btn" :class="{ active: composeOpen }" type="button"
@@ -108,17 +118,20 @@ import {logout} from "@/request/login.js";
 import {Icon} from "@iconify/vue";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
+import {useAccountStore} from "@/store/account.js";
 import {useRoute} from "vue-router";
 import {computed, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
 import {useSettingStore} from "@/store/setting.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
 import {setExtend} from "@/utils/day.js"
+import AccountSwitcher from '@/layout/account/index.vue'
 
 const {t} = useI18n();
 const route = useRoute();
 const settingStore = useSettingStore();
 const userStore = useUserStore();
+const accountStore = useAccountStore();
 const uiStore = useUiStore();
 const logoutLoading = ref(false)
 const userInfoShow = ref(false)
@@ -126,6 +139,10 @@ const userinfoRef = ref({})
 const searchRef = ref(null)
 const searchQuery = ref('')
 const mobileSearchOpen = ref(false)
+const mailboxSwitchRef = ref(null)
+const canSwitch = computed(() => hasPerm('account:query') && settingStore.settings.manyEmail === 0)
+const currentMailboxEmail = computed(() => accountStore.currentAccount?.email || userStore.user.email || '')
+const currentMailboxName = computed(() => accountStore.currentAccount?.name || currentMailboxEmail.value.split('@')[0] || 'Mail')
 const userDisplayName = computed(() => userStore.user.name || userStore.user.email?.split('@')[0] || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
 const roleName = computed(() => userStore.user.role?.name || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
 const routeTitle = computed(() => {
@@ -161,7 +178,23 @@ watch(
   {immediate: true}
 )
 
-watch(() => route.name, () => { mobileSearchOpen.value = false })
+watch(() => route.name, () => {
+  mobileSearchOpen.value = false
+  uiStore.accountShow = false
+})
+
+function toggleMailbox() {
+  if (window.innerWidth < 768) uiStore.asideShow = false
+  uiStore.accountShow = !uiStore.accountShow
+}
+
+function closeMailboxOnOutside(event) {
+  if (uiStore.accountShow && !mailboxSwitchRef.value?.contains(event.target)) uiStore.accountShow = false
+}
+
+function closeMailboxOnEsc(event) {
+  if (event.key === 'Escape') uiStore.accountShow = false
+}
 
 function handleGlobalShortcut(event) {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -202,8 +235,16 @@ function closeMobileSearch() {
   searchRef.value?.blur()
 }
 
-onMounted(() => window.addEventListener('keydown', handleGlobalShortcut))
-onUnmounted(() => window.removeEventListener('keydown', handleGlobalShortcut))
+onMounted(() => {
+  window.addEventListener('keydown', handleGlobalShortcut)
+  window.addEventListener('keydown', closeMailboxOnEsc)
+  document.addEventListener('click', closeMailboxOnOutside)
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalShortcut)
+  window.removeEventListener('keydown', closeMailboxOnEsc)
+  document.removeEventListener('click', closeMailboxOnOutside)
+})
 
 const accountCount = computed(() => {
   return userStore.user.role.accountCount
@@ -485,6 +526,7 @@ function formatName(email) {
   padding: 0 10px;
   font-size: 16px;
 }
+.header.has-switcher { grid-template-columns: auto minmax(200px, 1fr) minmax(170px, 240px) auto; }
 
 .brand { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .brand-mark { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: var(--brand-600); border-radius: var(--r-md); background: #fff; }
@@ -545,6 +587,34 @@ function formatName(email) {
 }
 
 .mobile-context, .mobile-search-trigger, .mobile-search-close { display: none; }
+
+.mailbox-switcher { position: relative; width: 100%; min-width: 0; justify-self: end; }
+.mailbox-trigger {
+  width: 100%;
+  height: 38px;
+  padding: 3px 8px 3px 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--topbar-fg);
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, .10);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.mailbox-trigger:hover, .mailbox-trigger[aria-expanded="true"] { background: var(--topbar-hover); border-color: rgba(255, 255, 255, .46); }
+.mailbox-trigger:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.mailbox-initial { width: 29px; height: 29px; flex: none; display: grid; place-items: center; color: var(--brand-600); background: #fff; border-radius: var(--r-sm); font-size: 12px; font-weight: 700; }
+.mailbox-label { min-width: 0; flex: 1; display: flex; flex-direction: column; line-height: 1.15; }
+.mailbox-label strong, .mailbox-label small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-label strong { font-size: 12px; font-weight: 700; }
+.mailbox-label small { margin-top: 2px; color: var(--topbar-fg-dim); font-size: 10px; }
+.mailbox-chevron { flex: none; color: var(--topbar-fg-dim); }
+.mailbox-pop { position: absolute; top: calc(100% + 8px); right: 0; width: min(356px, calc(100vw - 20px)); color: var(--text); z-index: 110; }
+.mailbox-pop-enter-active, .mailbox-pop-leave-active { transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
+.mailbox-pop-enter-from, .mailbox-pop-leave-to { opacity: 0; transform: translateY(-5px); }
 
 .toolbar {
   display: flex;
@@ -640,8 +710,23 @@ function formatName(email) {
   .brand-title { display: none; }
 }
 
+@media (min-width: 768px) and (max-width: 900px) {
+  .header.has-switcher { grid-template-columns: auto minmax(160px, 1fr) 38px auto; }
+  .mailbox-switcher { width: 38px; }
+  .mailbox-trigger { width: 38px; padding: 3px; justify-content: center; }
+  .mailbox-label, .mailbox-chevron { display: none; }
+}
+
 @media (max-width: 767px) {
   .header { grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; padding: 0 8px; }
+  .header.has-switcher { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  .header.has-switcher.mobile-search-open { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .header.mobile-search-open .mailbox-switcher { display: none; }
+  .mailbox-switcher { width: 34px; }
+  .mailbox-trigger { width: 34px; height: 32px; padding: 3px; justify-content: center; }
+  .mailbox-initial { width: 24px; height: 24px; }
+  .mailbox-label, .mailbox-chevron { display: none; }
+  .mailbox-pop { right: -48px; }
   .brand { gap: 0; }
   .brand-mark { display: none; }
   .header-btn { display: inline-flex; }
