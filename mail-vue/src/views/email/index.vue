@@ -15,7 +15,7 @@
                :unread-badge="true"
                :search-query="typeof route.query.q === 'string' ? route.query.q : ''"
                :empty-title="settingStore.lang === 'zh' ? '收件箱是空的' : 'Your inbox is empty'"
-               :empty-description="settingStore.lang === 'zh' ? '收到的邮件会显示在这里。你可以先写一封邮件，或同步检查新邮件。' : 'Incoming messages will appear here. Compose a message or sync to check for new mail.'"
+               :empty-description="settingStore.lang === 'zh' ? '收到的邮件会显示在这里' : 'Incoming messages will appear here'"
                :selected-id="selectedEmailId"
                actionLeft="4px"
                @jump="jumpContent"
@@ -28,11 +28,6 @@
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else
             width="28" height="28"/>
     </template>
-    <template #empty-actions>
-      <button v-perm="'email:send'" class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
-      <button type="button" :disabled="scroll?.loading" @click="syncInbox"><Icon icon="solar:refresh-linear" width="15" />{{ settingStore.lang === 'zh' ? '重新同步' : 'Sync again' }}</button>
-    </template>
-
       </emailScroll>
     </section>
     <section class="mail-preview-pane" v-if="isDesktop">
@@ -47,13 +42,7 @@
           icon="solar:letter-opened-linear"
           :title="settingStore.lang === 'zh' ? '选择一封邮件开始阅读' : 'Select a message to start reading'"
           :description="settingStore.lang === 'zh' ? '正文、附件和会话记录将在这里显示' : 'The message, attachments and conversation history will appear here'"
-      >
-        <template #actions>
-          <button v-perm="'email:send'" class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="16" />{{ settingStore.lang === 'zh' ? '写邮件' : 'Compose' }}</button>
-          <button type="button" :disabled="scroll?.loading" @click="syncInbox"><Icon icon="solar:refresh-linear" width="16" />{{ settingStore.lang === 'zh' ? '同步邮件' : 'Sync mail' }}</button>
-        </template>
-        <template #meta><span><i></i>{{ syncedTimeLabel }}</span><span><kbd>Ctrl K</kbd>{{ settingStore.lang === 'zh' ? '全局搜索' : 'Global search' }}</span></template>
-      </MailPreviewEmpty>
+      />
     </section>
   </div>
 </template>
@@ -62,11 +51,10 @@
 import {useAccountStore} from "@/store/account.js";
 import {useEmailStore} from "@/store/email.js";
 import {useSettingStore} from "@/store/setting.js";
-import {useUiStore} from "@/store/ui.js";
 import emailScroll from "@/components/email-scroll/index.vue"
 import {emailList, emailDelete, emailLatest, emailRead} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {computed, defineOptions, h, nextTick, onActivated, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
+import {defineOptions, h, nextTick, onActivated, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
@@ -82,7 +70,6 @@ const route = useRoute();
 const emailStore = useEmailStore();
 const accountStore = useAccountStore();
 const settingStore = useSettingStore();
-const uiStore = useUiStore();
 const scroll = ref({})
 const params = reactive({
   timeSort: 0,
@@ -92,13 +79,6 @@ const isPhone = ref(window.innerWidth < 768)
 const selectedEmailId = ref(null)
 const switchingInbox = ref(false)
 let refreshLoopActive = true
-const syncedTimeLabel = computed(() => {
-  if (scroll.value?.loading) return settingStore.lang === 'zh' ? '正在同步…' : 'Syncing…'
-  if (scroll.value?.loadError) return settingStore.lang === 'zh' ? '同步失败，请重试' : 'Sync failed. Try again'
-  if (!scroll.value?.lastSyncedAt) return settingStore.lang === 'zh' ? '尚未同步' : 'Not synced yet'
-  const time = new Intl.DateTimeFormat(settingStore.lang === 'zh' ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit', hour12: false}).format(scroll.value.lastSyncedAt)
-  return settingStore.lang === 'zh' ? `已同步 · ${time}` : `Synced · ${time}`
-})
 
 const handleViewport = () => {
   isDesktop.value = window.innerWidth >= 1280
@@ -177,11 +157,6 @@ watch(() => accountStore.currentAccountId, async (accountId, previousAccountId) 
 function changeTimeSort() {
   params.timeSort = params.timeSort ? 0 : 1
   scroll.value.refreshList();
-}
-
-function syncInbox() {
-  if (scroll.value?.loading) return
-  return scroll.value.refreshList?.()
 }
 
 function clearRouteSearch() {

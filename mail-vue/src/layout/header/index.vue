@@ -586,6 +586,7 @@ function formatName(email) {
 }
 
 .mobile-context, .mobile-search-trigger, .mobile-search-close { display: none; }
+.toolbar .mobile-search-trigger { display: none; }
 
 .mailbox-switcher { position: relative; width: 100%; min-width: 0; justify-self: end; }
 .mailbox-trigger {
