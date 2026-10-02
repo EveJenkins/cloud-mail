@@ -10,7 +10,7 @@
         </button>
       </div>
       <div class="action-group action-group-right" v-perm="'email:send'">
-        <button v-if="emailStore.contentData.showReply" class="detail-action" @click="openReply"><Icon icon="la:reply" width="18" />{{ $t('reply') }}</button>
+        <button v-if="emailStore.contentData.showReply" class="detail-action" @click="openReply"><Icon icon="la:reply" width="18" />{{ Number(email.type) === 1 ? (settingStore.lang === 'zh' ? '跟进' : 'Follow up') : $t('reply') }}</button>
         <button v-if="emailStore.contentData.showReply" class="detail-action" @click="openForward"><Icon icon="iconoir:arrow-up-right" width="17" />{{ $t('forward') }}</button>
       </div>
     </div>
@@ -149,8 +149,8 @@
           <div class="quick-reply-heading">
             <div class="reply-title">
               <span class="reply-mark"><Icon icon="solar:chat-round-line-linear" width="17" height="17"/></span>
-              <strong>{{ settingStore.lang === 'zh' ? '快速回复' : 'Quick reply' }}</strong>
-              <span class="reply-recipient">{{ settingStore.lang === 'zh' ? `回复给 ${replyTargetLabel}` : `Reply to ${replyTargetLabel}` }}</span>
+              <strong>{{ Number(email.type) === 1 ? (settingStore.lang === 'zh' ? '快速跟进' : 'Quick follow-up') : (settingStore.lang === 'zh' ? '快速回复' : 'Quick reply') }}</strong>
+              <span class="reply-recipient">{{ Number(email.type) === 1 ? (settingStore.lang === 'zh' ? `跟进给 ${replyTargetLabel}` : `Follow up with ${replyTargetLabel}`) : (settingStore.lang === 'zh' ? `回复给 ${replyTargetLabel}` : `Reply to ${replyTargetLabel}`) }}</span>
             </div>
             <div class="ai-draft">
               <button class="ai-draft-btn" type="button" :class="{ active: aiPanelOpen }" @click="aiPanelOpen = !aiPanelOpen">
@@ -208,7 +208,7 @@
               <span class="reply-shortcut">Ctrl / ⌘ + Enter</span>
               <button class="quick-send" type="button" :disabled="quickSending || !quickReply.trim()" @click="sendQuickReply">
                 <Icon icon="solar:plain-2-bold" width="16" height="16"/>
-                <span>{{ quickSending ? (settingStore.lang === 'zh' ? '发送中…' : 'Sending…') : (settingStore.lang === 'zh' ? '发送回复' : 'Send reply') }}</span>
+                <span>{{ quickSending ? (settingStore.lang === 'zh' ? '发送中…' : 'Sending…') : Number(email.type) === 1 ? (settingStore.lang === 'zh' ? '发送跟进' : 'Send follow-up') : (settingStore.lang === 'zh' ? '发送回复' : 'Send reply') }}</span>
               </button>
             </div>
           </div>
@@ -246,7 +246,7 @@
             </div>
             <div class="trace-item">
               <span class="trace-dot success"></span>
-              <span>{{ settingStore.lang === 'zh' ? '邮件已由 Cloudflare Email Routing 接收' : 'Accepted by Cloudflare Email Routing' }}</span>
+              <span>{{ Number(email.type) === 1 ? (settingStore.lang === 'zh' ? '邮件已提交发送' : 'Message submitted for sending') : (settingStore.lang === 'zh' ? '邮件已由 Cloudflare Email Routing 接收' : 'Accepted by Cloudflare Email Routing') }}</span>
             </div>
             <div class="trace-item" v-if="detectedCode">
               <span class="trace-dot success"></span>
@@ -293,6 +293,7 @@ import {useI18n} from "vue-i18n";
 import {EmailUnreadEnum} from "@/enums/email-enum.js";
 import {useUserStore} from "@/store/user.js";
 import {useWriterStore} from "@/store/writer.js";
+import {replyRecipients} from '@/utils/reply-target.js'
 
 const props = defineProps({
   embedded: {
@@ -359,16 +360,7 @@ const replyCountryLanguageMap = {
   巴西: 'pt', 阿根廷: 'es', 南非: 'en',
 }
 const conversationEmails = computed(() => {
-  const ownAddresses = [accountStore.currentAccount?.email, userStore.user?.email].filter(Boolean).map(value => String(value).toLowerCase())
-  const sender = String(email.value.sendEmail || '').toLowerCase()
-  if (!ownAddresses.includes(sender)) return sender ? [sender] : []
-  try {
-    const rawRecipients = email.value.recipient || email.value.receiveEmail || []
-    const recipients = Array.isArray(rawRecipients) ? rawRecipients : JSON.parse(rawRecipients || '[]')
-    return recipients.map(item => String(item.address || item.email || item).toLowerCase()).filter(Boolean)
-  } catch {
-    return []
-  }
+  return replyRecipients(email.value).map(address => address.toLowerCase())
 })
 const replyAutoLanguage = computed(() => {
   const contacts = Array.isArray(writerStore.contacts) ? writerStore.contacts : []
@@ -379,7 +371,7 @@ const replyAutoLanguage = computed(() => {
 })
 const replyTargetLabel = computed(() => {
   const address = conversationEmails.value[0]
-  if (!address) return email.value.name || email.value.sendEmail || ''
+  if (!address) return ''
   const contacts = Array.isArray(writerStore.contacts) ? writerStore.contacts : []
   const contact = contacts.find(item => String(item.email || '').toLowerCase() === address)
   return contact?.name || address
@@ -413,6 +405,7 @@ const detectedCode = computed(() => {
 const emailCategory = computed(() => {
   const source = `${email.value.subject || ''} ${email.value.text || ''}`.toLowerCase()
   if (detectedCode.value) return settingStore.lang === 'zh' ? '系统' : 'System'
+  if (Number(email.value.type) === 1 && /(报价|询价|quotation|quote|rfq)/i.test(source)) return settingStore.lang === 'zh' ? '已发送报价' : 'Sent quote'
   if (/(报价|询价|quotation|quote|rfq)/i.test(source)) return settingStore.lang === 'zh' ? '供应商报价' : 'Supplier quote'
   if (/(运单|物流|清关|提单|装箱单|快递|shipment|tracking|customs|dhl|fedex|ups)/i.test(source)) return settingStore.lang === 'zh' ? '物流单据' : 'Logistics'
   if (/(询盘|采购|需求|我(?:要|想要|需要)|有(?:现)?货(?:吗|么)?|有没有货|能否提供|是否有货|多少钱|价格|inquiry|enquiry|request for|\bneed\b|\bwant\b|looking for|do you have|can you supply|availability|in stock)/i.test(source)) return settingStore.lang === 'zh' ? '客户询盘' : 'Customer inquiry'
@@ -420,6 +413,7 @@ const emailCategory = computed(() => {
   return ''
 })
 const senderScope = computed(() => {
+  if (Number(email.value.type) === 1) return settingStore.lang === 'zh' ? '已发送邮件' : 'Sent message'
   const senderDomain = String(email.value.sendEmail || '').split('@')[1]?.toLowerCase()
   const accountDomain = String(accountStore.currentAccount?.email || userStore.user?.email || '').split('@')[1]?.toLowerCase()
   const internal = senderDomain && accountDomain && senderDomain === accountDomain
@@ -694,6 +688,10 @@ function openReplyWithDraft() {
 
 async function generateAiReply(variant = false) {
   if (aiGenerating.value) return
+  if (!replyRecipients(email.value).length) {
+    ElMessage.warning(settingStore.lang === 'zh' ? '找不到邮件收件人，无法起草跟进邮件' : 'No recipient found for this message')
+    return
+  }
   aiGenerating.value = true
   try {
     const replyLanguage = aiLanguage.value === 'auto' ? replyAutoLanguage.value.code : aiLanguage.value
@@ -836,10 +834,16 @@ async function sendQuickReply() {
   }
   if (quickSending.value) return
 
+  const recipients = replyRecipients(email.value)
+  if (!recipients.length) {
+    ElMessage.warning(settingStore.lang === 'zh' ? '找不到邮件收件人，无法发送回复' : 'No recipient found for this message')
+    return
+  }
+
   const subject = email.value.subject || ''
   const replySubject = /^(Re:|Re：|回复：|回复:)/i.test(subject) ? subject : `Re: ${subject}`
   const html = `<div>${escapeHtml(replyText).replaceAll('\n', '<br>')}</div>`
-  const payload = replyPayload({text: replyText, html, subject: replySubject, receiveEmail: [email.value.sendEmail]})
+  const payload = replyPayload({text: replyText, html, subject: replySubject, receiveEmail: recipients})
 
   quickSending.value = true
   try {

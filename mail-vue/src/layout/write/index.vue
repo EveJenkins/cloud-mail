@@ -176,6 +176,7 @@ import {Icon} from "@iconify/vue";
 import {useUserStore} from "@/store/user.js";
 import {emailAiCompose, emailSend} from "@/request/email.js";
 import {isEmail} from "@/utils/verify-utils.js";
+import {replyRecipients} from '@/utils/reply-target.js'
 import {useAccountStore} from "@/store/account.js";
 import {useEmailStore} from "@/store/email.js";
 import {signatureContentHtml} from '@/utils/signature.js'
@@ -881,7 +882,7 @@ function openReply(email) {
 
   email.subject = email.subject || ''
 
-  form.receiveEmail.push(email.sendEmail)
+  form.receiveEmail.push(...replyRecipients(email))
   form.subject = (
       email.subject.startsWith('Re:') ||
       email.subject.startsWith('Re：') ||
@@ -1041,7 +1042,7 @@ function close() {
 function openReplyWithContent(email, replyText = '') {
   resetForm();
   email.subject = email.subject || ''
-  form.receiveEmail.push(email.sendEmail)
+  form.receiveEmail.push(...replyRecipients(email))
   form.subject = /^(Re:|Re：|回复：|回复:)/i.test(email.subject) ? email.subject : 'Re: ' + email.subject
   form.sendType = 'reply'
   form.emailId = email.emailId
