@@ -52,7 +52,7 @@
 
 - **💻 响应式设计**：响应式布局自动适配PC和大部分手机端浏览器
 
-- **📧 邮件发送**：集成Resend发送邮件，支持群发，内嵌图片和附件发送，发送状态查看
+- **📧 邮件发送**：支持 Cloudflare Email Service 或 Resend，支持群发、内嵌图片和附件发送、发送状态查看
 
 - **🛡️ 管理员功能**：可以对用户，邮件进行管理，RABC权限控制对功能及使用资源限制
 
@@ -86,13 +86,21 @@
 
 - **UI框架**：[Element Plus](https://element-plus.org/) 
 
-- **邮件推送：** [Resend](https://resend.com/)
+- **邮件发送：** [Cloudflare Email Service](https://developers.cloudflare.com/email-service/get-started/send-emails/) 或 [Resend](https://resend.com/)
 
 - **缓存**：[Cloudflare KV](https://developers.cloudflare.com/kv/)
 
 - **数据库**：[Cloudflare D1](https://developers.cloudflare.com/d1/)
 
 - **文件存储**：[Cloudflare R2](https://developers.cloudflare.com/r2/)
+
+## Cloudflare Email Service 发件
+
+1. 在 Cloudflare 控制台的 **Compute → Email Service → Email Sending** 中为发件域名完成启用和 DNS 验证。发件人地址必须属于已启用的域名。
+2. 使用本仓库的 GitHub Actions 部署时，将仓库变量 `CF_EMAIL` 设为 `true`。工作流会添加名为 `email` 的 `send_email` Worker 绑定；站外邮件优先通过 Cloudflare Email Service 发送，未启用绑定时仍可使用管理设置中的 Resend token。
+3. 手动部署时，在 `mail-worker/wrangler.toml` 中取消 `[[send_email]]` 和 `name = "email"` 的注释后部署。仅在需要本地发送真实邮件时再启用 `remote = true`；默认本地模拟不会实际发送。
+
+Cloudflare 接受邮件后，已发送列表记录为“已发送”，不代表收件服务器已投递。站内邮件仍直接送达站内邮箱。Cloudflare 发信不需要 Resend token。
 
 ## 目录结构
 
@@ -153,6 +161,4 @@ cloud-mail
 ## 交流
 
 [Telegram](https://t.me/cloud_mail_tg)
-
-
 

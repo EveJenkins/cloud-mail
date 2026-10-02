@@ -485,10 +485,11 @@ const emailService = {
 		emailData.content = html;
 		emailData.text = text;
 		emailData.accountId = accountId;
-		emailData.status = useCloudflareEmail ? emailConst.status.DELIVERED : emailConst.status.SENT;
+		// Provider acceptance is not proof of delivery; on-site mail is delivered immediately.
+		emailData.status = allInternal ? emailConst.status.DELIVERED : emailConst.status.SENT;
 		emailData.type = emailConst.type.SEND;
 		emailData.userId = userId;
-		emailData.resendEmailId = data?.id;
+		emailData.resendEmailId = useCloudflareEmail ? null : data?.id;
 		// Cloudflare Email Service returns the SMTP Message-ID. Resend returns a
 		// provider record id instead, so do not store that value as a Message-ID.
 		emailData.messageId = useCloudflareEmail ? (data?.id || '') : '';

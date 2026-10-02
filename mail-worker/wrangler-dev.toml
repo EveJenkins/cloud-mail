@@ -33,6 +33,7 @@ run_worker_first = true
 
 #[[send_email]]
 #name = "email"
+#remote = true #取消注释后本地开发也会发送真实邮件
 
 
 [vars]
