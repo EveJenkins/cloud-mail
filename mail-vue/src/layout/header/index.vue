@@ -527,7 +527,7 @@ function formatName(email) {
   padding: 0 10px;
   font-size: 16px;
 }
-.header.has-switcher { grid-template-columns: auto minmax(160px, 1fr) minmax(280px, 380px) auto; }
+.header.has-switcher { grid-template-columns: auto minmax(160px, 1fr) minmax(0, max-content) auto; }
 
 .brand { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .brand-mark { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: var(--brand-600); border-radius: var(--r-md); background: #fff; }
@@ -590,7 +590,7 @@ function formatName(email) {
 .mobile-context, .mobile-search-trigger, .mobile-search-close { display: none; }
 .toolbar .mobile-search-trigger { display: none; }
 
-.mailbox-switcher { position: relative; width: 100%; min-width: 0; justify-self: end; }
+.mailbox-switcher { position: relative; width: max-content; max-width: 380px; min-width: 0; justify-self: end; }
 .mailbox-trigger {
   width: 100%;
   height: 38px;
@@ -609,9 +609,9 @@ function formatName(email) {
 .mailbox-trigger:hover, .mailbox-trigger[aria-expanded="true"] { background: var(--topbar-hover); }
 .mailbox-trigger:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .mailbox-initial { width: 29px; height: 29px; flex: none; display: none; place-items: center; color: var(--brand-600); background: #fff; border-radius: var(--r-sm); font-size: 12px; font-weight: 700; }
-.mailbox-label { min-width: 0; flex: 1; overflow: hidden; font-size: 16px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-label { min-width: 0; flex: 0 1 auto; overflow: hidden; font-size: 16px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .mailbox-chevron { flex: none; color: var(--topbar-fg-dim); }
-.mailbox-pop { position: absolute; top: calc(100% + 8px); right: 0; width: min(356px, calc(100vw - 20px)); color: var(--text); z-index: 110; }
+.mailbox-pop { position: absolute; top: calc(100% + 8px); right: 0; width: min(440px, calc(100vw - 20px)); color: var(--text); z-index: 110; }
 .mailbox-pop-enter-active, .mailbox-pop-leave-active { transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
 .mailbox-pop-enter-from, .mailbox-pop-leave-to { opacity: 0; transform: translateY(-5px); }
 

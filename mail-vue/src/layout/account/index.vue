@@ -508,8 +508,8 @@ path[fill="#ffdda1"] {
     background: var(--surface-2);
   }
   .head-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
-  .head-copy strong { color: var(--text); font-size: 14px; font-weight: 700; }
-  .head-copy small { color: var(--text-3); font-size: 11px; }
+  .head-copy strong { color: var(--text); font-size: 16px; font-weight: 700; }
+  .head-copy small { color: var(--text-3); font-size: 12px; }
   .head-actions { display: flex; align-items: center; gap: 4px; }
   .head-btn {
     width: 30px;
@@ -572,7 +572,7 @@ path[fill="#ffdda1"] {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 6px 10px 10px;
+    padding: 12px 6px 12px 10px;
     border: 0;
     background: transparent;
     text-align: left;
@@ -605,8 +605,8 @@ path[fill="#ffdda1"] {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .item-copy strong { color: var(--text); font-size: 13px; font-weight: 600; }
-  .item-copy small { color: var(--text-3); font-size: 11px; }
+  .item-copy strong { color: var(--text); font-size: 15px; font-weight: 600; }
+  .item-copy small { color: var(--text-3); font-size: 13px; }
   .selected-check { flex: none; color: var(--brand-600); }
   .item-menu { flex: none; margin-right: 7px; }
   .more-btn {
