@@ -316,6 +316,7 @@ function remove(account) {
     accountDelete(account.accountId).then(() => {
       const index = accounts.findIndex(item => item.accountId === account.accountId);
       accounts.splice(index, 1);
+      if (accountStore.currentAccountId === account.accountId) accountStore.selectAccount(userStore.user.account);
       if (accounts.length < queryParams.size) {
         getAccountList()
       }
@@ -344,8 +345,7 @@ function refresh() {
 }
 
 function changeAccount(account) {
-  accountStore.currentAccountId = account.accountId
-  accountStore.currentAccount = account
+  accountStore.selectAccount(account)
   // 选中后收起下拉
   uiStore.accountShow = false
 }
@@ -416,9 +416,8 @@ function getAccountList() {
     if (list.length < queryParams.size) {
       noLoading.value = true
     }
-    if (accounts.length === 0) {
-      accountStore.currentAccount = list[0]
-    }
+    const selected = list.find(item => item.accountId === accountStore.currentAccountId)
+    if (selected) accountStore.currentAccount = selected
 
     accounts.push(...list)
 

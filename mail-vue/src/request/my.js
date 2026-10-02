@@ -1,7 +1,7 @@
 import http from '@/axios/index.js';
 
-export function loginUserInfo() {
-    return http.get('/my/loginUserInfo')
+export function loginUserInfo(selectedAccountId) {
+    return http.get('/my/loginUserInfo', {params: selectedAccountId ? {selectedAccountId} : {}})
 }
 
 export function resetPassword(password) {
@@ -11,4 +11,3 @@ export function resetPassword(password) {
 export function userDelete() {
     return http.delete('/my/delete')
 }
-

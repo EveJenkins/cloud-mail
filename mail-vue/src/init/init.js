@@ -26,7 +26,7 @@ export async function init() {
     let setting = null;
 
     if (token) {
-        const userPromise = loginUserInfo().catch(e => {
+        const userPromise = loginUserInfo(accountStore.preferredAccountId).catch(e => {
             console.error(e);
             return null;
         });
@@ -38,8 +38,7 @@ export async function init() {
         document.title = setting.title;
 
         if (user) {
-            accountStore.currentAccountId = user.account.accountId;
-            accountStore.currentAccount = user.account;
+            accountStore.selectAccount(user.selectedAccount || user.account);
             userStore.user = user;
 
             const routers = permsToRouter(user.permKeys);

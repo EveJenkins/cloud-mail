@@ -1747,7 +1747,7 @@ function editSetting(settingForm, refreshStatus = true) {
       plain: true
     })
     if (setting.value.manyEmail === 1) {
-      accountStore.currentAccountId = userStore.user.account.accountId;
+      accountStore.selectAccount(userStore.user.account);
     }
     if (refreshStatus) {
       getSettings()
@@ -2371,4 +2371,3 @@ form .el-button {
   .setting-item { grid-template-columns: minmax(0, 1fr); gap: 8px; }
 }
 </style>
-

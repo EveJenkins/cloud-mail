@@ -20,10 +20,11 @@ import {oauth} from "../entity/oauth";
 import oauthService from "./oauth-service";
 import settingService from './setting-service';
 import starService from './star-service';
+import { belongsToUser } from './account-selection.mjs';
 
 const userService = {
 
-	async loginUserInfo(c, userId) {
+	async loginUserInfo(c, userId, selectedAccountId) {
 
 		const userRow = await userService.selectById(c, userId);
 
@@ -42,6 +43,11 @@ const userService = {
 		user.sendCount = userRow.sendCount;
 		user.email = userRow.email;
 		user.account = account;
+		const preferredId = Number(selectedAccountId);
+		if (Number.isSafeInteger(preferredId) && preferredId > 0 && preferredId !== account.accountId) {
+			const preferred = await accountService.selectById(c, preferredId);
+			if (belongsToUser(preferred, userId)) user.selectedAccount = preferred;
+		}
 		user.name = account.name;
 		user.permKeys = permKeys;
 		user.role = roleRow;
