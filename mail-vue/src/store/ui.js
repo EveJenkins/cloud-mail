@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useUiStore = defineStore('ui', {
     state: () => ({
-        asideShow: window.innerWidth > 1024,
+        asideShow: !window.matchMedia('(max-width: 767px)').matches,
         accountShow: false,
         backgroundLoading: true,
         changeNotice: 0,

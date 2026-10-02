@@ -10,7 +10,8 @@
         <Aside />
       </aside>
       <div
-          :class="(uiStore.asideShow && isMobile)? 'overlay-show':'overlay-hide'"
+          class="sidebar-overlay"
+          :class="{ 'is-visible': uiStore.asideShow && isMobile }"
           @click="uiStore.asideShow = false"
       ></div>
       <div class="main-container">
@@ -33,21 +34,21 @@ import writer from '@/layout/write/index.vue'
 
 const uiStore = useUiStore();
 const writerRef = ref({})
-const isMobile = ref(window.innerWidth < 1025)
-const handleResize = () => {
-  isMobile.value = window.innerWidth < 1025
-  uiStore.asideShow = window.innerWidth > 1024;
+const mobileViewport = window.matchMedia('(max-width: 767px)')
+const isMobile = ref(mobileViewport.matches)
+const handleViewportChange = ({ matches }) => {
+  isMobile.value = matches
+  uiStore.asideShow = !matches
 }
 
 onMounted(() => {
   uiStore.writerRef = writerRef
 
-  window.addEventListener('resize', handleResize)
-  handleResize()
+  mobileViewport.addEventListener('change', handleViewportChange)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
+  mobileViewport.removeEventListener('change', handleViewportChange)
 })
 </script>
 
@@ -93,29 +94,34 @@ onBeforeUnmount(() => {
   -webkit-overflow-scrolling: touch;
 }
 
-.overlay-show {
+.sidebar-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 100;
-  transition: all 0.3s;
-}
-
-.overlay-hide {
-  display: flex;
-  pointer-events: none;
   opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease), visibility 0s var(--dur);
 }
 
-@media (min-width: 1025px) {
+.sidebar-overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+@media (min-width: 768px) {
   .aside-hide { margin-left: calc(-1 * var(--sidebar-w)); }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 767px) {
   .aside {
     position: fixed;
     top: var(--topbar-h);
     bottom: 0;
+    height: auto;
     left: 0;
     z-index: 101;
     transform: translateX(-100%);

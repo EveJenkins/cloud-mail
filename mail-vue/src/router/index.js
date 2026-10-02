@@ -191,7 +191,7 @@ router.afterEach((to) => {
     // 邮箱切换改为浮层，仅在用户点击邮箱卡片时展开
     uiStore.accountShow = false
 
-    if (window.innerWidth < 1025) {
+    if (window.matchMedia('(max-width: 767px)').matches) {
         uiStore.asideShow = false
     }
 
