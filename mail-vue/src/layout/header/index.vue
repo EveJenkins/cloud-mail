@@ -54,7 +54,7 @@
       <button class="notice icon-item" type="button" :aria-label="settingStore.lang === 'zh' ? '系统通知' : 'Notifications'" @click="openNotice">
         <Icon icon="solar:megaphone-linear"/>
       </button>
-      <el-dropdown ref="userinfoRef" @visible-change="e => userInfoShow = e" :teleported="false" popper-class="detail-dropdown">
+      <el-dropdown ref="userinfoRef" @visible-change="e => userInfoShow = e" placement="bottom-end" :teleported="true" popper-class="detail-dropdown">
         <div class="avatar" @click="userInfoHide" >
           <div class="avatar-text">
             <div>{{ formatName(userStore.user.email) }}</div>
@@ -450,8 +450,10 @@ function formatName(email) {
 
   .action-info {
     width: 100%;
+    box-sizing: border-box;
+    padding: 0 14px;
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     margin-top: 10px;
 
     > div:first-child {
@@ -725,7 +727,15 @@ function formatName(email) {
   .mailbox-initial { width: 24px; height: 24px; }
   .mailbox-initial { display: grid; }
   .mailbox-label, .mailbox-chevron { display: none; }
-  .mailbox-pop { right: -48px; }
+  .mailbox-pop {
+    position: fixed;
+    top: calc(var(--topbar-h) + 8px);
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-height: calc(100dvh - var(--topbar-h) - 20px);
+    overflow-y: auto;
+  }
   .brand { gap: 0; }
   .brand-mark { display: none; }
   .header-btn { display: inline-flex; }
@@ -760,7 +770,7 @@ function formatName(email) {
   .toolbar .mobile-search-trigger { display: flex; }
   .header.mobile-search-open .toolbar .mobile-search-trigger { display: none; }
   .avatar { padding: 3px; }
-  .avatar .setting-icon, .avatar .avatar-identity { display: none; }
+  .toolbar .avatar .setting-icon, .toolbar .avatar .avatar-identity { display: none; }
   .avatar .avatar-text { width: 26px; height: 26px; }
 }
 
