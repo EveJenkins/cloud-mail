@@ -597,14 +597,14 @@ function formatName(email) {
   align-items: center;
   gap: 8px;
   color: var(--topbar-fg);
-  border: 1px solid rgba(255, 255, 255, .25);
+  border: 0;
   border-radius: var(--r-md);
-  background: rgba(255, 255, 255, .10);
+  background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  transition: background var(--dur) var(--ease);
 }
-.mailbox-trigger:hover, .mailbox-trigger[aria-expanded="true"] { background: var(--topbar-hover); border-color: rgba(255, 255, 255, .46); }
+.mailbox-trigger:hover, .mailbox-trigger[aria-expanded="true"] { background: var(--topbar-hover); }
 .mailbox-trigger:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .mailbox-initial { width: 29px; height: 29px; flex: none; display: none; place-items: center; color: var(--brand-600); background: #fff; border-radius: var(--r-sm); font-size: 12px; font-weight: 700; }
 .mailbox-label { min-width: 0; flex: 1; overflow: hidden; font-size: 16px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
