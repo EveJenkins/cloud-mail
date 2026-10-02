@@ -226,24 +226,22 @@ async function latest() {
     if (!scroll.value.firstLoad && autoRefresh > 1) {
       try {
         const accountId = accountStore.currentAccountId
-        const allReceive = scroll.value.latestEmail?.allReceive
         const curTimeSort = params.timeSort
         let list = []
 
         //确保发起请求时最后一个邮件是当前账号的,或者
         if (accountId === scroll.value.latestEmail?.reqAccountId) {
-          list = await emailLatest(latestId, accountId, allReceive);
+          list = await emailLatest(latestId, accountId);
         }
 
         //确保请求回来后，账号没有切换，时间排序没有改变，全部邮件类型没变
-        if (accountId === accountStore.currentAccountId && params.timeSort === curTimeSort && allReceive === accountStore.currentAccount.allReceive) {
+        if (accountId === accountStore.currentAccountId && params.timeSort === curTimeSort) {
           if (list.length > 0) {
             emailStore.applyFullList(list)
 
             for (let email of list) {
 
               email.reqAccountId = accountId;
-              email.allReceive = allReceive;
 
               if (!existIds.has(email.emailId)) {
 
@@ -278,14 +276,12 @@ function cancelStar(email) {
 
 function getEmailList(emailId, size) {
   const accountId =  accountStore.currentAccountId;
-  const allReceive = accountStore.currentAccount.allReceive;
   return emailStore.fetchList(full =>
-    emailList(accountId, allReceive, emailId, params.timeSort, size, 0, full)
+    emailList(accountId, emailId, params.timeSort, size, 0, full)
   ).then(data => {
     const normalized = data || { list: [], latestEmail: null, total: 0 }
     if (normalized.latestEmail) {
       normalized.latestEmail.reqAccountId = accountId;
-      normalized.latestEmail.allReceive = allReceive;
     }
     return normalized;
   })

@@ -1,40 +1,37 @@
 <template>
   <div class="account-box">
     <div class="head-opt">
-      <span class="head-title">{{ settingStore.lang === 'zh' ? '我的邮箱' : 'My mailboxes' }}</span>
+      <span class="head-copy">
+        <strong>{{ settingStore.lang === 'zh' ? '切换邮箱' : 'Switch mailbox' }}</strong>
+        <small>{{ settingStore.lang === 'zh' ? '选择要查看的邮箱身份' : 'Choose a mailbox to view' }}</small>
+      </span>
       <span class="head-actions">
-        <button v-perm="'account:add'" class="head-btn" type="button" :title="settingStore.lang === 'zh' ? '添加邮箱' : 'Add mailbox'" @click="add">
-          <Icon icon="solar:add-circle-linear" width="17"/>
+        <button v-perm="'account:add'" class="head-btn" type="button" :title="settingStore.lang === 'zh' ? '添加邮箱' : 'Add mailbox'" :aria-label="settingStore.lang === 'zh' ? '添加邮箱' : 'Add mailbox'" @click="add">
+          <Icon icon="solar:add-circle-linear" width="18"/>
         </button>
-        <button class="head-btn" type="button" :title="settingStore.lang === 'zh' ? '刷新' : 'Refresh'" @click="refresh">
-          <Icon icon="solar:refresh-linear" width="16"/>
+        <button class="head-btn" type="button" :title="settingStore.lang === 'zh' ? '刷新邮箱列表' : 'Refresh mailboxes'" :aria-label="settingStore.lang === 'zh' ? '刷新邮箱列表' : 'Refresh mailboxes'" @click="refresh">
+          <Icon icon="solar:refresh-linear" width="17"/>
         </button>
       </span>
     </div>
     <el-scrollbar class="scrollbar" ref="scrollbarRef">
       <div v-infinite-scroll="getAccountList" :infinite-scroll-distance="600" :infinite-scroll-immediate="false">
-        <div class="item" :class="itemBg(item.accountId)" v-for="(item, index) in accounts" :key="item.accountId"
-             @click="changeAccount(item)">
-          <span class="item-avatar">{{ (item.email || 'M').charAt(0).toUpperCase() }}</span>
-          <span class="item-email">{{ item.email }}</span>
-          <span class="item-actions" @click.stop>
-            <button class="act" type="button" :class="{ on: item.allReceive }"
-                    :title="item.allReceive ? (settingStore.lang === 'zh' ? '已开启全部接收，点击关闭' : 'Receiving all mail — click to disable') : (settingStore.lang === 'zh' ? '开启全部接收' : 'Receive all mail')"
-                    @click="setAllReceive(item)">
-              <Icon :icon="item.allReceive ? 'solar:inbox-archive-linear' : 'solar:inbox-in-linear'" width="16"/>
-            </button>
-            <button class="act" type="button" :title="settingStore.lang === 'zh' ? '复制地址' : 'Copy address'" @click="copyAccount(item.email)">
-              <Icon icon="solar:copy-linear" width="15"/>
-            </button>
-            <button class="act" type="button" disabled v-if="showNullSetting(item)" :title="settingStore.lang === 'zh' ? '无可用操作' : 'No actions'">
-              <Icon icon="solar:settings-linear" width="15"/>
-            </button>
-            <el-dropdown v-else trigger="click">
-              <button class="act" type="button" :title="settingStore.lang === 'zh' ? '更多设置' : 'More'">
-                <Icon icon="solar:settings-linear" width="15"/>
+        <div class="item" :class="itemBg(item.accountId)" v-for="(item, index) in accounts" :key="item.accountId">
+          <button class="item-main" type="button" :aria-current="accountStore.currentAccountId === item.accountId ? 'true' : undefined" @click="changeAccount(item)">
+            <span class="item-avatar">{{ (item.email || 'M').charAt(0).toUpperCase() }}</span>
+            <span class="item-copy">
+              <strong>{{ item.name || item.email?.split('@')[0] }}</strong>
+              <small>{{ item.email }}</small>
+            </span>
+            <Icon v-if="accountStore.currentAccountId === item.accountId" class="selected-check" icon="solar:check-circle-bold" width="18" />
+          </button>
+          <el-dropdown class="item-menu" trigger="click">
+              <button class="more-btn" type="button" :title="settingStore.lang === 'zh' ? '邮箱操作' : 'Mailbox actions'" :aria-label="settingStore.lang === 'zh' ? `操作 ${item.email}` : `Actions for ${item.email}`">
+                <Icon icon="solar:menu-dots-bold" width="18"/>
               </button>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item @click="copyAccount(item.email)">{{ settingStore.lang === 'zh' ? '复制邮箱地址' : 'Copy address' }}</el-dropdown-item>
                   <el-dropdown-item v-if="hasPerm('email:send')" @click="openSetName(item)">{{ $t('rename') }}</el-dropdown-item>
                   <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId" @click="setAsTop(item, index)">{{ $t('pin') }}</el-dropdown-item>
                   <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId && hasPerm('account:delete')"
@@ -43,7 +40,6 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-          </span>
         </div>
 
         <!-- Initial Loading Skeleton -->
@@ -76,6 +72,10 @@
       </div>
 
     </el-scrollbar>
+    <div class="account-footer" v-if="accounts.length">
+      <Icon icon="solar:shield-check-linear" width="15" />
+      {{ settingStore.lang === 'zh' ? '邮件按当前邮箱身份显示' : 'Mail is shown for the selected mailbox' }}
+    </div>
     <el-dialog v-model="showAdd" :title="$t('addAccount')">
       <div class="container">
         <el-input v-model="addForm.email" ref="addRef" type="text" :placeholder="$t('emailAccount')" autocomplete="off" @keyup.enter="submit">
@@ -134,7 +134,6 @@ import {
   accountAdd,
   accountDelete,
   accountSetName,
-  accountSetAllReceive,
   accountSetAsTop
 } from "@/request/account.js";
 import {sleep} from "@/utils/time-utils.js"
@@ -142,18 +141,15 @@ import {isEmail} from "@/utils/verify-utils.js";
 import {useSettingStore} from "@/store/setting.js";
 import {useAccountStore} from "@/store/account.js";
 import {useUiStore} from "@/store/ui.js";
-import {useEmailStore} from "@/store/email.js";
 import {useUserStore} from "@/store/user.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
-import {AccountAllReceiveEnum} from "@/enums/account-enum.js";
 
 const {t} = useI18n();
 const userStore = useUserStore();
 const accountStore = useAccountStore();
 const uiStore = useUiStore();
 const settingStore = useSettingStore();
-const emailStore = useEmailStore();
 const showAdd = ref(false)
 const addLoading = ref(false);
 const domainList = computed(() => settingStore.domainList)
@@ -172,7 +168,6 @@ let turnstileId = null
 const botJsError = ref(false)
 let verifyToken = ''
 let verifyErrorCount = 0
-let first = true
 const addForm = reactive({
   email: '',
   suffix: settingStore.domainList[0]
@@ -189,7 +184,7 @@ if (hasPerm('account:query')) {
 }
 
 watch(() => accountStore.changeUserAccountName, () => {
-  accounts[0].name = accountStore.changeUserAccountName
+  if (accounts[0]) accounts[0].name = accountStore.changeUserAccountName
 })
 
 watch(() => settingStore.domainList, (list) => {
@@ -273,32 +268,6 @@ function openSetName(accountItem) {
   accountName.value = accountItem.name
   account = accountItem
   setNameShow.value = true
-}
-
-function setAllReceive(account) {
-  let allReceiveAccount = accounts.find(account => account.allReceive === AccountAllReceiveEnum.ENABLED);
-  if (allReceiveAccount && allReceiveAccount.accountId !== account.accountId) allReceiveAccount.allReceive = AccountAllReceiveEnum.DISABLED;
-  account.allReceive = account.allReceive === AccountAllReceiveEnum.DISABLED ? AccountAllReceiveEnum.ENABLED : AccountAllReceiveEnum.DISABLED;
-  accountSetAllReceive(account.accountId).catch(() => {
-    account.allReceive = account.allReceive === AccountAllReceiveEnum.DISABLED ? AccountAllReceiveEnum.ENABLED : AccountAllReceiveEnum.DISABLED;
-    if (allReceiveAccount) allReceiveAccount.allReceive = AccountAllReceiveEnum.ENABLED;
-  }).then(() => {
-    if (account.allReceive === AccountAllReceiveEnum.ENABLED) {
-      ElMessage({
-        message: t('setSuccess'),
-        type: 'success',
-        plain: true,
-      })
-    }
-    changeAccount(account);
-    emailStore.emailScroll?.refreshList();
-    emailStore.sendScroll?.refreshList();
-  })
-}
-
-
-function showNullSetting(item) {
-  return !hasPerm('email:send') && !(item.accountId !== userStore.user.account.accountId && hasPerm('account:delete'))
 }
 
 function itemBg(accountId) {
@@ -423,7 +392,6 @@ function getAccountList() {
 
     loading.value = false
     followLoading.value = false
-    first = false
   }).catch(() => {
     loading.value = false
     followLoading.value = false
@@ -534,32 +502,35 @@ path[fill="#ffdda1"] {
   .head-opt {
     display: flex;
     align-items: center;
-    height: 38px;
-    padding: 0 6px 0 12px;
+    min-height: 68px;
+    padding: 11px 12px 10px 16px;
     border-bottom: 1px solid var(--border);
     background: var(--surface-2);
   }
-  .head-title { flex: 1; color: var(--text-2); font-size: 12px; font-weight: 600; }
-  .head-actions { display: flex; align-items: center; gap: 2px; }
+  .head-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .head-copy strong { color: var(--text); font-size: 14px; font-weight: 700; }
+  .head-copy small { color: var(--text-3); font-size: 11px; }
+  .head-actions { display: flex; align-items: center; gap: 4px; }
   .head-btn {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-3);
-    border: 0;
+    color: var(--text-2);
+    border: 1px solid var(--border);
     border-radius: var(--r-md);
-    background: transparent;
+    background: var(--surface);
     cursor: pointer;
     transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
   }
   .head-btn:hover { color: var(--brand-600); background: var(--brand-soft); }
+  .head-btn:focus-visible, .item-main:focus-visible, .more-btn:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
 
   .scrollbar {
     width: 100%;
-    max-height: 296px;
-    padding-bottom: 6px;
+    max-height: min(342px, 45vh);
+    padding: 6px 0;
     overflow: auto;
 
     .empty {
@@ -585,48 +556,62 @@ path[fill="#ffdda1"] {
 
   .item {
     min-width: 0;
-    margin: 4px 6px 0;
-    padding: 6px 6px 6px 8px;
+    margin: 3px 8px;
     display: flex;
     align-items: center;
-    gap: 8px;
     border: 1px solid transparent;
     border-radius: var(--r-md);
     background: transparent;
-    cursor: pointer;
     transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
   }
-  .item:hover { background: var(--surface-2); border-color: var(--border); }
+  .item:hover { background: var(--surface-2); }
+
+  .item-main {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 6px 10px 10px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
 
   .skeleton-row { pointer-events: none; }
 
   .item-avatar {
-    width: 26px;
-    height: 26px;
-    flex: 0 0 26px;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
     display: grid;
     place-items: center;
     color: #fff;
     background: var(--brand-600);
     border-radius: var(--r-sm);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
   }
-  .item-email {
+  .item-copy {
     min-width: 0;
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .item-copy strong, .item-copy small {
     overflow: hidden;
-    color: var(--text);
-    font-size: 12.5px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .item-actions { flex: none; display: flex; align-items: center; gap: 1px; opacity: 0; transition: opacity var(--dur) var(--ease); }
-  .item:hover .item-actions,
-  .item-choose .item-actions { opacity: 1; }
-  .act {
-    width: 24px;
-    height: 24px;
+  .item-copy strong { color: var(--text); font-size: 13px; font-weight: 600; }
+  .item-copy small { color: var(--text-3); font-size: 11px; }
+  .selected-check { flex: none; color: var(--brand-600); }
+  .item-menu { flex: none; margin-right: 7px; }
+  .more-btn {
+    width: 28px;
+    height: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -637,23 +622,15 @@ path[fill="#ffdda1"] {
     cursor: pointer;
     transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
   }
-  .act:hover:not(:disabled) { color: var(--brand-600); background: var(--brand-soft); }
-  .act.on { color: var(--brand-600); }
-  .act:disabled { cursor: default; opacity: .45; }
-
-  .item:first-child {
-    margin-top: 6px;
-  }
-
-  .item:hover { border-color: color-mix(in srgb, var(--brand-500) 45%, var(--border)); }
+  .more-btn:hover { color: var(--brand-600); background: var(--brand-soft); }
 
   .item-choose,
   .item-choose:hover {
     background: var(--brand-soft);
-    border-color: color-mix(in srgb, var(--brand-500) 34%, var(--border));
-    box-shadow: inset 2px 0 0 var(--brand-600);
+    border-color: color-mix(in srgb, var(--brand-500) 38%, var(--border));
   }
-  .item-choose .item-email { color: var(--brand-700); font-weight: 600; }
+  .item-choose .item-copy strong { color: var(--brand-700); }
+  .account-footer { display: flex; align-items: center; gap: 6px; padding: 10px 16px; color: var(--text-3); border-top: 1px solid var(--border); font-size: 11px; }
 }
 
 

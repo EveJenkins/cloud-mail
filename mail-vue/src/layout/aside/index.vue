@@ -173,7 +173,7 @@ const inboxUnread = computed(() => Number(uiStore.asideCount?.email) || 0)
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  width: 296px;
+  width: min(356px, calc(100vw - 24px));
   z-index: 30;
 }
 

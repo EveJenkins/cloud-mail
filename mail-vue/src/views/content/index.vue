@@ -558,7 +558,6 @@ function isRelatedSentMessage(item) {
 async function loadThreadFallback(emailId) {
   const data = await emailList(
       accountStore.currentAccountId,
-      accountStore.currentAccount?.allReceive,
       0,
       0,
       50,

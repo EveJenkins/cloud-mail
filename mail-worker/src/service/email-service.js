@@ -23,7 +23,6 @@ import domainUtils from '../utils/domain-uitls';
 import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
-import { requiresAccountFilter } from './mailbox-scope.mjs';
 
 function emailReferenceTokens(...values) {
 	return [...new Set(values
@@ -37,14 +36,13 @@ const emailService = {
 
 	async list(c, params, userId) {
 
-		let { emailId, type, accountId, size, timeSort, allReceive, full } = params;
+		let { emailId, type, accountId, size, timeSort, full } = params;
 
 		size = Number(size);
 		type = Number(type);
 		emailId = Number(emailId) || 0;
 		timeSort = Number(timeSort);
 		accountId = Number(accountId);
-		allReceive = Number(allReceive);
 		full = Number(full);
 
 		if (isNaN(type)) {
@@ -69,13 +67,8 @@ const emailService = {
 			size = 50;
 		}
 
-		if (isNaN(allReceive)) {
-			let accountRow = await accountService.selectById(c, accountId);
-			allReceive = accountRow.allReceive;
-		}
-
-		const filters = this.emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort });
-		const countFilters = this.emailListFilters({ userId, accountId, type, allReceive, withCursor: false });
+		const filters = this.emailListFilters({ userId, accountId, type, emailId, timeSort });
+		const countFilters = this.emailListFilters({ userId, accountId, type, withCursor: false });
 		const columns = full ? emailListColumns : emailBriefColumns;
 
 		const query = orm(c)
@@ -122,7 +115,7 @@ const emailService = {
 				eq(email.userId, userId),
 				eq(email.type, type),
 				eq(email.isDel, isDel.NORMAL),
-				requiresAccountFilter(type, allReceive) ? eq(email.accountId, accountId) : undefined
+				eq(email.accountId, accountId)
 			))
 			.orderBy(desc(email.emailId)).limit(1).get();
 
@@ -224,16 +217,14 @@ const emailService = {
 		return list;
 	},
 
-	emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort, withCursor = true }) {
+	emailListFilters({ userId, accountId, type, emailId, timeSort, withCursor = true }) {
 		const conditions = [
 			eq(email.userId, userId),
 			eq(email.type, type),
 			eq(email.isDel, isDel.NORMAL),
 			eq(account.isDel, isDel.NORMAL),
 		];
-		if (requiresAccountFilter(type, allReceive)) {
-			conditions.push(eq(email.accountId, accountId));
-		}
+		conditions.push(eq(email.accountId, accountId));
 		if (withCursor && emailId) {
 			conditions.push(timeSort ? gt(email.emailId, emailId) : lt(email.emailId, emailId));
 		}
@@ -899,13 +890,7 @@ const emailService = {
 	},
 
 	async latest(c, params, userId) {
-		let { emailId, accountId, allReceive } = params;
-		allReceive = Number(allReceive);
-
-		if (isNaN(allReceive)) {
-			let accountRow = await accountService.selectById(c, accountId);
-			allReceive = accountRow.allReceive;
-		}
+		let { emailId, accountId } = params;
 
 		const list = await orm(c).select({ ...emailListColumns }).from(email)
 			.innerJoin(
@@ -918,7 +903,7 @@ const emailService = {
 					eq(email.userId, userId),
 					eq(email.isDel, isDel.NORMAL),
 					eq(account.isDel, isDel.NORMAL),
-					allReceive ? undefined : eq(email.accountId, accountId),
+					eq(email.accountId, accountId),
 					eq(email.type, emailConst.type.RECEIVE)
 				))
 			.orderBy(desc(email.emailId))

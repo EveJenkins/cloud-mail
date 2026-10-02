@@ -171,15 +171,12 @@ function cancelStar(email) {
 
 function getEmailList(emailId, size) {
   const accountId =  accountStore.currentAccountId;
-  // Receiving-all is an inbox preference; sent mail must use the active identity.
-  const allReceive = 0;
   return emailStore.fetchList(full =>
-    emailList(accountId, allReceive, emailId, params.timeSort, size, 1, full)
+    emailList(accountId, emailId, params.timeSort, size, 1, full)
   ).then(data => {
     const normalized = data || { list: [], latestEmail: null, total: 0 }
     if (normalized.latestEmail) {
       normalized.latestEmail.reqAccountId = accountId;
-      normalized.latestEmail.allReceive = allReceive;
     }
     return normalized;
   })
