@@ -97,10 +97,12 @@
 ## Cloudflare Email Service 发件
 
 1. 在 Cloudflare 控制台的 **Compute → Email Service → Email Sending** 中为发件域名完成启用和 DNS 验证。发件人地址必须属于已启用的域名。
-2. 使用本仓库的 GitHub Actions 部署时，将仓库变量 `CF_EMAIL` 设为 `true`。工作流会添加名为 `email` 的 `send_email` Worker 绑定；站外邮件优先通过 Cloudflare Email Service 发送，未启用绑定时仍可使用管理设置中的 Resend token。
+2. 使用本仓库的 GitHub Actions 部署时，将仓库变量 `CF_EMAIL` 设为 `true`。工作流会添加名为 `email` 的 `send_email` Worker 绑定。
 3. 手动部署时，在 `mail-worker/wrangler.toml` 中取消 `[[send_email]]` 和 `name = "email"` 的注释后部署。仅在需要本地发送真实邮件时再启用 `remote = true`；默认本地模拟不会实际发送。
 
 Cloudflare 接受邮件后，已发送列表记录为“已发送”，不代表收件服务器已投递。站内邮件仍直接送达站内邮箱。Cloudflare 发信不需要 Resend token。
+
+部署后可在**管理员后台 → 邮件设置 → 发信服务**中选择“自动选择”“Cloudflare 邮件发送”或“Resend”。自动选择优先使用已配置的 Cloudflare 绑定，否则使用对应发件域名的 Resend token；选择 Cloudflare 时必须先启用绑定。切换设置会影响后续站外邮件，不改变已经发送的邮件。
 
 ## 目录结构
 
@@ -161,4 +163,3 @@ cloud-mail
 ## 交流
 
 [Telegram](https://t.me/cloud_mail_tg)
-

@@ -12,8 +12,18 @@ import userContext from '../security/user-context';
 import domainUtils from '../utils/domain-uitls';
 
 const settingService = {
+	async ensureSendProviderColumn(c) {
+		const column = await c.env.db.prepare("SELECT 1 FROM pragma_table_info('setting') WHERE name = 'send_provider' LIMIT 1").first();
+		if (column) return;
+		try {
+			await c.env.db.prepare("ALTER TABLE setting ADD COLUMN send_provider TEXT NOT NULL DEFAULT 'auto'").run();
+		} catch (error) {
+			if (!String(error.message).includes('duplicate column name')) throw error;
+		}
+	},
 
 	async refresh(c) {
+		await this.ensureSendProviderColumn(c);
 		const settingRow = await orm(c).select().from(setting).get();
 		settingRow.resendTokens = JSON.parse(settingRow.resendTokens);
 		c.set('setting', settingRow);
@@ -23,7 +33,9 @@ const settingService = {
 	async query(c) {
 
 		if (c.get?.('setting')) {
-			return c.get('setting')
+			const cachedSetting = c.get('setting');
+			cachedSetting.sendProvider ||= 'auto';
+			return cachedSetting;
 		}
 
 		const setting = await c.env.kv.get(KvConst.SETTING, { type: 'json' });
@@ -31,6 +43,7 @@ const settingService = {
 		if (!setting) {
 			throw new BizError('数据库未初始化 Database not initialized.');
 		}
+		setting.sendProvider ||= 'auto';
 
 		let domainList = c.env.domain;
 
@@ -111,7 +124,16 @@ const settingService = {
 	},
 
 	async set(c, params) {
+		await this.ensureSendProviderColumn(c);
 		const settingData = await this.query(c);
+		if (params.sendProvider !== undefined) {
+			if (!['auto', 'cloudflare', 'resend'].includes(params.sendProvider)) {
+				throw new BizError('无效的发信服务 / Invalid sending provider');
+			}
+			if (params.sendProvider === 'cloudflare' && !c.env.email) {
+				throw new BizError('Cloudflare Email Service 绑定未启用 / Email binding is not configured');
+			}
+		}
 		let resendTokens = { ...settingData.resendTokens, ...params.resendTokens };
 		Object.keys(resendTokens).forEach(domain => {
 			if (!resendTokens[domain]) delete resendTokens[domain];

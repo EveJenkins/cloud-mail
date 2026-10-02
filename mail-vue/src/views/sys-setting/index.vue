@@ -197,11 +197,25 @@
                 </div>
               </div>
               <div class="setting-item">
-                <div><span>{{ setting.hasCfEmail ? $t('cloudflareEmailSending') : $t('resendToken') }}</span></div>
-                <div v-if="setting.hasCfEmail">
-                  <span>{{ $t('enabled') }}</span>
+                <div>
+                  <span>{{ $t('sendProvider') }}</span>
+                  <el-tooltip effect="dark" :content="$t('sendProviderDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
                 </div>
-                <div v-else>
+                <div>
+                  <el-select v-model="setting.sendProvider" style="width: 156px"
+                             @visible-change="open => open && backupSetting()"
+                             @change="value => editSetting({ sendProvider: value })">
+                    <el-option :label="$t('sendProviderAuto')" value="auto"/>
+                    <el-option :label="$t('cloudflareEmailSending')" value="cloudflare" :disabled="!setting.hasCfEmail"/>
+                    <el-option label="Resend" value="resend"/>
+                  </el-select>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div><span>{{ $t('resendToken') }}</span></div>
+                <div>
                   <el-button class="opt-button" style="margin-top: 0" @click="openResendList" size="small"
                              type="primary">
                     <Icon icon="ic:round-list" width="18" height="18"/>

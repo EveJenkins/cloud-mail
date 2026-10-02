@@ -11,6 +11,7 @@ export const setting = sqliteTable('setting', {
 	regVerifyCount: integer('reg_verify_count').default(1).notNull(),
 	addVerifyCount: integer('add_verify_count').default(1).notNull(),
 	send: integer('send').default(1).notNull(),
+	sendProvider: text('send_provider').default('auto').notNull(),
 	r2Domain: text('r2_domain'),
 	secretKey: text('secret_key'),
 	siteKey: text('site_key'),
