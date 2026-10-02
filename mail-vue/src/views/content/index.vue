@@ -61,50 +61,45 @@
             </div>
           </div>
           <div class="body-block">
-          <button class="translate-fab" type="button" :class="{ active: translationOpen }"
-                  :title="translationOpen ? (settingStore.lang === 'zh' ? '关闭翻译' : 'Close translation') : (settingStore.lang === 'zh' ? 'Workers AI 翻译正文' : 'Translate with Workers AI')"
-                  @click="translationOpen = !translationOpen">
-            <Icon :icon="translationOpen ? 'solar:close-circle-linear' : 'solar:translation-2-linear'" width="17" />
+          <section class="translation-banner" v-if="translationSuggestion || translationSettingsOpen || translatedText" :aria-busy="translating">
+            <span class="translation-banner-icon"><Icon icon="solar:translation-2-linear" width="19" /></span>
+            <div class="translation-banner-copy">
+              <strong v-if="translatedText && translationOpen">{{ settingStore.lang === 'zh' ? '已翻译此邮件' : 'Message translated' }}</strong>
+              <strong v-else-if="translationSuggestion === 'en'">{{ settingStore.lang === 'zh' ? '此邮件似乎是用英语撰写的' : 'This message appears to be in English' }}</strong>
+              <strong v-else-if="translationSuggestion === 'zh'">{{ settingStore.lang === 'zh' ? '此邮件似乎是用中文撰写的' : 'This message appears to be in Chinese' }}</strong>
+              <strong v-else>{{ settingStore.lang === 'zh' ? '翻译邮件' : 'Translate message' }}</strong>
+              <button class="translation-primary" type="button" :disabled="translating" @click="toggleTranslation">
+                <Icon v-if="translating" icon="svg-spinners:ring-resize" width="14" />
+                {{ translating ? (settingStore.lang === 'zh' ? '正在翻译…' : 'Translating…') : translatedText && translationOpen ? (settingStore.lang === 'zh' ? '显示原文' : 'Show original') : translatedText ? (settingStore.lang === 'zh' ? '显示译文' : 'Show translation') : (settingStore.lang === 'zh' ? `翻译成${translationLanguage === 'zh' ? '中文' : '英文'}` : `Translate to ${translationLanguage === 'zh' ? 'Chinese' : 'English'}`) }}
+              </button>
+            </div>
+            <button class="translation-settings-button" type="button" :aria-label="settingStore.lang === 'zh' ? '翻译设置' : 'Translation settings'" :aria-expanded="translationSettingsOpen" @click="translationSettingsOpen = !translationSettingsOpen">
+              <Icon icon="solar:settings-linear" width="19" />
+            </button>
+          </section>
+          <div class="translation-settings" v-if="translationSettingsOpen">
+            <label for="translation-language">{{ settingStore.lang === 'zh' ? '翻译为' : 'Translate to' }}</label>
+            <select id="translation-language" v-model="translationLanguage" @change="resetTranslation">
+              <option value="zh">简体中文</option>
+              <option value="en">English</option>
+            </select>
+            <span>{{ settingStore.lang === 'zh' ? '原文可随时切换查看' : 'You can switch back to the original at any time' }}</span>
+          </div>
+          <button v-if="!translationSuggestion && !translationSettingsOpen && !translatedText && translationSource" class="translate-fab" type="button"
+                  :title="settingStore.lang === 'zh' ? '翻译正文' : 'Translate message'"
+                  :aria-label="settingStore.lang === 'zh' ? '翻译正文' : 'Translate message'"
+                  @click="translationSettingsOpen = true">
+            <Icon icon="solar:translation-2-linear" width="17" />
           </button>
-          <el-scrollbar class="htm-scrollbar" :class="!email.attList?.length ? 'bottom-distance' : ''">
+          <div v-if="translationOpen && translatedText" class="translated-body" :lang="translationLanguage">
+            <span>{{ settingStore.lang === 'zh' ? '译文' : 'Translation' }} · {{ translationLanguage === 'zh' ? '简体中文' : 'English' }}</span>
+            <pre>{{ translatedText }}</pre>
+          </div>
+          <el-scrollbar v-else class="htm-scrollbar" :class="!email.attList?.length ? 'bottom-distance' : ''">
             <ShadowHtml class="shadow-html" :html="displayBody.html" :fallback-text="displayBody.text" comfortable v-if="displayBody.html" />
             <pre v-else-if="displayBody.text" class="email-text">{{ displayBody.text }}</pre>
             <div v-else class="empty-email-body">{{ settingStore.lang === 'zh' ? '该邮件没有可显示的正文内容' : 'This message has no displayable body content' }}</div>
           </el-scrollbar>
-            <section class="translation-card" v-if="translationOpen">
-            <div class="translation-heading">
-              <div class="translation-title">
-                <span class="translation-mark"><Icon icon="solar:translation-2-linear" width="19" height="19" /></span>
-                <div>
-                  <strong>Workers AI {{ settingStore.lang === 'zh' ? '邮件翻译' : 'Email translation' }}</strong>
-                  <small>{{ settingStore.lang === 'zh' ? '原文保持不变，译文仅在当前邮件中展示' : 'The original message remains unchanged' }}</small>
-                </div>
-              </div>
-              <button class="translation-close" type="button" :title="settingStore.lang === 'zh' ? '关闭' : 'Close'" @click="translationOpen = false">
-                <Icon icon="solar:close-circle-linear" width="19" />
-              </button>
-            </div>
-            <div class="translation-controls">
-              <label>
-                <span>{{ settingStore.lang === 'zh' ? '翻译为' : 'Translate to' }}</span>
-                <select v-model="translationLanguage">
-                  <option value="zh">简体中文</option>
-                  <option value="en">English</option>
-                </select>
-              </label>
-              <button class="translation-run" type="button" :disabled="translating" @click="translateEmail">
-                <Icon :icon="translating ? 'svg-spinners:ring-resize' : 'solar:stars-minimalistic-bold'" width="16" />
-                {{ translating ? (settingStore.lang === 'zh' ? '翻译中…' : 'Translating…') : (translatedText ? (settingStore.lang === 'zh' ? '重新翻译' : 'Translate again') : (settingStore.lang === 'zh' ? '开始翻译' : 'Translate')) }}
-              </button>
-            </div>
-            <div class="translation-result" v-if="translatedText">
-              <div class="translation-result-label">{{ translationLanguage === 'zh' ? '简体中文' : 'English' }}</div>
-              <pre>{{ translatedText }}</pre>
-            </div>
-            <div class="translation-empty" v-else>
-              {{ settingStore.lang === 'zh' ? '选择目标语言后，点击“开始翻译”即可生成译文。' : 'Choose a language and select Translate to generate a translation.' }}
-            </div>
-          </section>
           </div>
         </div>
         </div>
@@ -294,6 +289,7 @@ import {EmailUnreadEnum} from "@/enums/email-enum.js";
 import {useUserStore} from "@/store/user.js";
 import {useWriterStore} from "@/store/writer.js";
 import {replyRecipients} from '@/utils/reply-target.js'
+import {suggestedSourceLanguage} from '@/utils/translation-hint.js'
 
 const props = defineProps({
   embedded: {
@@ -330,9 +326,11 @@ const aiLanguage = ref('auto')
 const aiCategory = ref('')
 const aiSummary = ref('')
 const translationOpen = ref(false)
-const translationLanguage = ref('zh')
+const translationSettingsOpen = ref(false)
+const translationLanguage = ref(settingStore.lang === 'en' ? 'en' : 'zh')
 const translating = ref(false)
 const translatedText = ref('')
+let translationRequestVersion = 0
 const threadMessages = ref([])
 const retryingMessageIds = ref([])
 const toneOptions = computed(() => settingStore.lang === 'zh'
@@ -398,7 +396,7 @@ const detectedCode = computed(() => {
   if (!/(验证码|校验码|动态码|一次性密码|otp|verification\s*code|security\s*code|authentication\s*code)/i.test(source)) return ''
 
   const labelled = source.match(/(?:验证码|校验码|动态码|一次性密码|otp|verification\s*code|security\s*code|authentication\s*code)[^A-Z0-9]{0,20}([A-Z0-9]{4,8})/i)
-  if (labelled?.[1]) return labelled[1]
+  if (labelled?.[1] && /\d/.test(labelled[1])) return labelled[1]
 
   return source.match(/\b\d{4,8}\b/)?.[0] || ''
 })
@@ -604,7 +602,11 @@ watch(() => email.value?.emailId, () => {
   aiTone.value = 'formal'
   aiLanguage.value = 'auto'
   translationOpen.value = false
+  translationSettingsOpen.value = false
+  translationLanguage.value = settingStore.lang === 'en' ? 'en' : 'zh'
   translatedText.value = ''
+  translating.value = false
+  translationRequestVersion++
   loadThread()
 })
 
@@ -726,9 +728,27 @@ function getEmailSourceText() {
   return String(documentNode.body?.textContent || '').replace(/\n{3,}/g, '\n\n').trim()
 }
 
+const translationSource = computed(getEmailSourceText)
+const translationSuggestion = computed(() => suggestedSourceLanguage(translationSource.value, settingStore.lang))
+
+function resetTranslation() {
+  translationRequestVersion++
+  translating.value = false
+  translationOpen.value = false
+  translatedText.value = ''
+}
+
+function toggleTranslation() {
+  if (translatedText.value) {
+    translationOpen.value = !translationOpen.value
+    return
+  }
+  translateEmail()
+}
+
 async function translateEmail() {
   if (translating.value) return
-  const source = getEmailSourceText()
+  const source = translationSource.value
   if (!source) {
     ElMessage({
       message: settingStore.lang === 'zh' ? '当前邮件没有可翻译的正文' : 'This message has no translatable content',
@@ -739,18 +759,25 @@ async function translateEmail() {
   }
 
   translating.value = true
+  const requestVersion = ++translationRequestVersion
+  const emailId = email.value.emailId
+  const targetLanguage = translationLanguage.value
   try {
-    const data = await emailAiCompose(source, 'translate', translationLanguage.value)
-    translatedText.value = String(data?.text || '').trim()
-    if (!translatedText.value) throw new Error(settingStore.lang === 'zh' ? '未生成有效译文' : 'No translation was returned')
+    const data = await emailAiCompose(source, 'translate', targetLanguage)
+    if (requestVersion !== translationRequestVersion || email.value.emailId !== emailId) return
+    const result = String(data?.text || '').trim()
+    if (!result) throw new Error(settingStore.lang === 'zh' ? '未生成有效译文' : 'No translation was returned')
+    translatedText.value = result
+    translationOpen.value = true
   } catch (error) {
+    if (requestVersion !== translationRequestVersion || email.value.emailId !== emailId) return
     ElMessage({
       message: error?.response?.data?.message || error?.message || (settingStore.lang === 'zh' ? '翻译暂不可用' : 'Translation is unavailable'),
       type: 'warning',
       plain: true,
     })
   } finally {
-    translating.value = false
+    if (requestVersion === translationRequestVersion) translating.value = false
   }
 }
 
@@ -1417,7 +1444,6 @@ const handleDelete = () => {
 .code-card-body { margin-top: 10px; flex-wrap: wrap; }
 .code-card-body .el-button { margin-left: 0; }
 .ai-badge { padding: 3px 7px; color: var(--success); background: var(--surface); border-radius: 6px; font-size: 10.5px; font-weight: 750; }
-/* 正文区右上角的翻译图标 */
 .body-block { position: relative; }
 .translate-fab {
   position: absolute;
@@ -1437,33 +1463,27 @@ const handleDelete = () => {
   transition: color var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 .translate-fab:hover { color: var(--brand-600); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 40%, var(--border)); }
-.translate-fab.active { color: var(--success); background: color-mix(in srgb, var(--success) 10%, var(--surface)); border-color: color-mix(in srgb, var(--success) 35%, var(--border)); }
-.translation-card { margin-bottom: 12px; padding: 12px; border: 1px solid color-mix(in srgb, var(--success) 30%, var(--border)); border-radius: var(--r-lg); background: color-mix(in srgb, var(--success) 5%, var(--surface)); box-shadow: var(--sh-1); }
-.translation-heading, .translation-title, .translation-controls, .translation-controls label { display: flex; align-items: center; }
-.translation-heading { justify-content: space-between; gap: 14px; }
-.translation-title { min-width: 0; gap: 10px; }
-.translation-title > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.translation-title strong { color: var(--text); font-size: 13.5px; }
-.translation-title small { color: var(--text-3); font-size: 11px; }
-.translation-mark { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; color: #fff; border-radius: var(--r-md); background: var(--success); }
-.translation-close { width: 28px; height: 28px; display: grid; place-items: center; color: var(--text-3); border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
-.translation-close:hover { color: var(--text); background: var(--surface-3); }
-.translation-controls { margin-top: 12px; flex-wrap: wrap; gap: 8px; }
-.translation-controls label { gap: 6px; color: var(--text-3); font-size: 11.5px; }
-.translation-controls select { height: 30px; min-width: 120px; padding: 0 28px 0 10px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); outline: none; }
-.translation-run { height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; color: #fff; border: 0; border-radius: var(--r-md); background: var(--success); font-weight: 500; cursor: pointer; }
-.translation-run:disabled { opacity: .65; cursor: wait; }
-.translation-result { margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
-.translation-result-label { margin-bottom: 6px; color: var(--success); font-size: 10.5px; font-weight: 600; letter-spacing: .02em; }
-.translation-result pre { margin: 0; color: var(--text); font-family: inherit; font-size: 13px; line-height: 1.75; white-space: pre-wrap; word-break: break-word; }
-.translation-empty { margin-top: 12px; padding: 10px 12px; color: var(--text-3); border: 1px dashed var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 11.5px; }
+.translation-banner { margin-bottom: 12px; padding: 13px 14px; display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2); }
+.translation-banner-icon { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: var(--brand-600); background: var(--brand-soft); border-radius: var(--r-md); }
+.translation-banner-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.translation-banner-copy strong { color: var(--text); font-size: 13px; font-weight: 600; line-height: 1.45; }
+.translation-primary { padding: 0; color: var(--brand-600); border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.translation-primary:disabled { opacity: .6; cursor: wait; }
+.translation-primary svg { vertical-align: -2px; }
+.translation-settings-button { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: var(--text-3); border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.translation-settings-button:hover { color: var(--text); background: var(--surface-3); }
+.translation-settings { margin: -4px 0 12px; padding: 10px 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 11.5px; }
+.translation-settings select { height: 30px; min-width: 118px; padding: 0 9px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font: inherit; }
+.translation-settings > span { margin-left: auto; }
+.translated-body { min-height: 120px; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
+.translated-body > span { color: var(--brand-600); font-size: 11px; font-weight: 650; }
+.translated-body pre { margin: 10px 0 0; color: var(--text); font-family: inherit; font-size: var(--font-read-body); line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
 .container .htm-scrollbar { min-height: 120px; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
 .container .htm-scrollbar .email-text { padding: 0; color: var(--text); font-size: var(--font-read-body); line-height: 1.8; background: transparent; }
 .empty-email-body { min-height: 76px; display: grid; place-items: center; color: var(--text-3); font-size: 12px; }
 .container .bottom-distance { margin-bottom: 0; }
 .container .att { margin: 0; background: var(--surface); box-shadow: var(--sh-1); }
 .container .delivery-trace { margin: 0; background: var(--surface); box-shadow: var(--sh-1); }
-.translation-card { margin-bottom: 0; }
 
 /* 读信页两栏：左正文 + 右信息栏 */
 .read-main { min-width: 0; display: grid; gap: 12px; align-content: start; }
@@ -1517,8 +1537,8 @@ const handleDelete = () => {
   .container .message-card { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .container .email-title { font-size: 19px; }
   .container .code-card .el-button { width: 100%; margin-left: 0; }
-  .container .translation-card { padding: 12px; margin-top: 12px; }
-  .container .translation-title small { display: none; }
+  .container .translation-banner { padding: 12px; }
+  .container .translation-settings > span { width: 100%; margin-left: 0; }
   .container .content .email-info .sender-secondary { white-space: normal; }
   .thread-message { padding: 12px; }
   .thread-direction { font-size: 0; }

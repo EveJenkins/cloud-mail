@@ -23,6 +23,7 @@ import domainUtils from '../utils/domain-uitls';
 import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
+import { requiresAccountFilter } from './mailbox-scope.mjs';
 
 function emailReferenceTokens(...values) {
 	return [...new Set(values
@@ -121,7 +122,7 @@ const emailService = {
 				eq(email.userId, userId),
 				eq(email.type, type),
 				eq(email.isDel, isDel.NORMAL),
-				allReceive ? undefined : eq(email.accountId, accountId)
+				requiresAccountFilter(type, allReceive) ? eq(email.accountId, accountId) : undefined
 			))
 			.orderBy(desc(email.emailId)).limit(1).get();
 
@@ -230,7 +231,7 @@ const emailService = {
 			eq(email.isDel, isDel.NORMAL),
 			eq(account.isDel, isDel.NORMAL),
 		];
-		if (!allReceive) {
+		if (requiresAccountFilter(type, allReceive)) {
 			conditions.push(eq(email.accountId, accountId));
 		}
 		if (withCursor && emailId) {

@@ -105,7 +105,8 @@ onActivated(async () => {
 })
 
 function syncSelection() {
-  const list = sendScroll.value?.emailList || []
+  const list = (sendScroll.value?.emailList || []).filter(item =>
+    Number(item.accountId) === Number(accountStore.currentAccountId))
   const selected = list.find(item => Number(item.emailId) === Number(selectedEmailId.value)) || list[0]
   if (selected) openContent(selected)
   else {
@@ -150,6 +151,7 @@ function jumpContent(email) {
 }
 
 function openContent(email) {
+  if (Number(email.accountId) !== Number(accountStore.currentAccountId)) return
   emailStore.contentData.email = emailStore.toContentEmail(email)
   emailStore.contentData.delType = 'logic'
   emailStore.contentData.showStar = true
@@ -167,7 +169,8 @@ function cancelStar(email) {
 
 function getEmailList(emailId, size) {
   const accountId =  accountStore.currentAccountId;
-  const allReceive = accountStore.currentAccount.allReceive;
+  // Receiving-all is an inbox preference; sent mail must use the active identity.
+  const allReceive = 0;
   return emailStore.fetchList(full =>
     emailList(accountId, allReceive, emailId, params.timeSort, size, 1, full)
   ).then(data => {

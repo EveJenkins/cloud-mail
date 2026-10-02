@@ -471,7 +471,7 @@ function extractVerificationCode(item = {}) {
   if (!/(验证码|校验码|动态码|一次性密码|otp|verification\s*code|security\s*code|authentication\s*code)/i.test(source)) return ''
 
   const labelled = source.match(/(?:验证码|校验码|动态码|一次性密码|otp|verification\s*code|security\s*code|authentication\s*code)[^A-Z0-9]{0,20}([A-Z0-9]{4,8})/i)
-  return labelled?.[1] || source.match(/\b\d{4,8}\b/)?.[0] || ''
+  return (labelled?.[1] && /\d/.test(labelled[1]) ? labelled[1] : '') || source.match(/\b\d{4,8}\b/)?.[0] || ''
 }
 
 function mailCategory(item = {}) {
