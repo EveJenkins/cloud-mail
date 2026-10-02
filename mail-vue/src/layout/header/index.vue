@@ -28,8 +28,8 @@
     </div>
     <div v-if="canSwitch" class="mailbox-switcher" ref="mailboxSwitchRef">
       <button class="mailbox-trigger" type="button" :aria-label="settingStore.lang === 'zh' ? `切换邮箱，当前为 ${currentMailboxEmail}` : `Switch mailbox, current ${currentMailboxEmail}`" :aria-expanded="uiStore.accountShow" @click="toggleMailbox">
-        <span class="mailbox-initial">{{ currentMailboxName.charAt(0).toUpperCase() }}</span>
-        <span class="mailbox-label"><strong>{{ currentMailboxName }}</strong><small>{{ currentMailboxEmail }}</small></span>
+        <span class="mailbox-initial">{{ currentMailboxEmail.charAt(0).toUpperCase() }}</span>
+        <strong class="mailbox-label" :title="currentMailboxEmail">{{ currentMailboxEmail }}</strong>
         <Icon class="mailbox-chevron" icon="mingcute:down-small-fill" width="17" />
       </button>
       <transition name="mailbox-pop">
@@ -142,7 +142,6 @@ const mobileSearchOpen = ref(false)
 const mailboxSwitchRef = ref(null)
 const canSwitch = computed(() => hasPerm('account:query') && settingStore.settings.manyEmail === 0)
 const currentMailboxEmail = computed(() => accountStore.currentAccount?.email || userStore.user.email || '')
-const currentMailboxName = computed(() => accountStore.currentAccount?.name || currentMailboxEmail.value.split('@')[0] || 'Mail')
 const userDisplayName = computed(() => userStore.user.name || userStore.user.email?.split('@')[0] || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
 const roleName = computed(() => userStore.user.role?.name || (settingStore.lang === 'zh' ? '企业成员' : 'Member'))
 const routeTitle = computed(() => {
@@ -526,7 +525,7 @@ function formatName(email) {
   padding: 0 10px;
   font-size: 16px;
 }
-.header.has-switcher { grid-template-columns: auto minmax(200px, 1fr) minmax(170px, 240px) auto; }
+.header.has-switcher { grid-template-columns: auto minmax(160px, 1fr) minmax(280px, 380px) auto; }
 
 .brand { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .brand-mark { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: var(--brand-600); border-radius: var(--r-md); background: #fff; }
@@ -592,7 +591,7 @@ function formatName(email) {
 .mailbox-trigger {
   width: 100%;
   height: 38px;
-  padding: 3px 8px 3px 4px;
+  padding: 3px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -606,11 +605,8 @@ function formatName(email) {
 }
 .mailbox-trigger:hover, .mailbox-trigger[aria-expanded="true"] { background: var(--topbar-hover); border-color: rgba(255, 255, 255, .46); }
 .mailbox-trigger:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.mailbox-initial { width: 29px; height: 29px; flex: none; display: grid; place-items: center; color: var(--brand-600); background: #fff; border-radius: var(--r-sm); font-size: 12px; font-weight: 700; }
-.mailbox-label { min-width: 0; flex: 1; display: flex; flex-direction: column; line-height: 1.15; }
-.mailbox-label strong, .mailbox-label small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mailbox-label strong { font-size: 12px; font-weight: 700; }
-.mailbox-label small { margin-top: 2px; color: var(--topbar-fg-dim); font-size: 10px; }
+.mailbox-initial { width: 29px; height: 29px; flex: none; display: none; place-items: center; color: var(--brand-600); background: #fff; border-radius: var(--r-sm); font-size: 12px; font-weight: 700; }
+.mailbox-label { min-width: 0; flex: 1; overflow: hidden; font-size: 16px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .mailbox-chevron { flex: none; color: var(--topbar-fg-dim); }
 .mailbox-pop { position: absolute; top: calc(100% + 8px); right: 0; width: min(356px, calc(100vw - 20px)); color: var(--text); z-index: 110; }
 .mailbox-pop-enter-active, .mailbox-pop-leave-active { transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
@@ -714,6 +710,7 @@ function formatName(email) {
   .header.has-switcher { grid-template-columns: auto minmax(160px, 1fr) 38px auto; }
   .mailbox-switcher { width: 38px; }
   .mailbox-trigger { width: 38px; padding: 3px; justify-content: center; }
+  .mailbox-initial { display: grid; }
   .mailbox-label, .mailbox-chevron { display: none; }
 }
 
@@ -725,6 +722,7 @@ function formatName(email) {
   .mailbox-switcher { width: 34px; }
   .mailbox-trigger { width: 34px; height: 32px; padding: 3px; justify-content: center; }
   .mailbox-initial { width: 24px; height: 24px; }
+  .mailbox-initial { display: grid; }
   .mailbox-label, .mailbox-chevron { display: none; }
   .mailbox-pop { right: -48px; }
   .brand { gap: 0; }

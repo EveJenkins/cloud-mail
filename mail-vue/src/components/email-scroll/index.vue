@@ -1,19 +1,6 @@
 <template>
   <div class="email-container" :class="{ 'has-summary': props.showInboxSummary }">
     <div class="inbox-panel-head" v-if="props.showInboxSummary">
-      <div class="inbox-title-row">
-        <div>
-          <strong>{{ props.summaryTitle || (settingStore.lang === 'zh' ? '收件箱' : 'Inbox') }}</strong>
-          <span>{{ currentAccountLabel }}</span>
-        </div>
-        <div class="summary-status">
-          <span v-if="total">{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
-          <span class="sync-status" :class="{ failed: loadError }" role="status"><i></i>{{ lastSyncedLabel }}</span>
-          <button type="button" class="summary-refresh" :disabled="loading" :title="settingStore.lang === 'zh' ? '同步邮件' : 'Sync messages'" @click="refresh">
-            <Icon icon="solar:refresh-linear" width="16" height="16" :class="{ spinning: loading }" />
-          </button>
-        </div>
-      </div>
       <label class="inbox-search">
         <Icon icon="solar:magnifer-linear" width="16" height="16" />
         <input v-model.trim="searchKeyword" :placeholder="settingStore.lang === 'zh' ? '搜索…' : 'Search…'" :aria-label="settingStore.lang === 'zh' ? '搜索邮件' : 'Search messages'" />
@@ -21,6 +8,13 @@
           <Icon icon="solar:close-circle-linear" width="16" height="16" />
         </button>
       </label>
+      <div class="summary-status">
+        <span v-if="total">{{ settingStore.lang === 'zh' ? `${total} 封` : `${total} messages` }}</span>
+        <span class="sync-status" :class="{ failed: loadError }" role="status"><i></i>{{ lastSyncedLabel }}</span>
+        <button type="button" class="summary-refresh" :disabled="loading" :title="settingStore.lang === 'zh' ? '同步邮件' : 'Sync messages'" @click="refresh">
+          <Icon icon="solar:refresh-linear" width="16" height="16" :class="{ spinning: loading }" />
+        </button>
+      </div>
     </div>
     <div class="header-actions" v-if="!props.showInboxSummary">
       <el-checkbox
@@ -47,13 +41,6 @@
         <Icon v-if="showAccountIcon" class="more-icon icon" width="16" height="16" icon="akar-icons:dot-grid-fill"
               @click="changeAccountShow"/>
       </div>
-    </div>
-
-    <div class="inbox-summary" v-if="props.showInboxSummary">
-      <button class="summary-chip" :class="{ active: activeFilter === 'all' }" @click="activeFilter = 'all'">{{ settingStore.lang === 'zh' ? '全部' : 'All' }} <small>{{ total || emailList.length }}</small></button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'unread' }" @click="activeFilter = 'unread'">{{ settingStore.lang === 'zh' ? '未读' : 'Unread' }} <small>{{ unreadCount }}</small></button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'attachment' }" @click="activeFilter = 'attachment'">{{ settingStore.lang === 'zh' ? '含附件' : 'Attachments' }} <small>{{ attachmentCount }}</small></button>
-      <button class="summary-chip" :class="{ active: activeFilter === 'code' }" @click="activeFilter = 'code'">{{ settingStore.lang === 'zh' ? '验证码' : 'Codes' }} <small>{{ codeCount }}</small></button>
     </div>
 
     <div ref="scroll" class="scroll" :aria-busy="loading">
@@ -313,7 +300,6 @@ import {useEmailStore} from "@/store/email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useSettingStore} from "@/store/setting.js";
 import {mailListRows} from '@/utils/mail-list-state.js';
-import {useAccountStore} from "@/store/account.js";
 import {sleep} from "@/utils/time-utils.js"
 import {fromNow} from "@/utils/day.js";
 import {useI18n} from "vue-i18n";
@@ -410,7 +396,6 @@ const props = defineProps({
 const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search', 'list-loaded', 'filters-reset'])
 const {t} = useI18n()
 const settingStore = useSettingStore()
-const accountStore = useAccountStore()
 const uiStore = useUiStore();
 const emailStore = useEmailStore();
 const loading = ref(false);
@@ -577,24 +562,19 @@ const unreadCount = computed(() => emailList.filter(item => item.unread === Emai
 watch(unreadCount, value => {
   if (props.unreadBadge) uiStore.asideCount.email = Number(value) || 0
 }, { immediate: true, flush: 'post' })
-const attachmentCount = computed(() => emailList.filter(item => item.attList?.length > 0).length)
-const codeCount = computed(() => emailList.filter(item => extractVerificationCode(item)).length)
 const searchKeyword = ref('')
-const activeFilter = ref('all')
-const isFiltering = computed(() => Boolean(searchKeyword.value) || activeFilter.value !== 'all')
+const isFiltering = computed(() => Boolean(searchKeyword.value))
 
 watch(
   () => props.searchQuery,
   value => {
     searchKeyword.value = value || ''
-    if (value) activeFilter.value = 'all'
   },
   {immediate: true}
 )
 
 function resetFilters() {
   searchKeyword.value = ''
-  activeFilter.value = 'all'
   emit('filters-reset')
 }
 
@@ -602,7 +582,6 @@ function resetSearchOnly() {
   searchKeyword.value = ''
   emit('filters-reset')
 }
-const currentAccountLabel = computed(() => accountStore.currentAccount?.email || '')
 const lastSyncedLabel = computed(() => {
   if (loading.value) return settingStore.lang === 'zh' ? '正在同步…' : 'Syncing…'
   if (loadError.value) return settingStore.lang === 'zh' ? '同步失败' : 'Sync failed'
@@ -614,9 +593,6 @@ const lastSyncedLabel = computed(() => {
 const filteredEmails = computed(() => {
   const keyword = searchKeyword.value.toLocaleLowerCase()
   return emailList.filter(item => {
-    if (activeFilter.value === 'unread' && item.unread !== EmailUnreadEnum.UNREAD) return false
-    if (activeFilter.value === 'attachment' && !item.attList?.length) return false
-    if (activeFilter.value === 'code' && !extractVerificationCode(item)) return false
     if (!keyword) return true
     return [item.name, item.sendEmail, item.subject, item.listText, item.text, item.code]
       .some(value => String(value || '').toLocaleLowerCase().includes(keyword))
@@ -1528,16 +1504,16 @@ function loadData() {
     background-color: #c2dbff;
   }*/
 }
-.email-container.has-summary { grid-template-rows: auto auto minmax(0, 1fr); }
+.email-container.has-summary { grid-template-rows: auto minmax(0, 1fr); }
 
 .inbox-panel-head {
-  padding: 12px 16px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
-.inbox-title-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
-.inbox-title-row > div:first-child { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
-.inbox-title-row strong { flex: none; white-space: nowrap; color: var(--text); font-size: 17px; font-weight: 600; }
-.inbox-title-row > div:first-child span { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; overflow: hidden; color: var(--brand-600); background: var(--brand-soft); border-radius: 6px; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .summary-status { margin-left: auto; flex: none; display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 15px; }
 .retry-load { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); color: var(--brand-600); cursor: pointer; }
 .sync-status.failed { color: var(--danger); }
@@ -1550,39 +1526,17 @@ function loadData() {
 .summary-refresh:disabled { cursor: wait; opacity: .6; }
 .summary-refresh .spinning { animation: summary-spin .75s linear infinite; }
 @keyframes summary-spin { to { transform: rotate(360deg); } }
-.inbox-search { height: 34px; margin-top: 8px; padding: 0 10px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
+.inbox-search { min-width: 0; flex: 1; height: 34px; padding: 0 10px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
 .inbox-search:focus-within { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
 .inbox-search input { min-width: 0; flex: 1; color: var(--text); background: transparent; font-size: 16px; }
 .inbox-search input::placeholder { color: var(--text-3); }
 .search-clear { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 6px; }
 
-.inbox-summary {
-  display: flex;
-  gap: 6px;
-  padding: 8px 14px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  scrollbar-width: none;
+@media (max-width: 600px) {
+  .inbox-panel-head { flex-wrap: wrap; }
+  .inbox-search { flex-basis: 100%; }
+  .summary-status { width: 100%; justify-content: flex-end; }
 }
-.inbox-summary::-webkit-scrollbar { display: none; }
-.summary-chip {
-  border: 1px solid transparent;
-  flex: 0 0 auto;
-  height: 30px;
-  padding: 0 11px;
-  border-radius: var(--r-md);
-  color: var(--text-2);
-  background: var(--surface-3);
-  font-size: 15px;
-  line-height: 28px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-.summary-chip:hover { color: var(--brand-600); }
-.summary-chip.active { color: var(--brand-600); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand-500) 32%, transparent); font-weight: 500; }
-.summary-chip small { margin-left: 3px; font-size: 10.5px; opacity: .72; }
 
 :deep(.sender-avatar) {
   width: 32px;
