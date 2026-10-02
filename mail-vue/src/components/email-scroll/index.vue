@@ -1507,14 +1507,14 @@ function loadData() {
 .email-container.has-summary { grid-template-rows: auto minmax(0, 1fr); }
 
 .inbox-panel-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
-.summary-status { margin-left: auto; flex: none; display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 15px; }
+.summary-status { min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 7px; color: var(--text-3); font-size: 15px; }
 .retry-load { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); color: var(--brand-600); cursor: pointer; }
 .sync-status.failed { color: var(--danger); }
 .sync-status.failed i { background: var(--danger); box-shadow: none; }
@@ -1526,17 +1526,11 @@ function loadData() {
 .summary-refresh:disabled { cursor: wait; opacity: .6; }
 .summary-refresh .spinning { animation: summary-spin .75s linear infinite; }
 @keyframes summary-spin { to { transform: rotate(360deg); } }
-.inbox-search { min-width: 0; flex: 1; height: 34px; padding: 0 10px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
+.inbox-search { min-width: 0; width: 100%; height: 34px; padding: 0 10px; display: flex; align-items: center; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
 .inbox-search:focus-within { border-color: var(--brand-500); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
 .inbox-search input { min-width: 0; flex: 1; color: var(--text); background: transparent; font-size: 16px; }
 .inbox-search input::placeholder { color: var(--text-3); }
 .search-clear { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 6px; }
-
-@media (max-width: 600px) {
-  .inbox-panel-head { flex-wrap: wrap; }
-  .inbox-search { flex-basis: 100%; }
-  .summary-status { width: 100%; justify-content: flex-end; }
-}
 
 :deep(.sender-avatar) {
   width: 32px;

@@ -42,6 +42,7 @@
     </template>
       </emailScroll>
     </section>
+    <MailPaneDivider v-if="isDesktop" />
     <section class="draft-preview-pane" v-if="isDesktop">
       <div class="draft-header-actions" v-if="selectedDraft">
         <button
@@ -104,6 +105,7 @@ import {Icon} from "@iconify/vue";
 import ShadowHtml from '@/components/shadow-html/index.vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import MailPreviewEmpty from '@/components/mail-preview-empty/index.vue'
+import MailPaneDivider from '@/components/mail-pane-divider/index.vue'
 
 defineOptions({
   name: 'draft'
@@ -238,7 +240,7 @@ function editSelectedDraft() {
 
 </script>
 <style lang="scss" scoped>
-.draft-workspace { height: 100%; min-width: 0; background: var(--reading-surface); }
+.draft-workspace { position: relative; height: 100%; min-width: 0; background: var(--reading-surface); }
 .draft-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
 .mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
 .draft-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }

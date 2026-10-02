@@ -32,6 +32,7 @@
     </template>
       </emailScroll>
     </section>
+    <MailPaneDivider v-if="isDesktop" />
     <section class="mail-preview-pane" v-if="isDesktop">
       <Content v-if="selectedEmailId" :key="`sent:${accountStore.currentAccountId}:${selectedEmailId}`" embedded @close="selectedEmailId = null" />
       <MailPreviewEmpty
@@ -61,6 +62,7 @@ import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import Content from '@/views/content/index.vue'
 import MailPreviewEmpty from '@/components/mail-preview-empty/index.vue'
+import MailPaneDivider from '@/components/mail-pane-divider/index.vue'
 import {useUiStore} from '@/store/ui.js'
 
 defineOptions({
@@ -185,7 +187,7 @@ function getEmailList(emailId, size) {
 </script>
 
 <style lang="scss" scoped>
-.sent-workspace { height: 100%; min-width: 0; background: var(--reading-surface); }
+.sent-workspace { position: relative; height: 100%; min-width: 0; background: var(--reading-surface); }
 .sent-workspace.with-preview { display: grid; grid-template-columns: var(--mail-list-w) minmax(0, 1fr); }
 .mail-list-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--mail-list-surface); border-right: 1px solid var(--border); }
 .mail-preview-pane { min-width: 0; height: 100%; overflow: hidden; background: var(--reading-surface); }
