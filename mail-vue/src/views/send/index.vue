@@ -105,6 +105,7 @@ onActivated(async () => {
 })
 
 function syncSelection() {
+  if (router.currentRoute.value.name !== 'send') return
   const list = (sendScroll.value?.emailList || []).filter(item =>
     Number(item.accountId) === Number(accountStore.currentAccountId))
   const selected = list.find(item => Number(item.emailId) === Number(selectedEmailId.value)) || list[0]
@@ -116,7 +117,7 @@ function syncSelection() {
 }
 
 watch(() => sendScroll.value?.emailList?.[0]?.emailId, () => {
-  if (isDesktop.value && !selectedEmailId.value && sendScroll.value?.emailList?.length) {
+  if (router.currentRoute.value.name === 'send' && isDesktop.value && !selectedEmailId.value && sendScroll.value?.emailList?.length) {
     syncSelection()
   }
 })
@@ -124,7 +125,7 @@ watch(() => sendScroll.value?.emailList?.[0]?.emailId, () => {
 watch(
   () => [selectedEmailId.value, emailStore.contentData.email],
   () => {
-    if (!isDesktop.value || !selectedEmailId.value) return
+    if (router.currentRoute.value.name !== 'send' || !isDesktop.value || !selectedEmailId.value) return
     const selected = sendScroll.value?.emailList?.find(item => Number(item.emailId) === Number(selectedEmailId.value))
     if (!selected) return
     if (!emailStore.sameEmailIdentity(selected, emailStore.contentData.email)) openContent(selected)
@@ -134,7 +135,7 @@ watch(
 
 watch(() => accountStore.currentAccountId, () => {
   selectedEmailId.value = null
-  emailStore.clearIdentityCache()
+  if (router.currentRoute.value.name === 'send') emailStore.clearIdentityCache()
   sendScroll.value.resetList?.()
   sendScroll.value.refreshList();
 })
@@ -151,6 +152,7 @@ function jumpContent(email) {
 }
 
 function openContent(email) {
+  if (router.currentRoute.value.name !== 'send' || Number(email.type) !== 1) return
   if (Number(email.accountId) !== Number(accountStore.currentAccountId)) return
   emailStore.contentData.email = emailStore.toContentEmail(email)
   emailStore.contentData.delType = 'logic'

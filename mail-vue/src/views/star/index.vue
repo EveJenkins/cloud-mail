@@ -78,6 +78,7 @@ function jumpContent(email) {
 }
 
 function openContent(email) {
+  if (router.currentRoute.value.name !== 'star') return
   emailStore.contentData.email = emailStore.toContentEmail(email)
   emailStore.contentData.delType = 'logic'
   emailStore.contentData.showStar = true
@@ -89,7 +90,7 @@ function openContent(email) {
 watch(() => accountStore.currentAccountId, async (accountId, previousAccountId) => {
   if (Number(accountId) === Number(previousAccountId)) return
   selectedEmailId.value = null
-  emailStore.clearIdentityCache()
+  if (router.currentRoute.value.name === 'star') emailStore.clearIdentityCache()
   scroll.value.resetList?.()
   await nextTick()
   await scroll.value.refreshList?.()
@@ -123,6 +124,7 @@ onActivated(async () => {
 })
 
 function syncSelection() {
+  if (router.currentRoute.value.name !== 'star') return
   const list = scroll.value?.emailList || []
   const selected = list.find(item => Number(item.emailId) === Number(selectedEmailId.value)) || list[0]
   if (selected) openContent(selected)
@@ -133,7 +135,7 @@ function syncSelection() {
 }
 
 watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
-  if (isDesktop.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
+  if (router.currentRoute.value.name === 'star' && isDesktop.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
     syncSelection()
   }
 })
@@ -141,7 +143,7 @@ watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
 watch(
   () => [selectedEmailId.value, emailStore.contentData.email],
   () => {
-    if (!isDesktop.value || !selectedEmailId.value) return
+    if (router.currentRoute.value.name !== 'star' || !isDesktop.value || !selectedEmailId.value) return
     const selected = scroll.value?.emailList?.find(item => Number(item.emailId) === Number(selectedEmailId.value))
     if (!selected) return
     if (!emailStore.sameEmailIdentity(selected, emailStore.contentData.email)) openContent(selected)

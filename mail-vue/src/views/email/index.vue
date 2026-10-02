@@ -19,6 +19,7 @@
                :selected-id="selectedEmailId"
                actionLeft="4px"
                @jump="jumpContent"
+               @list-loaded="syncSelection"
                @filters-reset="clearRouteSearch"
   >
     <template #first>
@@ -65,7 +66,7 @@ import {useUiStore} from "@/store/ui.js";
 import emailScroll from "@/components/email-scroll/index.vue"
 import {emailList, emailDelete, emailLatest, emailRead} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {computed, defineOptions, h, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
+import {computed, defineOptions, h, nextTick, onActivated, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
@@ -107,24 +108,30 @@ const handleViewport = () => {
 onMounted(() => {
   emailStore.emailScroll = scroll;
   window.addEventListener('resize', handleViewport)
-  const persisted = emailStore.contentData.email
-  if (isDesktop.value && persisted?.emailId && (!persisted.accountId || Number(persisted.accountId) === Number(accountStore.currentAccountId))) {
-    selectedEmailId.value = persisted.emailId
-  }
   latest()
 })
+
+onActivated(async () => {
+  await nextTick()
+  syncSelection()
+})
+
+function syncSelection() {
+  if (route.name !== 'email' || !isDesktop.value || switchingInbox.value) return
+  const list = scroll.value?.emailList || []
+  const selected = list.find(item => Number(item.emailId) === Number(selectedEmailId.value))
+    || list.find(item => emailStore.sameEmailIdentity(item, emailStore.contentData.email))
+    || list[0]
+  if (selected) openContent(selected)
+  else {
+    selectedEmailId.value = null
+    emailStore.clearContent()
+  }
+}
 
 onBeforeUnmount(() => {
   refreshLoopActive = false
   window.removeEventListener('resize', handleViewport)
-})
-
-watch(() => scroll.value?.emailList?.[0]?.emailId, () => {
-  if (isDesktop.value && !switchingInbox.value && !selectedEmailId.value && scroll.value?.emailList?.length) {
-    const persistedId = emailStore.contentData.email?.emailId
-    const persisted = scroll.value.emailList.find(item => Number(item.emailId) === Number(persistedId))
-    openContent(persisted || scroll.value.emailList[0])
-  }
 })
 
 watch(
@@ -136,7 +143,7 @@ watch(
     emailStore.contentData.email?.subject,
   ],
   () => {
-    if (!isDesktop.value || switchingInbox.value || !selectedEmailId.value) return
+    if (route.name !== 'email' || !isDesktop.value || switchingInbox.value || !selectedEmailId.value) return
     const selected = scroll.value?.emailList?.find(item => Number(item.emailId) === Number(selectedEmailId.value))
     if (!selected) {
       selectedEmailId.value = null
@@ -155,13 +162,13 @@ watch(() => accountStore.currentAccountId, async (accountId, previousAccountId) 
   if (Number(accountId) === Number(previousAccountId)) return
   switchingInbox.value = true
   selectedEmailId.value = null
-  emailStore.clearIdentityCache()
+  if (route.name === 'email') emailStore.clearIdentityCache()
   scroll.value.resetList?.()
   await nextTick()
   try {
     await scroll.value.refreshList?.()
     const firstEmail = scroll.value.emailList?.[0]
-    if (firstEmail && Number(accountStore.currentAccountId) === Number(accountId)) openContent(firstEmail)
+    if (route.name === 'email' && firstEmail && Number(accountStore.currentAccountId) === Number(accountId)) openContent(firstEmail)
   } finally {
     switchingInbox.value = false
   }
@@ -191,6 +198,7 @@ function jumpContent(email) {
 }
 
 function openContent(email) {
+  if (route.name !== 'email' || Number(email.type) !== 0) return
   emailStore.contentData.email = emailStore.toContentEmail(email)
   emailStore.contentData.delType = 'logic'
   emailStore.contentData.showUnread = true
