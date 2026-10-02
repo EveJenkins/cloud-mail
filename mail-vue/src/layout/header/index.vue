@@ -150,6 +150,7 @@ const routeTitle = computed(() => {
     email: zh ? '收件箱' : 'Inbox',
     content: zh ? '邮件详情' : 'Message',
     star: zh ? '星标邮件' : 'Starred',
+    deleted: zh ? '已删除' : 'Deleted',
     send: zh ? '已发送' : 'Sent',
     draft: zh ? '草稿箱' : 'Drafts',
     contacts: zh ? '通讯录' : 'Contacts',

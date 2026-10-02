@@ -36,7 +36,7 @@ const emailService = {
 
 	async list(c, params, userId) {
 
-		let { emailId, type, accountId, size, timeSort, full } = params;
+		let { emailId, type, accountId, size, timeSort, full, deleted } = params;
 
 		size = Number(size);
 		type = Number(type);
@@ -44,8 +44,10 @@ const emailService = {
 		timeSort = Number(timeSort);
 		accountId = Number(accountId);
 		full = Number(full);
+		deleted = Number(deleted) === 1;
+		if (deleted) type = 2;
 
-		if (isNaN(type)) {
+		if (!deleted && type !== emailConst.type.RECEIVE && type !== emailConst.type.SEND) {
 			type = 0;
 		}
 
@@ -67,8 +69,8 @@ const emailService = {
 			size = 50;
 		}
 
-		const filters = this.emailListFilters({ userId, accountId, type, emailId, timeSort });
-		const countFilters = this.emailListFilters({ userId, accountId, type, withCursor: false });
+		const filters = this.emailListFilters({ userId, accountId, type, emailId, timeSort, deleted });
+		const countFilters = this.emailListFilters({ userId, accountId, type, withCursor: false, deleted });
 		const columns = full ? emailListColumns : emailBriefColumns;
 
 		const query = orm(c)
@@ -106,7 +108,7 @@ const emailService = {
 			.where(and(...countFilters))
 			.get();
 
-		const latestEmailQuery = orm(c).select({
+		const latestEmailQuery = deleted ? Promise.resolve(null) : orm(c).select({
 			emailId: email.emailId,
 			accountId: email.accountId,
 			userId: email.userId,
@@ -217,13 +219,13 @@ const emailService = {
 		return list;
 	},
 
-	emailListFilters({ userId, accountId, type, emailId, timeSort, withCursor = true }) {
+	emailListFilters({ userId, accountId, type, emailId, timeSort, deleted = false, withCursor = true }) {
 		const conditions = [
 			eq(email.userId, userId),
-			eq(email.type, type),
-			eq(email.isDel, isDel.NORMAL),
+			eq(email.isDel, deleted ? isDel.DELETE : isDel.NORMAL),
 			eq(account.isDel, isDel.NORMAL),
 		];
+		if (type !== 2) conditions.push(eq(email.type, type));
 		conditions.push(eq(email.accountId, accountId));
 		if (withCursor && emailId) {
 			conditions.push(timeSort ? gt(email.emailId, emailId) : lt(email.emailId, emailId));
@@ -299,6 +301,19 @@ const emailService = {
 				eq(email.userId, userId),
 				inArray(email.emailId, emailIdList)))
 			.run();
+	},
+
+	async restore(c, params, userId) {
+		const accountId = Number(params?.accountId);
+		const emailIds = [...new Set((Array.isArray(params?.emailIds) ? params.emailIds : []).map(Number).filter(id => Number.isInteger(id) && id > 0))];
+		if (!Number.isInteger(accountId) || accountId <= 0 || !emailIds.length) throw new BizError(t('notExistEmailReply'), 400);
+		const restored = await orm(c).update(email).set({ isDel: isDel.NORMAL }).where(and(
+			eq(email.userId, userId),
+			eq(email.accountId, accountId),
+			eq(email.isDel, isDel.DELETE),
+			inArray(email.emailId, emailIds)
+		)).returning({ emailId: email.emailId }).all();
+		if (!restored.length) throw new BizError(t('notExistEmailReply'), 404);
 	},
 
 	receive(c, params, cidAttList, r2domain) {

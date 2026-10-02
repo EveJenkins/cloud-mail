@@ -702,7 +702,7 @@ function visibleChange(e) {
 
 const handleContextmenu = (event, email) => {
 
-  if (props.type === 'draft') {
+  if (props.type === 'draft' || props.type === 'trash') {
     return
   }
 

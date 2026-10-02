@@ -3,7 +3,8 @@
     <div class="header-actions">
       <div class="action-group">
         <button v-if="!embedded" class="detail-action icon-only" :title="settingStore.lang === 'zh' ? '返回' : 'Back'" @click="handleBack"><Icon icon="material-symbols-light:arrow-back-ios-new" width="18" /></button>
-        <button v-perm="'email:delete'" class="detail-action icon-only" :title="$t('delete')" @click="handleDelete"><Icon icon="uiw:delete" width="16" /></button>
+        <button v-if="!isTrash" v-perm="'email:delete'" class="detail-action icon-only" :title="$t('delete')" @click="handleDelete"><Icon icon="uiw:delete" width="16" /></button>
+        <button v-else v-perm="'email:delete'" class="detail-action" type="button" :disabled="restoring" @click="handleRestore"><Icon icon="solar:restart-linear" width="17" />{{ restoring ? (settingStore.lang === 'zh' ? '恢复中…' : 'Restoring…') : $t('restore') }}</button>
         <button class="detail-action icon-only" v-if="emailStore.contentData.showStar" :title="$t('star')" @click="changeStar">
           <Icon v-if="email.isStar" icon="fluent-color:star-16" width="19" />
           <Icon v-else icon="solar:star-line-duotone" width="18" />
@@ -272,7 +273,7 @@ import ShadowHtml from '@/components/shadow-html/index.vue'
 import {computed, reactive, ref, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox, ElNotification} from 'element-plus'
-import {emailAiCompose, emailAiReply, emailDelete, emailList, emailRead, emailSend, emailThread} from "@/request/email.js";
+import {emailAiCompose, emailAiReply, emailDelete, emailList, emailRead, emailRestore, emailSend, emailThread} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
@@ -297,7 +298,7 @@ const props = defineProps({
     default: false,
   },
 })
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'restored'])
 const embedded = computed(() => props.embedded)
 
 const uiStore = useUiStore();
@@ -314,6 +315,8 @@ const email = computed(() => emailStore.contentData.email || {
   text: '',
   recipient: '[]',
 })
+const isTrash = computed(() => emailStore.contentData.delType === 'trash')
+const restoring = ref(false)
 const showPreview = ref(false)
 const srcList = reactive([])
 const quickReply = ref('')
@@ -571,6 +574,10 @@ async function loadThreadFallback(emailId) {
 
 async function loadThread() {
   const emailId = email.value?.emailId
+  if (isTrash.value) {
+    threadMessages.value = []
+    return
+  }
   if (!emailId) {
     threadMessages.value = []
     return
@@ -1012,6 +1019,22 @@ const handleDelete = () => {
     if (props.embedded) emit('close')
     else router.back()
   })
+}
+
+async function handleRestore() {
+  if (!isTrash.value || !email.value?.emailId || restoring.value) return
+  restoring.value = true
+  const emailId = email.value.emailId
+  try {
+    await emailRestore([emailId], accountStore.currentAccountId)
+    ElMessage({ message: t('restoreSuccessMsg'), type: 'success', plain: true })
+    emailStore.deleteIds = [emailId]
+    emit('restored', emailId)
+    if (props.embedded) emit('close')
+    else router.back()
+  } finally {
+    restoring.value = false
+  }
 }
 </script>
 <style scoped lang="scss">

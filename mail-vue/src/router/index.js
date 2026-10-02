@@ -81,6 +81,12 @@ const routes = [
                     menu: true
                 }
             },
+            {
+                path: '/deleted',
+                name: 'deleted',
+                component: () => import('@/views/deleted/index.vue'),
+                meta: { title: 'deleted', name: 'deleted', menu: true }
+            },
         ]
 
     },

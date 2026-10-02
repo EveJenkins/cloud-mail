@@ -26,7 +26,7 @@ import { computed } from 'vue'
 const route = useRoute()
 const uiStore = useUiStore()
 const settingStore = useSettingStore()
-const mailSectionActive = computed(() => ['email', 'content', 'star', 'send', 'draft'].includes(route.meta.name))
+const mailSectionActive = computed(() => ['email', 'content', 'star', 'send', 'draft', 'deleted'].includes(route.meta.name))
 const go = name => router.push({ name })
 const compose = () => uiStore.writerRef?.open?.()
 </script>

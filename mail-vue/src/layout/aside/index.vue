@@ -32,6 +32,11 @@
           <Icon icon="ep:document" width="17" height="17" />
           <span class="menu-name">{{ $t('drafts') }}</span>
         </el-menu-item>
+        <el-menu-item @click="router.push({name: 'deleted'})" index="deleted"
+                      :class="route.meta.name === 'deleted' ? 'choose-item' : ''">
+          <Icon icon="solar:trash-bin-trash-linear" width="18" height="18" />
+          <span class="menu-name">{{ settingStore.lang === 'zh' ? '已删除' : 'Deleted' }}</span>
+        </el-menu-item>
 
         <div class="group-title">{{ settingStore.lang === 'zh' ? '其他' : 'OTHER' }}</div>
         <el-menu-item @click="router.push({name: 'contacts'})" index="contacts"
