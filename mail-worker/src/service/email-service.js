@@ -489,6 +489,7 @@ const emailService = {
 		emailData.text = text;
 		emailData.accountId = accountId;
 		// Provider acceptance is not proof of delivery; on-site mail is delivered immediately.
+		// Keep external mail in SENT until a provider delivery event is received.
 		emailData.status = allInternal ? emailConst.status.DELIVERED : emailConst.status.SENT;
 		emailData.type = emailConst.type.SEND;
 		emailData.userId = userId;
