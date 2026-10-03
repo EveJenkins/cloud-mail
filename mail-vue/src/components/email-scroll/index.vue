@@ -1066,10 +1066,10 @@ function handleList(list) {
     email.test = t('received')
     const statusIconMap = {
       0: { icon: 'ic:round-mark-email-read', color: 'var(--success)', content: t('received') },
-      1: { icon: 'bi:send-arrow-up-fill',  color: 'var(--success)', content: t('sent') },
-      2: { icon: 'bi:send-check-fill',     color: 'var(--success)', content: t('delivered') },
-      3: { icon: 'bi:send-x-fill',         color: 'var(--danger)', content: t('bounced') },
-      8: { icon: 'bi:send-x-fill',         color: 'var(--danger)', content: t('bounced') },
+      1: { icon: 'bi:send-arrow-up-fill',  color: 'var(--brand-600)', content: settingStore.lang === 'zh' ? '待确认送达' : 'Delivery pending' },
+      2: { icon: 'bi:send-check-fill',     color: 'var(--success)', content: settingStore.lang === 'zh' ? '已送达' : 'Delivered' },
+      3: { icon: 'bi:send-x-fill',         color: 'var(--danger)', content: settingStore.lang === 'zh' ? '已退信' : 'Bounced' },
+      8: { icon: 'bi:send-x-fill',         color: 'var(--danger)', content: t('sendFailMsg') },
       4: { icon: 'bi:send-exclamation-fill', color: 'var(--warning)', content: t('complained') },
       5: { icon: 'bi:send-arrow-up-fill',  color: 'var(--warning)', content: t('delayed') },
       7: { icon: 'ic:round-mark-email-read', color: 'var(--warning)', content: t('noRecipient') },

@@ -44,6 +44,7 @@
               </div>
             </div>
             <el-alert v-if="email.status === 3" :closable="false" :title="toMessage(email.message)" class="email-msg" type="error" show-icon />
+            <el-alert v-if="email.status === 8" :closable="false" :title="toMessage(email.message) || (settingStore.lang === 'zh' ? '发送失败' : 'Sending failed')" class="email-msg" type="error" show-icon />
             <el-alert v-if="email.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
             <el-alert v-if="email.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
           </div>
@@ -245,6 +246,12 @@
             <div class="trace-item">
               <span class="trace-dot success"></span>
               <span>{{ Number(email.type) === 1 ? (settingStore.lang === 'zh' ? '邮件已提交发送' : 'Message submitted for sending') : (settingStore.lang === 'zh' ? '邮件已由 Cloudflare Email Routing 接收' : 'Accepted by Cloudflare Email Routing') }}</span>
+            </div>
+            <div v-if="Number(email.type) === 1" class="delivery-summary">{{ deliveryHeadline }}</div>
+            <div v-for="item in deliveryRecipients" :key="item.address" class="delivery-recipient">
+              <span class="delivery-recipient-address">{{ item.address }}</span>
+              <span :class="['delivery-recipient-state', item.status]">{{ deliveryStateLabel(item.status) }}</span>
+              <small v-if="item.reason" :title="item.reason">{{ item.reason }}</small>
             </div>
             <div class="trace-item" v-if="detectedCode">
               <span class="trace-dot success"></span>
@@ -508,10 +515,38 @@ function threadStatus(item) {
     return {label: settingStore.lang === 'zh' ? '已接收' : 'Received', icon: 'solar:inbox-in-linear', className: 'received', failed: false}
   }
   const status = Number(item.status)
-  if ([3, 8].includes(status)) return {label: settingStore.lang === 'zh' ? '发送失败' : 'Failed', icon: 'solar:danger-triangle-linear', className: 'failed', failed: true}
+  if (status === 3) return {label: settingStore.lang === 'zh' ? '已退信' : 'Bounced', icon: 'solar:danger-triangle-linear', className: 'failed', failed: true}
+  if (status === 8) return {label: settingStore.lang === 'zh' ? '发送失败' : 'Failed', icon: 'solar:danger-triangle-linear', className: 'failed', failed: true}
+  if (status === 4) return {label: settingStore.lang === 'zh' ? '被投诉' : 'Complained', icon: 'solar:danger-triangle-linear', className: 'failed', failed: false}
   if (status === 5) return {label: settingStore.lang === 'zh' ? '发送延迟' : 'Delayed', icon: 'solar:clock-circle-linear', className: 'delayed', failed: false}
   if (status === 2) return {label: settingStore.lang === 'zh' ? '已送达' : 'Delivered', icon: 'solar:check-circle-linear', className: 'delivered', failed: false}
-  return {label: settingStore.lang === 'zh' ? '已发送' : 'Sent', icon: 'solar:plain-2-linear', className: 'sent', failed: false}
+  return {label: settingStore.lang === 'zh' ? '待确认送达' : 'Delivery pending', icon: 'solar:plain-2-linear', className: 'sent', failed: false}
+}
+
+const deliveryData = computed(() => {
+  try { return JSON.parse(email.value.message || '{}').delivery || null }
+  catch { return null }
+})
+const deliveryRecipients = computed(() => {
+  if (Number(email.value.type) !== 1 || !deliveryData.value) return []
+  const addresses = [email.value.recipient, email.value.cc, email.value.bcc].flatMap(value => {
+    try { return (typeof value === 'string' ? JSON.parse(value || '[]') : value || []).map(item => item.address || item.email || item) }
+    catch { return [] }
+  })
+  return addresses.map(address => ({address, ...(deliveryData.value.recipients?.[address.toLowerCase()] || {status: 'pending'})}))
+})
+const deliveryHeadline = computed(() => {
+  if (Number(email.value.status) === 2) return settingStore.lang === 'zh' ? '全部收件人已送达' : 'Delivered to all recipients'
+  if (Number(email.value.status) === 3) return settingStore.lang === 'zh' ? '有收件人被退信' : 'One or more recipients bounced'
+  if (Number(email.value.status) === 8) return settingStore.lang === 'zh' ? '发送失败' : 'Sending failed'
+  if (Number(email.value.status) === 4) return settingStore.lang === 'zh' ? '收件人已将邮件标记为垃圾邮件' : 'A recipient reported this message as spam'
+  if (Number(email.value.status) === 5) return settingStore.lang === 'zh' ? '投递延迟，服务商正在重试' : 'Delivery delayed; provider retrying'
+  return settingStore.lang === 'zh' ? '服务商已接收，等待送达确认' : 'Accepted by provider; awaiting delivery confirmation'
+})
+function deliveryStateLabel(status) {
+  const zh = {pending: '待确认', delivered: '已送达', delayed: '延迟中', bounced: '已退信', failed: '发送失败', complained: '已投诉'}
+  const en = {pending: 'Pending', delivered: 'Delivered', delayed: 'Delayed', bounced: 'Bounced', failed: 'Failed', complained: 'Complained'}
+  return (settingStore.lang === 'zh' ? zh : en)[status] || status
 }
 
 function canRetryThreadMessage(item) {
@@ -925,7 +960,8 @@ async function sendQuickReply() {
 }
 
 function toMessage(message) {
-  return  message ? JSON.parse(message).message : '';
+  if (!message) return ''
+  try { return JSON.parse(message).message || '' } catch { return String(message) }
 }
 
 function formatImage(content) {
@@ -1267,6 +1303,14 @@ async function handleRestore() {
   }
   .trace-heading { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--text); font-size: var(--font-card-title); }
   .trace-item { display: flex; align-items: center; gap: 9px; min-height: 30px; font-size: var(--font-read-meta); }
+  .delivery-summary { margin: 8px 0; color: var(--text-2); font-size: var(--font-read-meta); font-weight: 650; }
+  .delivery-recipient { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 0; border-top: 1px solid var(--border); font-size: var(--font-read-meta); }
+  .delivery-recipient-address { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+  .delivery-recipient-state { color: var(--text-3); white-space: nowrap; }
+  .delivery-recipient-state.delivered { color: var(--success); }
+  .delivery-recipient-state.bounced, .delivery-recipient-state.failed { color: var(--danger); }
+  .delivery-recipient-state.delayed { color: var(--warning); }
+  .delivery-recipient small { width: 100%; color: var(--text-3); overflow-wrap: anywhere; }
   .trace-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; }
   .trace-dot.success { background: var(--success); }
   .trace-dot.brand { background: var(--brand-500); }

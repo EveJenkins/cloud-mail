@@ -24,6 +24,17 @@ export default {
 		return env.assets.fetch(req);
 	},
 	email: email,
+	async queue(batch, env) {
+		for (const message of batch.messages) {
+			try {
+				await emailService.recordCloudflareDeliveryEvent({env}, message.body)
+				message.ack()
+			} catch (error) {
+				console.error('Email delivery event processing failed', error)
+				message.retry()
+			}
+		}
+	},
 	async scheduled(c, env, ctx) {
 		if (c.cron === '*/30 * * * *') {
 			await analysisService.refreshEchartsCache({ env })
@@ -33,6 +44,7 @@ export default {
 		await verifyRecordService.clearRecord({ env })
 		await userService.resetDaySendCount({ env })
 		await emailService.completeReceiveAll({ env })
+		await emailService.refreshResendDeliveryStatuses({ env })
 		await emailService.autoClean({ env })
 		await analysisService.refreshEchartsCache({ env })
 		await oauthService.clearNoBindOathUser({ env })

@@ -24,6 +24,7 @@ import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
 import {normalizeSendRecipients, recipientMetadata} from '../lib/send-recipients.mjs';
+import {applyCloudflareDeliveryEvent} from '../lib/delivery-status.mjs';
 
 function emailReferenceTokens(...values) {
 	return [...new Set(values
@@ -968,7 +969,62 @@ const emailService = {
 		return orm(c).update(email).set({
 			status: status,
 			message: message
-		}).where(eq(email.resendEmailId, resendEmailId)).returning().get();
+		}).where(and(
+			eq(email.resendEmailId, resendEmailId),
+			status === emailConst.status.DELAYED
+				? inArray(email.status, [emailConst.status.SENT, emailConst.status.DELAYED])
+				: inArray(email.status, [emailConst.status.SENT, emailConst.status.DELAYED, emailConst.status.DELIVERED])
+		)).returning().get();
+	},
+
+	async refreshResendDeliveryStatuses(c) {
+		const {resendTokens} = await settingService.query(c)
+		const rows = await c.env.db.prepare(`
+			SELECT email_id, resend_email_id, send_email, status
+			FROM email
+			WHERE resend_email_id IS NOT NULL AND status IN (?, ?)
+			  AND create_time >= datetime('now', '-7 days')
+			ORDER BY email_id DESC LIMIT 50
+		`).bind(emailConst.status.SENT, emailConst.status.DELAYED).all()
+		for (const row of rows.results || []) {
+			const token = resendTokens[emailUtils.getDomain(row.send_email || '')]
+			if (!token) continue
+			try {
+				const {data, error} = await new Resend(token).emails.get(row.resend_email_id)
+				if (error || !data) continue
+				const lastEvent = data.last_event
+				const status = ({delivered: 2, opened: 2, clicked: 2, bounced: 3,
+					complained: 4, delivery_delayed: 5, failed: 8, suppressed: 8})[lastEvent]
+				if (status === undefined || status === row.status) continue
+				await c.env.db.prepare('UPDATE email SET status = ?, message = ? WHERE email_id = ? AND status = ?')
+					.bind(status, JSON.stringify({message: `Resend: ${lastEvent}`}), row.email_id, row.status).run()
+			} catch (error) {
+				console.error('Could not refresh Resend delivery status', row.email_id, error)
+			}
+		}
+	},
+
+	async recordCloudflareDeliveryEvent(c, event) {
+		const messageId = String(event?.payload?.messageId || '')
+		if (!messageId || !event?.type?.startsWith('cf.email.sending.message.')) return false
+		for (let attempt = 0; attempt < 5; attempt++) {
+			const row = await c.env.db.prepare(
+				'SELECT email_id, message, recipient, cc, bcc FROM email WHERE message_id = ? AND type = ? LIMIT 1'
+			).bind(messageId, emailConst.type.SEND).first()
+			if (!row) throw new Error(`Sent email ${messageId} is not saved yet`)
+			const parseAddresses = value => {
+				try { return JSON.parse(value || '[]').map(item => item.address || item.email || item).filter(Boolean) }
+				catch { return [] }
+			}
+			const addresses = [...parseAddresses(row.recipient), ...parseAddresses(row.cc), ...parseAddresses(row.bcc)]
+			const update = applyCloudflareDeliveryEvent(row.message, event, addresses)
+			if (!update) return false
+			const result = await c.env.db.prepare(
+				'UPDATE email SET status = ?, message = ? WHERE email_id = ? AND message IS ?'
+			).bind(update.status, update.message, row.email_id, row.message).run()
+			if (result.meta?.changes) return true
+		}
+		throw new Error(`Could not update delivery status for ${messageId}`)
 	},
 
 	async selectUserEmailCountList(c, userIds, type, del = isDel.NORMAL) {

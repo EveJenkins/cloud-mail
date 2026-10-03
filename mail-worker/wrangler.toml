@@ -23,6 +23,9 @@ enabled = true
 #name = "email"			#Cloudflare Email Service 发件；先在控制台启用发件域名，再取消这两行注释
 #remote = true			#本地开发时会发送真实邮件；不需要真实发送则保持注释
 
+[[queues.consumers]]
+queue = "cloud-mail-delivery-events"
+
 [ai]
 binding = "ai"
 

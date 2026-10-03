@@ -98,6 +98,8 @@ const dbInit = {
 				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_saving_account ON email(account_id) WHERE status = 6`),
 				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_type_name ON email(type, name)`),
 				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_type_create_time ON email(type, create_time)`),
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_resend_status ON email(status, email_id) WHERE resend_email_id IS NOT NULL`),
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_message_id ON email(message_id) WHERE message_id IS NOT NULL`),
 				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_user_create_time ON user(create_time)`),
 				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_user_type ON user(type)`),
 				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_attachments_email_type ON attachments(email_id, type)`),

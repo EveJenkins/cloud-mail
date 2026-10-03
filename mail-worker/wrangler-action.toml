@@ -22,6 +22,9 @@ id = "${KV_NAMESPACE_ID}"
 binding = "r2"
 bucket_name = "${R2_BUCKET_NAME}"
 
+[[queues.consumers]]
+queue = "cloud-mail-delivery-events"
+
 [ai]
 binding = "ai"
 
