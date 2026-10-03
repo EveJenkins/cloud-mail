@@ -45,4 +45,5 @@ crons = ["0 * * * *"]	#每小时执行；resetDaySendCount 仅在 UTC 0 点生�
 #jwt_secret = ""			#jwt令牌的密钥,随便填一串字符串
 
 [build]
+# 前端位于 ../mail-vue；前端变更也需要重新构建并部署此 Worker。
 command = "pnpm --prefix ../mail-vue install && pnpm --prefix ../mail-vue run build"
