@@ -1564,9 +1564,11 @@ async function saveDraftNow() {
 }
 @media (max-width: 1180px) {
   .compose-page { overflow-y: auto; }
-  .compose-grid { grid-template-columns: minmax(0, 1fr); }
-  .compose-main-card { min-height: 60vh; }
-  .compose-assistant { overflow: visible; }
+  .compose-body { flex: none; display: block; }
+  .compose-grid { display: block; }
+  .compose-main-card { min-height: 0; overflow: visible; }
+  .compose-main-card .editor-shell { flex: none; height: 360px; min-height: 260px; }
+  .compose-assistant { margin-top: 12px; overflow: visible; }
 }
 @media (max-width: 767px) {
   .send { top: 48px; bottom: 0; }

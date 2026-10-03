@@ -97,7 +97,6 @@ function initEditor(initialContent = props.defValue) {
     selector: `#${props.editorId}`,
     statusbar: false,
     height: "100%",
-    auto_focus: true,
     //relative_urls: false,  //阻止 img标签域名和网站域名相同 自动把链接转换相对路径
     //remove_script_host: false, // 阻止删除 URL 中的域名
     forced_root_block: 'div',
@@ -132,7 +131,6 @@ function initEditor(initialContent = props.defValue) {
         emit('focus', focus);
       })
     },
-    autofocus: true,
     branding: false,
     file_picker_types: 'image',
     image_dimensions: false,
