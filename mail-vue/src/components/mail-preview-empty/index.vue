@@ -24,7 +24,7 @@ defineProps({
 
 <style lang="scss" scoped>
 .preview-state {
-  width: min(620px, calc(100% - 48px));
+  width: min(480px, calc(100% - 48px));
   height: 100%;
   margin: 0 auto;
   display: flex;
@@ -48,7 +48,7 @@ defineProps({
 }
 .preview-state strong { margin-top: 16px; color: var(--text-2); font-size: 15px; font-weight: 650; }
 .preview-state p { max-width: 380px; margin-top: 6px; font-size: 12.5px; line-height: 1.6; }
-.preview-state__guide { width: 100%; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+.preview-state__guide { width: 100%; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
 .preview-state__actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
 .preview-state__actions :deep(button) {
   min-height: 36px;

@@ -194,7 +194,7 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .head-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .contact-search { width: 240px; height: 38px; padding: 0 11px; display: flex; align-items: center; gap: 8px; color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); }
 .contact-search:focus-within { border-color: var(--brand-500); box-shadow: 0 0 0 3px var(--brand-soft); }
-.contact-search input { min-width: 0; flex: 1; color: var(--text); font-size: 12.5px; }
+.contact-search input { min-width: 0; flex: 1; color: var(--text); font-size: 14px; }
 .contact-search button { width: 24px; height: 24px; flex: 0 0 24px; display: grid; place-items: center; color: var(--text-3); border-radius: 6px; cursor: pointer; }
 .contact-search button:hover { color: var(--brand-600); background: var(--brand-soft); }
 .primary-button { height: 38px; padding: 0 13px; display: inline-flex; align-items: center; gap: 6px; color: #fff; background: var(--brand-600); border-radius: var(--r-sm); font-size: 12.5px; font-weight: 700; cursor: pointer; }
@@ -203,8 +203,8 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .contact-tabs button { height: 26px; padding: 0 10px; color: var(--text-2); background: var(--surface-3); border-radius: var(--r-md); font-size: 12.5px; cursor: pointer; }
 .contact-tabs button.active { color: var(--brand-600); background: var(--brand-soft); font-weight: 700; }
 .contact-card { overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
-.table-head, .contact-row { display: grid; grid-template-columns: 1.35fr 1.5fr .7fr 160px; align-items: center; gap: 14px; }
-.table-head.external, .contact-row.external { grid-template-columns: 1.3fr 1fr 1.35fr .65fr 160px; }
+.table-head, .contact-row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.5fr) minmax(0, .7fr) 160px; align-items: center; gap: 14px; }
+.table-head.external, .contact-row.external { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, .65fr) 160px; }
 .table-head { min-height: 42px; padding: 0 16px; color: var(--text-3); background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; }
 .contact-list article + article { border-top: 1px solid var(--border); }
 .contact-row { min-height: 66px; padding: 10px 16px; color: var(--text-2); font-size: 13px; }
@@ -216,6 +216,7 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
 .person-cell strong { color: var(--text); font-size: 13.5px; }
 .person-cell small { margin-top: 2px; color: var(--text-3); font-size: 11.5px; }
 .truncate-cell, .email-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.email-cell { min-width: 0; }
 .type-badge { min-height: 22px; padding: 3px 8px; display: inline-flex; align-items: center; border-radius: 6px; font-size: 11px; font-style: normal; font-weight: 700; }
 .type-badge.customer, .type-badge.team { color: var(--brand-600); background: var(--brand-soft); }
 .type-badge.supplier { color: #b45309; background: color-mix(in srgb, var(--warning) 15%, transparent); }
@@ -261,6 +262,7 @@ function composeTo(contact) { uiStore.writerRef?.openWithRecipient?.(contact.ema
   .contacts-shell { padding: 12px; }
   .head-actions { align-items: stretch; flex-direction: column; }
   .contact-search { width: 100%; flex: none; }
+  .contact-search input { font-size: 16px; }
   .primary-button { justify-content: center; }
   .contact-row, .contact-row.external { grid-template-columns: minmax(0, 1fr); }
   .row-actions { grid-column: 1; grid-row: auto; justify-content: flex-start; padding-left: 44px; }

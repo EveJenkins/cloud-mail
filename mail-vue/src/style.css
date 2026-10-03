@@ -68,6 +68,14 @@ button, input, select, textarea {
     outline: none;
 }
 
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="menuitem"]:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+}
+
 .el-message {
     white-space: nowrap !important;
 }

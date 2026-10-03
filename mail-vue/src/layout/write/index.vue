@@ -1537,7 +1537,7 @@ async function saveDraftNow() {
 .assistant-body { display: grid; gap: 12px; align-content: start; padding-right: 2px; }
 .side-card { min-width: 0; padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 .side-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.side-title > span { color: var(--text-3); font-size: 15px; font-weight: 600; }
+.side-title > span { color: var(--text-2); font-size: 15px; font-weight: 600; }
 .side-title small { margin-left: auto; padding: 3px 7px; color: var(--text-3); background: var(--surface-2); border-radius: 7px; font-size: 10.5px; }
 .side-title small.warning { color: var(--warning); background: color-mix(in srgb, var(--warning) 14%, var(--surface)); }
 .insight-list { display: grid; gap: 8px; }
@@ -1547,7 +1547,7 @@ async function saveDraftNow() {
 .insight-person strong, .insight-person small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .insight-person strong { color: var(--text); font-size: 11.5px; }
 .insight-person small { color: var(--text-3); font-size: 10.5px; }
-.side-empty { padding: 10px; color: var(--text-3); background: var(--surface-2); border-radius: 8px; font-size: 11.5px; line-height: 1.55; }
+.side-empty { padding: 10px; color: var(--text-mail-meta); background: var(--surface-2); border-radius: 8px; font-size: 12.5px; line-height: 1.55; }
 .contact-book-button { width: 100%; height: 32px; margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--brand-600); background: var(--brand-soft); border-radius: var(--r-md); font-size: 12px; font-weight: 500; }
 .phrase-title { align-items: center; }
 .phrase-add { padding: 3px 6px; display: inline-flex; align-items: center; gap: 3px; color: var(--brand-700); border-radius: 6px; background: var(--brand-soft); font-size: 10px; font-weight: 700; }
@@ -1555,7 +1555,7 @@ async function saveDraftNow() {
 .phrase-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .phrase-item { display: inline-flex; overflow: hidden; border: 1px solid transparent; border-radius: 999px; background: var(--surface-2); }
 .phrase-item:hover { border-color: color-mix(in srgb, var(--brand-500) 25%, var(--border)); background: var(--brand-soft); }
-.phrase-list .phrase-insert { max-width: 120px; padding: 5px 3px 5px 9px; overflow: hidden; color: var(--text-2); background: transparent; font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.phrase-list .phrase-insert { max-width: 120px; padding: 6px 3px 6px 9px; overflow: hidden; color: var(--text-2); background: transparent; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .phrase-list .phrase-edit { width: 25px; padding: 0 6px 0 3px; display: grid; place-items: center; color: var(--text-3); background: transparent; }
 .phrase-item:hover button { color: var(--brand-700); }
 .phrase-empty { width: 100%; padding: 10px; color: var(--text-3); border: 1px dashed var(--border); border-radius: 8px; background: var(--surface-2); font-size: 10.5px; }
@@ -1563,14 +1563,14 @@ async function saveDraftNow() {
 .phrase-form label { display: grid; gap: 7px; color: var(--text-2); font-size: 12px; font-weight: 700; }
 .dialog-delete { float: left; padding: 8px 12px; color: var(--danger, #ef4444); border-radius: 7px; background: color-mix(in srgb, #ef4444 8%, var(--surface)); }
 .translate-row { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
-.translate-row select { min-width: 0; height: 34px; padding: 0 8px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; outline: 0; font: inherit; font-size: 11.5px; }
+.translate-row select { min-width: 0; height: 34px; padding: 0 8px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; outline: 0; font: inherit; font-size: 12.5px; }
 .translate-row button { height: 34px; display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; color: #fff; background: var(--brand-600); border-radius: 8px; font-size: 11.5px; font-weight: 700; }
 .translate-row button:disabled { cursor: not-allowed; opacity: .5; }
 .side-card > .auto-language-hint { display: flex; align-items: flex-start; gap: 5px; }
 .auto-language-hint svg { flex: 0 0 auto; margin-top: 1px; }
 .auto-language-hint.matched { color: var(--brand-600); }
 .signature-manage { padding: 3px 7px; color: var(--brand-700); border: 0; border-radius: 6px; background: var(--brand-soft); font-size: 10px; font-weight: 700; cursor: pointer; }
-.signature-select { width: 100%; height: 34px; padding: 0 28px 0 9px; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: inherit; font-size: 11px; outline: none; }
+.signature-select { width: 100%; height: 34px; padding: 0 28px 0 9px; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: inherit; font-size: 12.5px; outline: none; }
 .signature-mini-preview { margin-top: 9px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); }
 .signature-mini-preview strong { display: block; margin-bottom: 4px; color: var(--text); font-size: 11px; }
 .signature-rich-preview { max-height: 110px; overflow: auto; color: var(--text-3); font-size: 10px; line-height: 1.5; }
@@ -1608,6 +1608,7 @@ async function saveDraftNow() {
   .compose-main-card { min-height: auto; border: 0; border-radius: 0; box-shadow: none; }
   .compose-main-card .field-row { align-items: flex-start; flex-direction: column; gap: 5px; padding: 8px 11px; }
   .compose-main-card .field-row > label { width: auto; flex-basis: auto; }
+  .compose-main-card .field-row :deep(input) { font-size: 16px; }
   .recipient-control { width: 100%; flex-wrap: wrap; }
   .recipient-control :deep(.el-input-tag) { flex-basis: 100%; }
   .copy-row :deep(.el-input-tag) { width: 100%; }

@@ -57,7 +57,7 @@ const compose = () => uiStore.writerRef?.open?.()
     justify-content: center;
     gap: 2px;
     color: var(--text-3);
-    font-size: 10.5px;
+    font-size: 12px;
     cursor: pointer;
   }
   button svg { width: 20px; height: 20px; }
