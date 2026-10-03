@@ -1,6 +1,6 @@
 <template>
   <div class="send" :class="{ 'full-width': !uiStore.asideShow }" v-show="show">
-    <div class="compose-page">
+    <div ref="composePage" class="compose-page">
       <header class="compose-head">
         <button class="head-back" type="button" @click="close">
           <Icon icon="solar:alt-arrow-left-linear" width="18" />
@@ -215,6 +215,7 @@ const settingStore = useSettingStore()
 const emailStore = useEmailStore();
 const accountStore = useAccountStore()
 const editor = ref({})
+const composePage = ref(null)
 const userStore = useUserStore();
 const show = ref(false);
 // 顶栏「写邮件」按钮据此显示按下态
@@ -224,6 +225,14 @@ watch(show, value => { uiStore.composeOpen = value })
 function focusCompose() {
   if (!show.value) return
   nextTick(() => editor.value?.focus?.())
+}
+
+function focusOnOpen() {
+  if (window.matchMedia('(max-width: 767px)').matches) {
+    composePage.value?.scrollTo(0, 0)
+    return
+  }
+  editor.value?.focus?.()
 }
 
 const percent = ref(0)
@@ -941,7 +950,7 @@ async function open() {
     lastSavedFingerprint = draftFingerprint()
     autoSaveReady = true
   }, 100)
-  editor.value?.focus?.()
+  focusOnOpen()
 }
 
 async function openWithRecipient(email) {
@@ -963,7 +972,7 @@ async function openDraft(draft) {
   }, 100)
   show.value = true;
   await nextTick()
-  editor.value?.focus?.()
+  focusOnOpen()
 }
 
 const handleKeyDown = (event) => {
