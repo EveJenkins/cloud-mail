@@ -51,20 +51,19 @@
   --sidebar-w: 232px;
   --mail-list-w: 384px;
 
-  /* ── 分区字号：各区域独立可调，互不影响 ─────────────
-     只改这里就能单独放大/缩小某一块 */
-  --font-base: 15px;          /* 全局正文、设置页、管理页 */
-  --font-nav: 14px;           /* 侧栏菜单 */
-  --font-list-sender: 14px;   /* 邮件列表 · 发件人 */
-  --font-list-subject: 14.5px;/* 邮件列表 · 主题 */
-  --font-list-snippet: 12.5px;/* 邮件列表 · 摘要 */
-  --font-list-meta: 12px;     /* 邮件列表 · 时间/标签 */
+  /* 主界面文字层级：正文 15、次要信息 13、标题 20。 */
+  --font-base: 15px;
+  --font-nav: 14px;
+  --font-list-sender: 14px;
+  --font-list-subject: 15px;
+  --font-list-snippet: 13px;
+  --font-list-meta: 12px;
   --list-row-h: 112px;        /* 邮件列表行高（改这里同时要改 email-scroll 的 JS 兜底值） */
-  --font-read-title: 20px;    /* 读信页 · 标题 */
-  --font-read-body: 14.5px;   /* 读信页 · 正文 */
-  --font-read-meta: 13px;     /* 读信页 · 发件人信息 */
-  --font-page-title: 20px;    /* 内容页主标题 */
-  --font-card-title: 15px;    /* 卡片标题 */
+  --font-read-title: 20px;
+  --font-read-body: 15px;
+  --font-read-meta: 13px;
+  --font-page-title: 20px;
+  --font-card-title: 15px;
 
   /* 顶部通栏 */
   --topbar-bg: var(--brand-600);
@@ -87,6 +86,18 @@
   --chart-4: #faad14;
   --chart-5: #eb2f96;
   --chart-6: #2f54eb;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --font-list-sender: 15px;
+    --font-list-subject: 15px;
+    --font-list-snippet: 14px;
+    --font-list-meta: 12px;
+    --font-read-body: 16px;
+    --font-read-meta: 14px;
+    --font-read-title: 20px;
+  }
 }
 
 html.dark {

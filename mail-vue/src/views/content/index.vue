@@ -1539,13 +1539,13 @@ async function handleRestore() {
 .translation-banner { margin-bottom: 12px; padding: 13px 14px; display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2); }
 .translation-banner-icon { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: var(--brand-600); background: var(--brand-soft); border-radius: var(--r-md); }
 .translation-banner-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
-.translation-banner-copy strong { color: var(--text); font-size: 13px; font-weight: 600; line-height: 1.45; }
-.translation-primary { padding: 0; color: var(--brand-600); border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.translation-banner-copy strong { color: var(--text); font-size: 14px; font-weight: 600; line-height: 1.45; }
+.translation-primary { padding: 0; color: var(--brand-600); border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
 .translation-primary:disabled { opacity: .6; cursor: wait; }
 .translation-primary svg { vertical-align: -2px; }
 .translation-settings-button { width: 30px; height: 30px; flex: none; display: grid; place-items: center; color: var(--text-3); border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
 .translation-settings-button:hover { color: var(--text); background: var(--surface-3); }
-.translation-settings { margin: -4px 0 12px; padding: 10px 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 11.5px; }
+.translation-settings { margin: -4px 0 12px; padding: 10px 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--text-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font-size: 12px; }
 .translation-settings select { height: 30px; min-width: 118px; padding: 0 9px; color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); font: inherit; }
 .translation-settings > span { margin-left: auto; }
 .translated-body { min-height: 120px; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
@@ -1570,7 +1570,7 @@ async function handleRestore() {
 .conversation-heading { min-height: 38px; padding: 0 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .conversation-heading > div { display: flex; align-items: center; gap: 7px; color: var(--text); }
 .conversation-heading strong { font-size: 13.5px; }
-.conversation-heading > span { color: var(--text-3); font-size: 11px; }
+.conversation-heading > span { color: var(--text-3); font-size: 12px; }
 .thread-message { overflow: hidden; padding: 12px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--sh-1); }
 .thread-message.sent { border-color: color-mix(in srgb, var(--brand-500) 25%, var(--border)); background: color-mix(in srgb, var(--brand-soft) 30%, var(--surface)); }
 .thread-message.failed { border-color: color-mix(in srgb, var(--danger) 38%, var(--border)); }
@@ -1580,7 +1580,7 @@ async function handleRestore() {
 .thread-sender { min-width: 0; flex: 1; }
 .thread-sender > div { min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 8px; }
 .thread-sender strong { color: var(--text); font-size: var(--font-read-meta); }
-.thread-sender span, .thread-sender small { color: var(--text-3); font-size: 11px; }
+.thread-sender span, .thread-sender small { color: var(--text-3); font-size: 12px; }
 .thread-sender span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .thread-sender small { display: block; margin-top: 2px; }
 .thread-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
@@ -1608,7 +1608,9 @@ async function handleRestore() {
   .detail-action { padding: 0 9px; }
   .container { padding: 16px 12px 28px; }
   .container .message-card { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-  .container .email-title { font-size: 19px; }
+  .container .email-title { font-size: var(--font-read-title); }
+  .container .translation-banner-copy strong,
+  .container .translation-primary { font-size: 14px; }
   .container .code-card .el-button { width: 100%; margin-left: 0; }
   .container .translation-banner { padding: 12px; }
   .container .translation-settings > span { width: 100%; margin-left: 0; }

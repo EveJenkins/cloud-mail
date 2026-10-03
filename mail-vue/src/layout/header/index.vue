@@ -757,11 +757,11 @@ function formatName(email) {
     text-align: left;
     cursor: pointer;
   }
-  .mobile-context span { max-width: 100%; overflow: hidden; font-size: 13.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-  .mobile-context small { max-width: 100%; overflow: hidden; color: var(--topbar-fg-dim); font-size: 9.5px; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-context span { max-width: 100%; overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-context small { max-width: 100%; overflow: hidden; color: var(--topbar-fg-dim); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
   .global-search.open .mobile-context { display: none; }
   .global-search.open .search-icon { display: block; }
-  .global-search.open input { display: block; padding-right: 34px; font-size: 12.5px; }
+  .global-search.open input { display: block; padding-right: 34px; font-size: 16px; }
   .mobile-search-close { position: absolute; right: 5px; width: 28px; height: 28px; display: none; place-items: center; color: var(--topbar-fg-dim); border-radius: var(--r-md); cursor: pointer; }
   .global-search.open .mobile-search-close { display: grid; }
   .toolbar { gap: 2px; }
