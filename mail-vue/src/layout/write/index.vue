@@ -40,7 +40,17 @@
                   </template>
                 </el-input-tag>
                 <button class="inline-link" type="button" @click.stop="openContacts">{{ settingStore.lang === 'zh' ? '通讯录' : 'Contacts' }}</button>
+                <button class="inline-link" :class="{ active: showCc }" type="button" @click="showCc = !showCc">{{ settingStore.lang === 'zh' ? '抄送' : 'Cc' }}</button>
+                <button class="inline-link" :class="{ active: showBcc }" type="button" @click="showBcc = !showBcc">{{ settingStore.lang === 'zh' ? '密送' : 'Bcc' }}</button>
               </div>
+            </div>
+            <div v-if="showCc || form.ccEmail.length" class="field-row copy-row">
+              <label>{{ settingStore.lang === 'zh' ? '抄送' : 'Cc' }}</label>
+              <el-input-tag v-model="form.ccEmail" @add-tag="value => addAddressTag('ccEmail', value)" tag-type="primary" :placeholder="settingStore.lang === 'zh' ? '输入抄送地址，回车分隔…' : 'Add Cc addresses…'" />
+            </div>
+            <div v-if="showBcc || form.bccEmail.length" class="field-row copy-row">
+              <label>{{ settingStore.lang === 'zh' ? '密送' : 'Bcc' }}</label>
+              <el-input-tag v-model="form.bccEmail" @add-tag="value => addAddressTag('bccEmail', value)" tag-type="primary" :placeholder="settingStore.lang === 'zh' ? '输入密送地址，回车分隔…' : 'Add Bcc addresses…'" />
             </div>
             <div class="field-row subject-row">
               <label>{{ $t('subject') }}</label>
@@ -83,7 +93,7 @@
         <aside class="compose-assistant">
           <div class="assistant-body">
           <section class="side-card recipient-insight">
-            <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '收件人洞察' : 'Recipient insight' }}</span><small>{{ form.receiveEmail.length }} {{ settingStore.lang === 'zh' ? '位' : 'people' }}</small></div>
+            <div class="side-title"><span>{{ settingStore.lang === 'zh' ? '收件人洞察' : 'Recipient insight' }}</span><small>{{ form.receiveEmail.length + form.ccEmail.length + form.bccEmail.length }} {{ settingStore.lang === 'zh' ? '位' : 'people' }}</small></div>
             <div v-if="recipientInsights.length" class="insight-list">
               <div class="insight-person" v-for="item in recipientInsights" :key="item.email"><span>{{ item.initial }}</span><div><strong>{{ item.email }}</strong><small>{{ item.domain }} · {{ item.internal ? (settingStore.lang === 'zh' ? '公司内部' : 'Internal') : (settingStore.lang === 'zh' ? '外部联系人' : 'External') }}</small></div></div>
             </div>
@@ -132,7 +142,7 @@
     </div>
 
     <el-dialog v-model="showMailPreview" class="mail-preview-dialog" :title="settingStore.lang === 'zh' ? '邮件预览' : 'Email preview'" width="min(760px, calc(100vw - 28px))">
-      <div class="preview-message"><div class="preview-meta"><span><b>{{ $t('sender') }}</b> {{ form.name }} &lt;{{ form.sendEmail }}&gt;</span><span><b>{{ $t('recipient') }}</b> {{ form.receiveEmail.join(', ') || '—' }}</span></div><h2>{{ form.subject || (settingStore.lang === 'zh' ? '（未填写主题）' : '(No subject)') }}</h2><ShadowHtml class="preview-body" :html="previewContent" /></div>
+      <div class="preview-message"><div class="preview-meta"><span><b>{{ $t('sender') }}</b> {{ form.name }} &lt;{{ form.sendEmail }}&gt;</span><span><b>{{ $t('recipient') }}</b> {{ form.receiveEmail.join(', ') || '—' }}</span><span v-if="form.ccEmail.length"><b>{{ settingStore.lang === 'zh' ? '抄送' : 'Cc' }}</b> {{ form.ccEmail.join(', ') }}</span><span v-if="form.bccEmail.length"><b>{{ settingStore.lang === 'zh' ? '密送' : 'Bcc' }}</b> {{ form.bccEmail.join(', ') }}</span></div><h2>{{ form.subject || (settingStore.lang === 'zh' ? '（未填写主题）' : '(No subject)') }}</h2><ShadowHtml class="preview-body" :html="previewContent" /></div>
     </el-dialog>
     <el-dialog v-model="phraseDialogOpen" :title="phraseEditIndex >= 0 ? (settingStore.lang === 'zh' ? '编辑快捷短语' : 'Edit quick phrase') : (settingStore.lang === 'zh' ? '新建快捷短语' : 'New quick phrase')" width="min(480px, calc(100vw - 28px))">
       <div class="phrase-form">
@@ -218,6 +228,8 @@ const editor = ref({})
 const composePage = ref(null)
 const userStore = useUserStore();
 const show = ref(false);
+const showCc = ref(false)
+const showBcc = ref(false)
 // 顶栏「写邮件」按钮据此显示按下态
 watch(show, value => { uiStore.composeOpen = value })
 
@@ -264,6 +276,8 @@ const backReply = reactive({
 const form = reactive({
   sendEmail: '',
   receiveEmail: [],
+  ccEmail: [],
+  bccEmail: [],
   accountId: -1,
   name: '',
   subject: '',
@@ -314,7 +328,7 @@ const contentStats = computed(() => {
 })
 const recipientInsights = computed(() => {
   const internalDomains = (settingStore.domainList || []).map(item => String(item).replace(/^@/, '').toLowerCase())
-  return form.receiveEmail.map(email => {
+  return [...form.receiveEmail, ...form.ccEmail, ...form.bccEmail].map(email => {
     const domain = String(email).split('@')[1]?.toLowerCase() || ''
     return { email, domain: domain || '—', initial: String(email).charAt(0).toUpperCase(), internal: internalDomains.includes(domain) }
   })
@@ -461,7 +475,7 @@ function chooseContact() {
 
   const contactList = contactsTabRef.value.getSelectionRows().map(item => item.email);
   contactList.forEach(item => {
-    if (!form.receiveEmail.includes(item)) {
+    if (![...form.receiveEmail, ...form.ccEmail, ...form.bccEmail].some(address => address.toLowerCase() === item.toLowerCase())) {
       form.receiveEmail.push(item);
     }
   })
@@ -478,7 +492,7 @@ function clearSelectContact() {
 }
 
 function selectChange(value) {
-  form.receiveEmail.push(value)
+  if (![...form.receiveEmail, ...form.ccEmail, ...form.bccEmail].some(address => address.toLowerCase() === value.toLowerCase())) form.receiveEmail.push(value)
 }
 
 function selectStatusChange(status) {
@@ -491,7 +505,8 @@ const openSelect = () => {
 
 function inputChange(value) {
 
-  selectRecipientList.value = writerStore.sendRecipientRecord.filter(item => value && !form.receiveEmail.includes(item) && item.startsWith(value)).slice(0, 10);
+  const used = [...form.receiveEmail, ...form.ccEmail, ...form.bccEmail].map(address => address.toLowerCase())
+  selectRecipientList.value = writerStore.sendRecipientRecord.filter(item => value && !used.includes(item.toLowerCase()) && item.startsWith(value)).slice(0, 10);
 
   if (!selectStatus && selectRecipientList.value.length > 0) {
     openSelect()
@@ -504,21 +519,21 @@ function inputChange(value) {
 }
 
 function addTagChange(val) {
+  if (addAddressTag('receiveEmail', val) && selectStatus) openSelect()
+}
 
-  const emails = Array.from(new Set(
-      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
-  ));
-
-  form.receiveEmail.splice(form.receiveEmail.length - 1, 1)
-
-  let has = false
-  emails.forEach(email => {
-    if (isEmail(email) && !form.receiveEmail.includes(email)) {
-      form.receiveEmail.push(email)
-      has = true
-    }
-  })
-  if (selectStatus && has) openSelect()
+function addAddressTag(field, raw) {
+  const addresses = form[field]
+  addresses.pop()
+  let added = false
+  for (const address of String(raw).split(/[,，;；]/).map(value => value.trim()).filter(Boolean)) {
+    const used = [...form.receiveEmail, ...form.ccEmail, ...form.bccEmail]
+      .some(value => value.toLowerCase() === address.toLowerCase())
+    if (!isEmail(address) || used) continue
+    addresses.push(address)
+    added = true
+  }
+  return added
 }
 
 function clearContent() {
@@ -711,11 +726,12 @@ async function sendEmail() {
 }
 
 function addRecipientRecord() {
+  const recipients = [...form.receiveEmail, ...form.ccEmail, ...form.bccEmail]
   writerStore.sendRecipientRecord = writerStore.sendRecipientRecord.filter(
-      email => !form.receiveEmail.includes(email)
+      email => !recipients.includes(email)
   );
 
-  writerStore.sendRecipientRecord.unshift(...form.receiveEmail);
+  writerStore.sendRecipientRecord.unshift(...recipients);
   writerStore.sendRecipientRecord = writerStore.sendRecipientRecord.slice(0, 500);
 }
 
@@ -723,6 +739,10 @@ function resetForm() {
   clearTimeout(autoSaveTimer)
   autoSaveReady = false
   form.receiveEmail = []
+  form.ccEmail = []
+  form.bccEmail = []
+  showCc.value = false
+  showBcc.value = false
   form.subject = ''
   form.content = ''
   form.text = ''
@@ -790,6 +810,8 @@ function draftFingerprint() {
   return JSON.stringify({
     accountId: form.accountId,
     receiveEmail: [...form.receiveEmail],
+    ccEmail: [...form.ccEmail],
+    bccEmail: [...form.bccEmail],
     subject: form.subject,
     content: form.content,
     sendType: form.sendType,
@@ -806,10 +828,10 @@ function hasDraftChanges() {
   if (backReply.sendType === 'reply' || backReply.sendType === 'forward') {
     const sameSubject = form.subject === backReply.subject
     const sameContent = content === backReply.content
-    const sameRecipients = form.receiveEmail.join('|') === backReply.receiveEmail.join('|')
+    const sameRecipients = form.receiveEmail.join('|') === backReply.receiveEmail.join('|') && !form.ccEmail.length && !form.bccEmail.length
     if (sameSubject && sameContent && sameRecipients && !form.attachments.length) return false
   }
-  return Boolean(form.subject.trim() || form.receiveEmail.length || hasBody || form.attachments.length)
+  return Boolean(form.subject.trim() || form.receiveEmail.length || form.ccEmail.length || form.bccEmail.length || hasBody || form.attachments.length)
 }
 
 async function autoSaveDraft() {
@@ -822,7 +844,7 @@ async function autoSaveDraft() {
 
   draftSaveState.value = 'saving'
   try {
-    const draft = {...toRaw(form), receiveEmail: [...form.receiveEmail]}
+    const draft = {...toRaw(form), receiveEmail: [...form.receiveEmail], ccEmail: [...form.ccEmail], bccEmail: [...form.bccEmail]}
     const attachments = [...toRaw(form.attachments)]
     delete draft.attachments
     delete draft.draftId
@@ -962,6 +984,10 @@ async function openWithRecipient(email) {
 
 async function openDraft(draft) {
   Object.assign(form, {...draft})
+  form.ccEmail = Array.isArray(draft.ccEmail) ? [...draft.ccEmail] : []
+  form.bccEmail = Array.isArray(draft.bccEmail) ? [...draft.bccEmail] : []
+  showCc.value = form.ccEmail.length > 0
+  showBcc.value = form.bccEmail.length > 0
   draftSaveState.value = 'saved'
   autoSaveReady = false
   defValue.value = ''
@@ -992,7 +1018,7 @@ onUnmounted(() => {
   clearTimeout(autoSaveTimer)
 });
 
-watch(() => [form.receiveEmail.join('|'), form.subject, form.content, form.attachments.map(item => `${item.filename}:${item.size}`).join('|')], scheduleAutoSave, {flush: 'post'})
+watch(() => [form.receiveEmail.join('|'), form.ccEmail.join('|'), form.bccEmail.join('|'), form.subject, form.content, form.attachments.map(item => `${item.filename}:${item.size}`).join('|')], scheduleAutoSave, {flush: 'post'})
 
 watch(() => [form.receiveEmail.join('|'), signatureLanguage.value, configuredSignatures.value.length], () => {
   if (!show.value) return
@@ -1014,7 +1040,7 @@ function close() {
     return;
   }
 
-  if (!(form.content || form.subject || form.receiveEmail.length > 0)) {
+  if (!(form.content || form.subject || form.receiveEmail.length > 0 || form.ccEmail.length > 0 || form.bccEmail.length > 0)) {
     show.value = false
     resetForm()
     return;
@@ -1023,8 +1049,8 @@ function close() {
   if (backReply.sendType === 'reply' || backReply.sendType === 'forward') {
     let subjectFlag = form.subject === backReply.subject
     let contentFlag = editor.value.getContent() === backReply.content
-    let receiveFlag = form.receiveEmail.length === 1 && form.receiveEmail[0] === backReply.receiveEmail[0]
-    if (backReply.sendType === 'forward' && form.receiveEmail.length === 0) {
+    let receiveFlag = form.receiveEmail.length === 1 && form.receiveEmail[0] === backReply.receiveEmail[0] && !form.ccEmail.length && !form.bccEmail.length
+    if (backReply.sendType === 'forward' && form.receiveEmail.length === 0 && !form.ccEmail.length && !form.bccEmail.length) {
       receiveFlag = true;
     }
     if (subjectFlag && contentFlag && receiveFlag) {
@@ -1483,6 +1509,9 @@ async function saveDraftNow() {
 .recipient-control { gap: 7px; }
 .recipient-control :deep(.el-input-tag__wrapper) { min-height: 30px; }
 .inline-link { flex: 0 0 auto; padding: 4px 0; color: var(--brand-700); background: transparent; font-size: 12px; font-weight: 700; }
+.inline-link.active { text-decoration: underline; text-underline-offset: 3px; }
+.copy-row :deep(.el-input-tag) { min-width: 0; flex: 1; }
+.copy-row :deep(.el-input-tag__wrapper) { min-height: 30px; padding-left: 0; box-shadow: none !important; }
 .subject-row :deep(.el-input__inner) { color: var(--text); font-weight: 650; }
 .identity-row { gap: 8px; }
 .sender-identity { min-width: 0; display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 12px; }
@@ -1581,6 +1610,7 @@ async function saveDraftNow() {
   .compose-main-card .field-row > label { width: auto; flex-basis: auto; }
   .recipient-control { width: 100%; flex-wrap: wrap; }
   .recipient-control :deep(.el-input-tag) { flex-basis: 100%; }
+  .copy-row :deep(.el-input-tag) { width: 100%; }
   .quota-hint { margin-left: 0; }
   .editor-status { gap: 7px; padding: 6px 10px; }
   .editor-status .compatibility { display: none; }

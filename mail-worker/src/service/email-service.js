@@ -23,6 +23,7 @@ import domainUtils from '../utils/domain-uitls';
 import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
+import {normalizeSendRecipients, recipientMetadata} from '../lib/send-recipients.mjs';
 
 function emailReferenceTokens(...values) {
 	return [...new Set(values
@@ -330,11 +331,21 @@ const emailService = {
 			sendType, //发件类型
 			emailId, //邮件id，如果是回复邮件会带
 			receiveEmail, //收件人邮箱
+			ccEmail = [],
+			bccEmail = [],
 			text, //邮件纯文本
 			content, //邮件内容
 			subject, //邮件标题
 			attachments = [] //附件
 		} = params;
+		let recipients;
+		try {
+			recipients = normalizeSendRecipients({receiveEmail, ccEmail, bccEmail});
+		} catch (error) {
+			throw new BizError(error.message, 400);
+		}
+		const allRecipients = recipients.all;
+		receiveEmail = recipients.to;
 
 		const { resendTokens, r2Domain, send, sendProvider = 'auto', domainList } = await settingService.query(c);
 
@@ -349,7 +360,7 @@ const emailService = {
 		const roleRow = await roleService.selectById(c, userRow.type);
 
 		//判断接收方是不是全部为站内邮箱
-		const allInternal = receiveEmail.every(email => {
+		const allInternal = allRecipients.every(email => {
 			const domain = '@' + emailUtils.getDomain(email);
 			return domainList.includes(domain);
 		});
@@ -376,7 +387,7 @@ const emailService = {
 				if (roleRow.sendType === 'count') throw new BizError(t('totalSendLimit'), 403);
 			}
 
-			if (userRow.sendCount + receiveEmail.length > roleRow.sendCount) {
+			if (userRow.sendCount + allRecipients.length > roleRow.sendCount) {
 				if (roleRow.sendType === 'day') throw new BizError(t('daySendLack'), 403);
 				if (roleRow.sendType === 'count') throw new BizError(t('totalSendLack'), 403);
 			}
@@ -443,6 +454,8 @@ const emailService = {
 					name,
 					accountEmail: accountRow.email,
 					receiveEmail,
+					ccEmail: recipients.cc,
+					bccEmail: recipients.bcc,
 					subject,
 					text,
 					html,
@@ -456,6 +469,8 @@ const emailService = {
 					name,
 					accountEmail: accountRow.email,
 					receiveEmail,
+					ccEmail: recipients.cc,
+					bccEmail: recipients.bcc,
 					subject,
 					text,
 					html,
@@ -498,13 +513,7 @@ const emailService = {
 		// provider record id instead, so do not store that value as a Message-ID.
 		emailData.messageId = useCloudflareEmail ? (data?.id || '') : '';
 
-		const recipient = [];
-
-		receiveEmail.forEach(item => {
-			recipient.push({ address: item, name: '' });
-		});
-
-		emailData.recipient = JSON.stringify(recipient);
+		Object.assign(emailData, recipientMetadata(recipients, true));
 
 		if (sendType === 'reply') {
 			emailData.inReplyTo = emailRow.messageId;
@@ -513,7 +522,7 @@ const emailService = {
 
 		//如果权限有发送次数增加用户发送次数
 		if (roleRow.sendCount && roleRow.sendType !== 'internal') {
-			await userService.incrUserSendCount(c, receiveEmail.length, userId);
+			await userService.incrUserSendCount(c, allRecipients.length, userId);
 		}
 
 		//保存到数据库并返回结果
@@ -540,7 +549,7 @@ const emailService = {
 
 		//如果全是站内接收方，直接写入数据库
 		if (allInternal) {
-			await this.HandleOnSiteEmail(c, receiveEmail, emailResult, attList);
+			await this.HandleOnSiteEmail(c, allRecipients, emailResult, attList);
 		}
 
 		const dateStr = dayjs().format('YYYY-MM-DD');
@@ -548,9 +557,9 @@ const emailService = {
 
 		//记录每天发件次数统计
 		if (!daySendTotal) {
-			await c.env.kv.put(kvConst.SEND_DAY_COUNT + dateStr, JSON.stringify(receiveEmail.length), { expirationTtl: 60 * 60 * 24 });
+			await c.env.kv.put(kvConst.SEND_DAY_COUNT + dateStr, JSON.stringify(allRecipients.length), { expirationTtl: 60 * 60 * 24 });
 		} else  {
-			daySendTotal = Number(daySendTotal) + receiveEmail.length
+			daySendTotal = Number(daySendTotal) + allRecipients.length
 			await c.env.kv.put(kvConst.SEND_DAY_COUNT + dateStr, JSON.stringify(daySendTotal), { expirationTtl: 60 * 60 * 24 });
 		}
 
@@ -561,6 +570,8 @@ const emailService = {
 		const sendForm = {
 			from: { email: params.accountEmail, name: params.name },
 			to: [...params.receiveEmail],
+			...(params.ccEmail.length ? {cc: [...params.ccEmail]} : {}),
+			...(params.bccEmail.length ? {bcc: [...params.bccEmail]} : {}),
 			subject: params.subject
 		};
 
@@ -599,6 +610,8 @@ const emailService = {
 		const sendForm = {
 			from: `${params.name} <${params.accountEmail}>`,
 			to: [...params.receiveEmail],
+			...(params.ccEmail.length ? {cc: [...params.ccEmail]} : {}),
+			...(params.bccEmail.length ? {bcc: [...params.bccEmail]} : {}),
 			subject: params.subject,
 			text: params.text,
 			html: params.html,
@@ -767,6 +780,7 @@ const emailService = {
 			emailValues.toEmail = email;
 			emailValues.toName = emailUtils.getName(email);
 			emailValues.emailId = null;
+			emailValues.bcc = '[]';
 
 			let accountRow = allAccounts.find(accountRow => accountRow.email === email);
 

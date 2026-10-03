@@ -39,6 +39,8 @@
                 <div class="sender-secondary">
                   {{ settingStore.lang === 'zh' ? '发送至' : 'To' }} {{ formateReceive(email.recipient) }} · {{ formatDetailDate(email.createTime) }}
                 </div>
+                <div class="copy-secondary" v-if="formateReceive(email.cc)">{{ settingStore.lang === 'zh' ? '抄送' : 'Cc' }} {{ formateReceive(email.cc) }}</div>
+                <div class="copy-secondary" v-if="Number(email.type) === 1 && formateReceive(email.bcc)">{{ settingStore.lang === 'zh' ? '密送' : 'Bcc' }} {{ formateReceive(email.bcc) }}</div>
               </div>
             </div>
             <el-alert v-if="email.status === 3" :closable="false" :title="toMessage(email.message)" class="email-msg" type="error" show-icon />
@@ -946,8 +948,12 @@ function isImage(filename) {
 
 function formateReceive(recipient) {
   if (!recipient) return ''
-  recipient = JSON.parse(recipient)
-  return recipient.map(item => item.address).join(', ')
+  try {
+    const addresses = typeof recipient === 'string' ? JSON.parse(recipient) : recipient
+    return Array.isArray(addresses) ? addresses.map(item => item.address || item.email || item).filter(Boolean).join(', ') : ''
+  } catch {
+    return ''
+  }
 }
 
 async function copyCode() {
@@ -1296,6 +1302,7 @@ async function handleRestore() {
       .sender-primary strong { color: var(--text); font-size: var(--font-read-meta); }
       .sender-primary span { overflow: hidden; color: var(--text-3); font-size: var(--font-read-meta); text-overflow: ellipsis; white-space: nowrap; }
       .sender-secondary { margin-top: 3px; overflow: hidden; color: var(--text-3); font-size: var(--font-read-meta); text-overflow: ellipsis; white-space: nowrap; }
+      .copy-secondary { margin-top: 3px; color: var(--text-3); font-size: var(--font-read-meta); overflow-wrap: anywhere; }
       .date {
         color: var(--regular-text-color);
         margin-bottom: 6px;

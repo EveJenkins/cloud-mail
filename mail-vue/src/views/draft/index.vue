@@ -66,6 +66,8 @@
             <span>{{ settingStore.lang === 'zh' ? '收件人' : 'To' }}</span>
             <strong>{{ selectedDraft.receiveEmail?.join(', ') || (settingStore.lang === 'zh' ? '尚未添加收件人' : 'No recipients') }}</strong>
           </div>
+          <div class="draft-meta" v-if="selectedDraft.ccEmail?.length"><span>{{ settingStore.lang === 'zh' ? '抄送' : 'Cc' }}</span><strong>{{ selectedDraft.ccEmail.join(', ') }}</strong></div>
+          <div class="draft-meta" v-if="selectedDraft.bccEmail?.length"><span>{{ settingStore.lang === 'zh' ? '密送' : 'Bcc' }}</span><strong>{{ selectedDraft.bccEmail.join(', ') }}</strong></div>
           <div class="draft-body">
             <ShadowHtml v-if="selectedDraft.content" :html="selectedDraft.content" comfortable />
             <pre v-else>{{ selectedDraft.text || (settingStore.lang === 'zh' ? '尚未填写正文' : 'No content yet') }}</pre>
@@ -138,7 +140,7 @@ watch(() => draftStore.setDraft, async () => {
   delete draft.draftId
   delete draft.attachments
 
-  if (!draft.content && !draft.subject && !(draft.receiveEmail.length > 0)) {
+  if (!draft.content && !draft.subject && !draft.receiveEmail?.length && !draft.ccEmail?.length && !draft.bccEmail?.length) {
     await db.value.draft.delete(draftId);
     await db.value.att.delete(draftId);
     draftStore.refreshList++
