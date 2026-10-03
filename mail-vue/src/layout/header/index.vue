@@ -573,9 +573,9 @@ function formatName(email) {
   }
   input::placeholder { color: var(--topbar-fg-dim); }
   input:hover { background: var(--topbar-field-hover); }
-  input:focus { color: var(--text); background: #fff; }
-  input:focus::placeholder { color: var(--text-3); }
-  &:focus-within .search-icon { color: var(--text-3); }
+  input:focus { color: var(--topbar-fg); background: var(--topbar-field-hover); border-color: rgba(255, 255, 255, .26); }
+  input:focus::placeholder { color: var(--topbar-fg-dim); }
+  &:focus-within .search-icon { color: var(--topbar-fg-dim); }
   kbd {
     position: absolute;
     right: 8px;
