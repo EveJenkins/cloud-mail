@@ -37,7 +37,7 @@
         <Icon icon="solar:trash-bin-trash-linear" width="16" />
       </button>
     </template>
-    <template #empty-actions>
+    <template v-if="!isDesktop" #empty-actions>
       <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '新建邮件' : 'New message' }}</button>
     </template>
       </emailScroll>

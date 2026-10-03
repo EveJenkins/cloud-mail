@@ -27,7 +27,7 @@
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else
             width="28" height="28"/>
     </template>
-    <template #empty-actions>
+    <template v-if="!isDesktop" #empty-actions>
       <button class="primary" type="button" @click="uiStore.writerRef?.open?.()"><Icon icon="solar:pen-new-square-linear" width="15" />{{ settingStore.lang === 'zh' ? '写新邮件' : 'Compose' }}</button>
     </template>
       </emailScroll>
