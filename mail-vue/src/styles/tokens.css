@@ -31,6 +31,7 @@
   --text: #1d2129;
   --text-2: #4e5969;
   --text-3: #86909c;
+  --text-mail-meta: #697586;
 
   /* 紧凑圆角 */
   --r-sm: 4px;
@@ -61,7 +62,7 @@
   --list-row-h: 112px;        /* 邮件列表行高（改这里同时要改 email-scroll 的 JS 兜底值） */
   --font-read-title: 20px;
   --font-read-body: 15px;
-  --font-read-meta: 13px;
+  --font-read-meta: 13.5px;
   --font-page-title: 20px;
   --font-card-title: 15px;
 
@@ -114,6 +115,7 @@ html.dark {
   --text: #ffffff;
   --text-2: rgba(255, 255, 255, .72);
   --text-3: rgba(255, 255, 255, .55);
+  --text-mail-meta: rgba(255, 255, 255, .66);
 
   --brand-50: #111a2c;
   --brand-100: #112545;

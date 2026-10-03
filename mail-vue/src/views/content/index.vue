@@ -1160,7 +1160,7 @@ async function handleRestore() {
   .quick-reply-heading strong { font-size: var(--font-card-title); font-weight: 600; }
   .reply-title { min-width: 0; display: flex; align-items: center; gap: 8px; }
   .reply-mark { width: 26px; height: 26px; flex: 0 0 26px; display: grid; place-items: center; color: var(--brand-600); background: var(--brand-soft); border-radius: var(--r-md); }
-  .reply-recipient { min-width: 0; overflow: hidden; color: var(--text-3); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
+  .reply-recipient { min-width: 0; overflow: hidden; color: var(--text-mail-meta); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
 
   /* AI 起草：参数收进弹出面板 */
   .ai-draft { position: relative; flex: none; }
@@ -1344,9 +1344,9 @@ async function handleRestore() {
       .sender-copy { min-width: 0; flex: 1; }
       .sender-primary { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 8px; }
       .sender-primary strong { color: var(--text); font-size: var(--font-read-meta); }
-      .sender-primary span { overflow: hidden; color: var(--text-3); font-size: var(--font-read-meta); text-overflow: ellipsis; white-space: nowrap; }
-      .sender-secondary { margin-top: 3px; overflow: hidden; color: var(--text-3); font-size: var(--font-read-meta); text-overflow: ellipsis; white-space: nowrap; }
-      .copy-secondary { margin-top: 3px; color: var(--text-3); font-size: var(--font-read-meta); overflow-wrap: anywhere; }
+      .sender-primary span { overflow: hidden; color: var(--text-mail-meta); font-size: var(--font-read-meta); text-overflow: ellipsis; white-space: nowrap; }
+      .sender-secondary { margin-top: 4px; overflow: hidden; color: var(--text-mail-meta); font-size: var(--font-read-meta); line-height: 1.45; text-overflow: ellipsis; white-space: nowrap; }
+      .copy-secondary { margin-top: 4px; color: var(--text-mail-meta); font-size: var(--font-read-meta); line-height: 1.45; overflow-wrap: anywhere; }
       .date {
         color: var(--regular-text-color);
         margin-bottom: 6px;

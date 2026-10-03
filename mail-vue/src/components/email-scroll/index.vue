@@ -1518,7 +1518,7 @@ function loadData() {
 .retry-load { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); color: var(--brand-600); cursor: pointer; }
 .sync-status.failed { color: var(--danger); }
 .sync-status.failed i { background: var(--danger); box-shadow: none; }
-.sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.sync-status { display: inline-flex; align-items: center; gap: 6px; color: var(--text-mail-meta); font-size: 12px; white-space: nowrap; }
 .sync-status i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-600); box-shadow: 0 0 0 3px var(--brand-soft); }
 .summary-refresh, .search-clear { display: grid; place-items: center; padding: 0; color: var(--text-3); border: 0; background: transparent; cursor: pointer; }
 .summary-refresh { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 8px; }
@@ -1563,12 +1563,12 @@ function loadData() {
 .email-container.has-summary :deep(.email-sender .name) { min-width: 0; flex: 1; display: block; }
 .email-container.has-summary :deep(.email-sender .name > span:first-child) { display: block; color: var(--text); font-size: var(--font-list-sender); line-height: 22px; }
 .email-container.has-summary :deep(.email-sender .name > span:last-child) { display: none; }
-.email-container.has-summary :deep(.phone-time) { display: block !important; flex: none; color: var(--text-3); font-size: var(--font-list-meta); line-height: 22px; }
+.email-container.has-summary :deep(.phone-time) { display: block !important; flex: none; color: var(--text-mail-meta); font-size: var(--font-list-meta); line-height: 22px; }
 .email-container.has-summary :deep(.summary-star) { width: 18px; height: 18px; flex: 0 0 18px; display: grid; place-items: center; padding: 0; color: var(--brand-600); background: transparent; border: 0; border-radius: var(--r-sm); cursor: pointer; }
 .email-container.has-summary :deep(.summary-star:hover) { background: var(--surface-3); }
 .email-container.has-summary :deep(.email-text) { display: block; min-width: 0; }
-.email-container.has-summary :deep(.email-subject) { display: block; margin-top: 2px; padding: 0; color: var(--text); font-size: var(--font-list-subject); line-height: 22px; }
-.email-container.has-summary :deep(.email-content) { display: block; margin-top: 2px; padding: 0; color: var(--text-3); font-size: var(--font-list-snippet); line-height: 19px; }
+.email-container.has-summary :deep(.email-subject) { display: block; margin-top: 2px; padding: 0; color: var(--text); font-size: var(--font-list-subject); font-weight: 550; line-height: 22px; }
+.email-container.has-summary :deep(.email-content) { display: block; margin-top: 3px; padding: 0; color: var(--text-mail-meta); font-size: var(--font-list-snippet); line-height: 20px; }
 .email-container.has-summary :deep(.row-tags) { margin-top: 5px; min-height: 21px; }
 .email-container.has-summary :deep(.mail-badge) { height: 21px; padding: 0 8px; font-size: var(--font-list-meta); }
 .email-container.has-summary :deep(.email-right) { display: none; }
