@@ -20,7 +20,7 @@ const resendService = {
 
 		if (body.type === 'email.bounced') {
 			params.status = emailConst.status.BOUNCED
-			params.message = JSON.stringify({message: body.data.bounce?.reason || 'Resend reported a bounced message'})
+			params.message = JSON.stringify({message: body.data.bounce?.message || body.data.bounce?.reason || 'Resend reported a bounced message'})
 		}
 
 		if (body.type === 'email.delivery_delayed') {
