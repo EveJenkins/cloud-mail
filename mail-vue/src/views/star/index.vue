@@ -19,7 +19,7 @@
                empty-icon="solar:star-fall-minimalistic-2-linear"
                :selected-id="selectedEmailId"
       >
-        <template #empty-actions>
+        <template v-if="!isDesktop" #empty-actions>
           <button class="primary" type="button" @click="router.push({name: 'email'})"><Icon icon="hugeicons:mailbox-01" width="15" />{{ settingStore.lang === 'zh' ? '返回收件箱' : 'Go to inbox' }}</button>
         </template>
       </emailScroll>
