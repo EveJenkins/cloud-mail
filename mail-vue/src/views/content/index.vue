@@ -1032,35 +1032,32 @@ const handleBack = () => {
 }
 
 const handleDelete = () => {
-  ElMessageBox.confirm(t('delEmailConfirm'), {
+  ElMessageBox.confirm(t(emailStore.contentData.delType === 'logic' ? 'delEmailConfirm' : 'delOneEmailConfirm'), {
     confirmButtonText: t('confirm'),
     cancelButtonText: t('cancel'),
     type: 'warning'
-  }).then(() => {
+  }).then(async () => {
     if (emailStore.contentData.delType === 'logic') {
-      emailDelete(email.value.emailId).then(() => {
-        ElMessage({
-          message: t('delSuccessMsg'),
-          type: 'success',
-          plain: true,
-        })
-        emailStore.deleteIds = [email.value.emailId]
+      await emailDelete(email.value.emailId)
+      ElMessage({
+        message: t('mailMovedToTrash'),
+        type: 'success',
+        plain: true,
       })
+      emailStore.deleteIds = [email.value.emailId]
     } else  {
-
-      allEmailDelete(email.value.emailId).then(() => {
-        ElMessage({
-          message: t('delSuccessMsg'),
-          type: 'success',
-          plain: true,
-        })
-        emailStore.deleteIds = [email.value.emailId]
+      await allEmailDelete(email.value.emailId)
+      ElMessage({
+        message: t('delSuccessMsg'),
+        type: 'success',
+        plain: true,
       })
+      emailStore.deleteIds = [email.value.emailId]
     }
 
     if (props.embedded) emit('close')
     else router.back()
-  })
+  }).catch(() => {})
 }
 
 async function handleRestore() {

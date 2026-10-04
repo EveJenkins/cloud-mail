@@ -818,7 +818,7 @@ function rightDelete(emailId) {
   }
   props.emailDelete([emailId]).then(() => {
     ElMessage({
-      message: t('delSuccessMsg'),
+      message: t('mailMovedToTrash'),
       type: 'success',
       plain: true
     })
@@ -849,7 +849,7 @@ async function copyCode(code) {
 }
 
 function handleDelete() {
-  ElMessageBox.confirm(t('delEmailsConfirm'), {
+  ElMessageBox.confirm(t(props.type === 'all-email' ? 'delOneEmailConfirm' : 'delEmailsConfirm'), {
     confirmButtonText: t('confirm'),
     cancelButtonText: t('cancel'),
     type: 'warning'
@@ -864,7 +864,7 @@ function handleDelete() {
     const emailIds = getSelectedMailsIds();
     props.emailDelete(emailIds).then(() => {
       ElMessage({
-        message: t('delSuccessMsg'),
+        message: t(props.type === 'all-email' ? 'delSuccessMsg' : 'mailMovedToTrash'),
         type: 'success',
         plain: true
       })
