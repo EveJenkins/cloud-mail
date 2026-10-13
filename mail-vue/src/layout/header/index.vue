@@ -66,43 +66,20 @@
           <Icon class="setting-icon" icon="mingcute:down-small-fill" width="24" height="24"/>
         </div>
         <template #dropdown>
-          <div class="user-details">
-            <div class="details-avatar">
-              {{ formatName(userStore.user.email) }}
+          <div class="profile-menu">
+            <div class="profile-menu-identity">
+              <div class="profile-menu-avatar">{{ formatName(userStore.user.email) }}</div>
+              <div class="profile-menu-name"><strong :title="userDisplayName">{{ userDisplayName }}</strong><span class="profile-menu-role"><Icon icon="solar:user-check-linear" width="12"/>{{ roleName }}</span></div>
             </div>
-            <div class="user-name">
-              {{ userStore.user.name }}
+            <button class="profile-menu-email" type="button" :title="settingStore.lang === 'zh' ? '点击复制邮箱' : 'Copy email address'" @click="copyEmail(userStore.user.email)"><span>{{ userStore.user.email }}</span><Icon icon="solar:copy-linear" width="14"/></button>
+            <div class="profile-menu-section">{{ settingStore.lang === 'zh' ? '账户配额' : 'ACCOUNT LIMITS' }}</div>
+            <div class="profile-menu-limits">
+              <div class="profile-menu-limit"><span class="profile-menu-limit-icon"><Icon icon="solar:plain-linear" width="19"/></span><div><span>{{ $t('sendCount') }}</span><strong><template v-if="sendCount">{{ sendCount }} <small>{{ sendType }}</small></template><template v-else>{{ sendType }}</template></strong></div></div>
+              <div class="profile-menu-limit"><span class="profile-menu-limit-icon"><Icon icon="solar:letter-linear" width="19"/></span><div><span>{{ $t('accountCount') }}</span><strong v-if="settingStore.settings.manyEmail || settingStore.settings.addEmail">{{ $t('disabled') }}</strong><strong v-else-if="accountCount && hasPerm('account:add')">{{ $t('totalUserAccount', {msg: accountCount}) }}</strong><strong v-else-if="!accountCount && hasPerm('account:add')">{{ $t('unlimited') }}</strong><strong v-else>{{ $t('unauthorized') }}</strong></div></div>
             </div>
-            <div class="detail-email" @click="copyEmail(userStore.user.email)">
-              {{ userStore.user.email }}
-            </div>
-            <div class="detail-user-type">
-              <el-tag>{{ userStore.user.role.name }}</el-tag>
-            </div>
-            <div class="action-info">
-              <div>
-                <span style="margin-right: 10px">{{ $t('sendCount') }}</span>
-                <span style="margin-right: 10px">{{ $t('accountCount') }}</span>
-              </div>
-              <div>
-                <div>
-                  <span v-if="sendCount" style="margin-right: 5px">{{ sendCount }}</span>
-                  <el-tag v-if="!hasPerm('email:send')">{{ sendType }}</el-tag>
-                  <el-tag v-else>{{ sendType }}</el-tag>
-                </div>
-                <div>
-                  <el-tag v-if="settingStore.settings.manyEmail || settingStore.settings.addEmail">
-                    {{ $t('disabled') }}
-                  </el-tag>
-                  <span v-else-if="accountCount && hasPerm('account:add')"
-                        style="margin-right: 5px">{{ $t('totalUserAccount', {msg: accountCount}) }}</span>
-                  <el-tag v-else-if="!accountCount && hasPerm('account:add')">{{ $t('unlimited') }}</el-tag>
-                  <el-tag v-else-if="!hasPerm('account:add')">{{ $t('unauthorized') }}</el-tag>
-                </div>
-              </div>
-            </div>
-            <div class="logout">
-              <el-button type="primary" :loading="logoutLoading" @click="clickLogout">{{ $t('logOut') }}</el-button>
+            <div class="profile-menu-actions">
+              <button class="profile-menu-settings" type="button" @click="openPersonalSettings"><Icon icon="solar:settings-linear" width="18"/><span>{{ settingStore.lang === 'zh' ? '个人设置' : 'Personal settings' }}</span><Icon icon="solar:alt-arrow-right-linear" width="15"/></button>
+              <el-button class="profile-menu-logout" :loading="logoutLoading" @click="clickLogout"><Icon v-if="!logoutLoading" icon="solar:logout-2-linear" width="17"/>{{ settingStore.lang === 'zh' ? '退出登录' : 'Sign out' }}</el-button>
             </div>
           </div>
         </template>
@@ -400,7 +377,13 @@ function changeAside() {
   uiStore.asideShow = !uiStore.asideShow
 }
 
+function openPersonalSettings() {
+  userinfoRef.value.handleClose();
+  router.push({name: 'setting'});
+}
+
 function clickLogout() {
+  if (logoutLoading.value) return;
   logoutLoading.value = true
   logout().then(() => {
     localStorage.removeItem("token")
@@ -418,6 +401,40 @@ function formatName(email) {
 <style>
 .detail-dropdown {
   color: var(--el-text-color-primary) !important;
+  border-radius: 18px !important;
+  border: 1px solid var(--el-border-color-lighter) !important;
+  box-shadow: 0 16px 48px rgba(15,23,42,.14) !important;
+  overflow: hidden;
+}
+.detail-dropdown .el-popper__arrow { display: none; }
+.detail-dropdown .profile-menu { width: min(304px, calc(100vw - 32px)); padding: 22px 20px 16px; box-sizing: border-box; color: var(--el-text-color-primary); }
+.detail-dropdown .profile-menu-identity { display: flex; align-items: center; gap: 12px; }
+.detail-dropdown .profile-menu-avatar { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 15px; font-size: 21px; font-weight: 600; color: var(--el-color-primary); background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); }
+.detail-dropdown .profile-menu-name { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.detail-dropdown .profile-menu-name > strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 650; }
+.detail-dropdown .profile-menu-role { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; line-height: 18px; color: var(--el-color-primary); }
+.detail-dropdown .profile-menu-email { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin: 15px 0 0; padding: 9px 10px; border: 1px solid var(--el-border-color-lighter); border-radius: 8px; background: var(--el-fill-color-light); font: inherit; font-size: 11px; color: var(--el-text-color-secondary); cursor: pointer; text-align: left; }
+.detail-dropdown .profile-menu-email span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail-dropdown .profile-menu-email svg { flex-shrink: 0; }
+.detail-dropdown .profile-menu-email:hover { color: var(--el-color-primary); border-color: var(--el-color-primary-light-7); }
+.detail-dropdown .profile-menu-section { font-size: 10px; color: var(--el-text-color-placeholder); letter-spacing: 1px; margin: 22px 0 12px; }
+.detail-dropdown .profile-menu-limits { display: grid; gap: 14px; }
+.detail-dropdown .profile-menu-limit { display: flex; align-items: center; gap: 10px; }
+.detail-dropdown .profile-menu-limit-icon { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: var(--el-fill-color-light); color: var(--el-text-color-secondary); }
+.detail-dropdown .profile-menu-limit > div { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.detail-dropdown .profile-menu-limit > div > span { font-size: 11px; color: var(--el-text-color-secondary); }
+.detail-dropdown .profile-menu-limit strong { font-size: 12px; font-weight: 600; text-align: right; }
+.detail-dropdown .profile-menu-limit small { display: block; font-size: 9px; font-weight: 400; color: var(--el-text-color-secondary); margin-top: 3px; }
+.detail-dropdown .profile-menu-actions { margin-top: 19px; padding-top: 12px; border-top: 1px solid var(--el-border-color-lighter); }
+.detail-dropdown .profile-menu-settings { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: transparent; color: var(--el-text-color-regular); font: inherit; font-size: 12px; text-align: left; padding: 10px 8px; border-radius: 8px; cursor: pointer; }
+.detail-dropdown .profile-menu-settings svg:last-child { margin-left: auto; color: var(--el-text-color-placeholder); }
+.detail-dropdown .profile-menu-settings:hover { background: var(--el-fill-color-light); color: var(--el-color-primary); }
+.detail-dropdown .profile-menu-logout.el-button { display: flex; width: 100%; height: 38px; margin-top: 8px; border-radius: 9px; border-color: var(--el-border-color-lighter); background: var(--el-fill-color-blank); color: var(--el-text-color-secondary); font-size: 12px; }
+.detail-dropdown .profile-menu-logout.el-button:hover { color: var(--el-color-danger); border-color: var(--el-color-danger-light-7); background: var(--el-color-danger-light-9); }
+.detail-dropdown .profile-menu-logout span { gap: 8px; }
+.detail-dropdown button:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
+.detail-dropdown .el-scrollbar__view { padding: 0 !important; }
+.detail-dropdown {
 }
 </style>
 <style lang="scss" scoped>
@@ -425,98 +442,6 @@ function formatName(email) {
 :deep(.el-popper.is-pure) {
   border-radius: 6px;
 }
-
-.user-details {
-  width: 250px;
-  font-size: 14px;
-  display: grid;
-  grid-template-columns: 1fr;
-  justify-items: center;
-
-  .user-name {
-    font-weight: bold;
-    margin-top: 10px;
-    padding-left: 20px;
-    padding-right: 20px;
-    width: 250px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    text-align: center;
-  }
-
-  .detail-user-type {
-    margin-top: 10px;
-  }
-
-  .action-info {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0 14px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    margin-top: 10px;
-
-    > div:first-child {
-      display: grid;
-      align-items: center;
-      gap: 10px;
-    }
-
-    > div:last-child {
-      display: grid;
-      gap: 10px;
-      text-align: center;
-
-      > div {
-        display: flex;
-        align-items: center;
-      }
-    }
-  }
-
-  .detail-email {
-    padding-left: 20px;
-    padding-right: 20px;
-    width: 250px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    text-align: center;
-    color: var(--regular-text-color);
-    cursor: pointer;
-  }
-
-  .logout {
-    margin-top: 20px;
-    width: 100%;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-bottom: 10px;
-
-    .el-button {
-      border-radius: 6px;
-      height: 28px;
-      width: 100%;
-    }
-  }
-
-  .details-avatar {
-    margin-top: 20px;
-    height: 40px;
-    width: 40px;
-    background: var(--el-bg-color);
-    color: var(--el-text-color-primary);
-    border: 1px solid var(--dark-border);
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--r-md);
-  }
-}
-
-
 
 /* ── 顶部通栏 ───────────────────────────── */
 .header {
