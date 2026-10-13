@@ -48,3 +48,35 @@ test('five failed user attempts block further verification', async () => {
  await assert.rejects(service.verify(c,2,'bad',true),/Too many/);
  c.db.close();
 });
+
+test('upgraded databases initialize on first read and preserve existing bindings', async () => {
+ const c = context();
+ assert.equal(await service.row(c,1),null);
+ const setup = await service.setup(c,{userId:1,email:'test@example.com'});
+ await service.verify(c,1,await totp(setup.secret,Math.floor(Date.now()/30000)),true);
+ const before = await service.row(c,1);
+ await service.init(c);
+ assert.deepEqual(await service.row(c,1),before);
+ c.db.close();
+});
+test('challenge, verify and consume handle uninitialized databases', async () => {
+ const c = context();
+ assert.equal((await service.challenge(c,1)).requiresTotp,true);
+ c.db.close();
+ const verifyContext = context();
+ await assert.rejects(service.verify(verifyContext,1,'123456'),/unavailable/);
+ verifyContext.db.close();
+ const consumeContext = context();
+ await assert.rejects(service.consume(consumeContext,'missing','123456'),/expired/);
+ consumeContext.db.close();
+});
+test('concurrent reads initialize once and failed initialization retries', async () => {
+ const c = context();
+ const batch = c.env.db.batch;
+ let calls = 0;
+ c.env.db.batch = async statements => { calls++; if (calls === 1) throw new Error('D1 unavailable'); return batch(statements); };
+ await assert.rejects(service.row(c,1),/D1 unavailable/);
+ assert.deepEqual(await Promise.all([service.row(c,1),service.row(c,2),service.row(c,3)]),[null,null,null]);
+ assert.equal(calls,2);
+ c.db.close();
+});

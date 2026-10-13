@@ -1,15 +1,30 @@
 import BizError from '../error/biz-error';
 import { encodeSecret, verifyTotp, seal } from '../utils/totp.mjs';
 
+// Cache only successful initialization per D1 binding. Failed attempts can retry.
+const schemaReady = new WeakMap();
 const service = {
+ async ensureSchema(c) {
+  const db = c.env.db;
+  let ready = schemaReady.get(db);
+  if (!ready) {
+   ready = this.init(c).catch(error => {
+    schemaReady.delete(db);
+    throw error;
+   });
+   schemaReady.set(db, ready);
+  }
+  await ready;
+ },
  async init(c) {
   await c.env.db.batch([
    c.env.db.prepare(`CREATE TABLE IF NOT EXISTS user_totp (user_id INTEGER PRIMARY KEY, secret TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0, expires INTEGER NOT NULL, last_step INTEGER NOT NULL DEFAULT -1)`),
    c.env.db.prepare(`CREATE TABLE IF NOT EXISTS totp_challenge (id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0)`)
   ]);
  },
- async row(c, id) { return c.env.db.prepare('SELECT * FROM user_totp WHERE user_id = ?').bind(id).first(); },
+ async row(c, id) { await this.ensureSchema(c); return c.env.db.prepare('SELECT * FROM user_totp WHERE user_id = ?').bind(id).first(); },
  async challenge(c, id) {
+  await this.ensureSchema(c);
   const challenge = crypto.randomUUID();
   await c.env.db.prepare('DELETE FROM totp_challenge WHERE expires < ?').bind(Date.now()).run();
   await c.env.db.prepare('INSERT INTO totp_challenge (id,user_id,expires) VALUES (?,?,?)').bind(challenge,id,Date.now()+300000).run();
@@ -23,6 +38,7 @@ const service = {
   return {secret, uri:`otpauth://totp/${encodeURIComponent('Cloud Mail:' + user.email)}?secret=${secret}&issuer=Cloud%20Mail&algorithm=SHA1&digits=6&period=30`};
  },
  async verify(c, id, code, enabling = false) {
+  await this.ensureSchema(c);
   // Reserve an attempt in D1 so concurrent requests cannot bypass the limit.
   const limitId = 'user:' + id;
   await c.env.db.prepare('DELETE FROM totp_challenge WHERE id=? AND expires < ?').bind(limitId,Date.now()).run();
@@ -38,6 +54,7 @@ const service = {
   await c.env.db.prepare('DELETE FROM totp_challenge WHERE id=?').bind(limitId).run();
  },
  async consume(c, challenge, code) {
+  await this.ensureSchema(c);
   if (typeof challenge !== 'string') throw new BizError('Invalid login challenge');
   const row = await c.env.db.prepare(`UPDATE totp_challenge SET attempts=attempts+1 WHERE id=? AND expires>? AND attempts<5 AND id NOT LIKE 'user:%' RETURNING *`).bind(challenge,Date.now()).first();
   if (!row) throw new BizError('Login challenge expired. Sign in again.');
