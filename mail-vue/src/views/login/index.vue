@@ -4,7 +4,7 @@
     <div class="totp-panel">
       <div class="totp-emblem"><Icon icon="solar:shield-keyhole-linear" width="32"/></div>
       <h2>{{ settingStore.lang === 'zh' ? '两步验证' : 'Two-step verification' }}</h2>
-      <p class="totp-description">{{ settingStore.lang === 'zh' ? '打开 Google Authenticator，输入当前的动态验证码，完成安全登录。' : 'Open Google Authenticator and enter your current code to securely sign in.' }}</p>
+      <p class="totp-description">{{ settingStore.lang === 'zh' ? '打开身份验证器，输入当前的动态验证码，完成安全登录。' : 'Open your authenticator and enter your current code to securely sign in.' }}</p>
       <form @submit.prevent="submitTotp">
         <label class="totp-label" for="login-totp-code">{{ settingStore.lang === 'zh' ? '6 位动态验证码' : '6-digit verification code' }}</label>
         <el-input id="login-totp-code" ref="totpInput" v-model="totpCode" class="totp-code-input" :class="{ 'has-error': totpError }" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" :disabled="totpLoading" :aria-invalid="!!totpError" aria-describedby="totp-code-hint" @input="sanitizeTotpCode"/>

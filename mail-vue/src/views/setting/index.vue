@@ -1,13 +1,29 @@
 <template>
-  <el-dialog v-model="totpDialog" title="Google Authenticator" width="380px" @closed="totpSetup = null; totpQr = ''; totpCode = ''">
-    <template v-if="totpSetup">
-      <p>{{ settingStore.lang === 'zh' ? '在 Google Authenticator 扫描二维码，或手动输入以下密钥。请妥善备份密钥，以便手机丢失后恢复。' : 'Scan with Google Authenticator or enter this key manually. Keep a secure backup to recover if your phone is lost.' }}</p>
-      <img :src="totpQr" alt="Google Authenticator QR code" width="220" height="220"/>
-      <p style="overflow-wrap:anywhere"><code>{{ totpSetup.secret }}</code></p>
+  <el-dialog v-model="totpDialog" class="authenticator-dialog" align-center :close-on-click-modal="false"
+             :close-on-press-escape="!totpBusy" :show-close="!totpBusy" @opened="totpInput?.focus()"
+             @closed="totpSetup = null; totpQr = ''; totpCode = ''; totpError = ''; totpCopied = false">
+    <template #header>
+      <div class="authenticator-heading">
+        <span class="authenticator-icon"><Icon icon="solar:shield-keyhole-linear" width="25"/></span>
+        <div><span class="authenticator-eyebrow">{{ settingStore.lang === 'zh' ? '身份验证器' : 'Authenticator' }}</span><h2>{{ totpEnabled ? (settingStore.lang === 'zh' ? '关闭两步验证' : 'Disable two-step verification') : (settingStore.lang === 'zh' ? '保护你的账户' : 'Protect your account') }}</h2></div>
+      </div>
     </template>
-    <p>{{ settingStore.lang === 'zh' ? '输入验证器中的6位验证码以确认操作' : 'Enter a 6-digit authenticator code to confirm' }}</p>
-    <el-input v-model="totpCode" maxlength="6" inputmode="numeric" autocomplete="one-time-code" @keyup.enter="confirmTotp"/>
-    <template #footer><el-button type="primary" :loading="totpBusy" @click="confirmTotp">{{ settingStore.lang === 'zh' ? '确认' : 'Confirm' }}</el-button></template>
+    <p class="authenticator-intro">{{ totpEnabled ? (settingStore.lang === 'zh' ? '输入当前动态验证码，确认解除验证器绑定。' : 'Enter your current code to unlink your authenticator.') : (settingStore.lang === 'zh' ? '只需两个步骤，为每次登录增加一层安全保护。' : 'Add an extra layer of security to every sign-in in two simple steps.') }}</p>
+    <div v-if="totpSetup" class="authenticator-enrollment">
+      <div class="authenticator-step"><span>1</span><div><strong>{{ settingStore.lang === 'zh' ? '添加到验证器' : 'Add to your authenticator' }}</strong><p>{{ settingStore.lang === 'zh' ? '打开应用，点击「＋」并扫描下方二维码' : 'Open the app, tap + and scan this QR code' }}</p></div></div>
+      <div class="authenticator-qr"><img :src="totpQr" :alt="settingStore.lang === 'zh' ? '身份验证器二维码' : 'Authenticator QR code'" width="184" height="184"/><span><Icon icon="solar:scan-square-linear" width="14"/>{{ settingStore.lang === 'zh' ? '使用身份验证器扫描' : 'Scan with your authenticator' }}</span></div>
+      <div class="authenticator-secret">
+        <div class="authenticator-secret-label"><span>{{ settingStore.lang === 'zh' ? '无法扫码？手动输入密钥' : 'Unable to scan? Enter this setup key' }}</span><button type="button" @click="copyTotpSecret"><Icon :icon="totpCopied ? 'solar:check-circle-linear' : 'solar:copy-linear'" width="15"/>{{ totpCopied ? (settingStore.lang === 'zh' ? '已复制' : 'Copied') : (settingStore.lang === 'zh' ? '复制' : 'Copy') }}</button></div>
+        <code>{{ totpSetup.secret.match(/.{1,4}/g)?.join(' ') }}</code>
+      </div>
+      <div class="authenticator-backup"><Icon icon="solar:info-circle-linear" width="16"/><span>{{ settingStore.lang === 'zh' ? '请安全备份密钥。手机丢失时，可用它恢复验证器。' : 'Keep this key somewhere safe to restore access if your phone is lost.' }}</span></div>
+    </div>
+    <form @submit.prevent="confirmTotp">
+      <div class="authenticator-step"><span>{{ totpSetup ? '2' : '1' }}</span><div><label for="setup-totp-code">{{ settingStore.lang === 'zh' ? '输入动态验证码' : 'Enter your verification code' }}</label><p>{{ settingStore.lang === 'zh' ? '输入应用中显示的 6 位数字' : 'Enter the 6 digits shown in the app' }}</p></div></div>
+      <el-input id="setup-totp-code" ref="totpInput" class="authenticator-code" :class="{ 'has-error': totpError }" v-model="totpCode" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" :disabled="totpBusy" :aria-invalid="!!totpError" aria-describedby="setup-totp-hint" @input="sanitizeTotpCode"/>
+      <p id="setup-totp-hint" class="authenticator-code-hint" :class="{ 'has-error': totpError }" aria-live="polite">{{ totpError || (settingStore.lang === 'zh' ? '验证码每 30 秒更新一次' : 'A new code is generated every 30 seconds') }}</p>
+      <div class="authenticator-actions"><el-button :disabled="totpBusy" @click="totpDialog = false">{{ settingStore.lang === 'zh' ? '取消' : 'Cancel' }}</el-button><el-button :type="totpEnabled ? 'danger' : 'primary'" native-type="submit" :loading="totpBusy" :disabled="totpCode.length !== 6"><Icon v-if="!totpBusy" :icon="totpEnabled ? 'solar:shield-cross-linear' : 'solar:shield-check-linear'" width="17"/>{{ totpEnabled ? (settingStore.lang === 'zh' ? '确认解绑' : 'Confirm disable') : (settingStore.lang === 'zh' ? '验证并启用' : 'Verify and enable') }}</el-button></div>
+    </form>
   </el-dialog>
   <div class="settings-page">
     <header class="settings-heading">
@@ -44,7 +60,7 @@
           <button class="outline-button" type="button" @click="pwdShow = true"><Icon icon="solar:key-linear" width="17"/>{{$t('changePwdBtn')}}</button>
         </div>
         <div class="setting-row">
-          <div class="row-copy"><strong>Google Authenticator</strong><span>{{ totpEnabled ? (settingStore.lang === 'zh' ? '已启用两步验证' : 'Two-step verification enabled') : (settingStore.lang === 'zh' ? '未启用两步验证' : 'Two-step verification disabled') }}</span></div>
+          <div class="row-copy"><strong>{{ settingStore.lang === 'zh' ? '身份验证器' : 'Authenticator' }}</strong><span>{{ totpEnabled ? (settingStore.lang === 'zh' ? '已启用两步验证' : 'Two-step verification enabled') : (settingStore.lang === 'zh' ? '未启用两步验证' : 'Two-step verification disabled') }}</span></div>
           <el-button :loading="totpBusy" @click="openTotp">{{ totpEnabled ? (settingStore.lang === 'zh' ? '解绑' : 'Disable') : (settingStore.lang === 'zh' ? '绑定' : 'Enable') }}</el-button>
         </div>
         <div class="security-note"><Icon icon="solar:lock-password-linear" width="18"/><span>{{ settingStore.lang === 'zh' ? '密码更新后，其他设备上的登录会话可能需要重新验证。' : 'Other devices may need to sign in again after a password change.' }}</span></div>
@@ -96,29 +112,50 @@ const totpDialog = ref(false);
 const totpCode = ref('');
 const totpBusy = ref(false);
 const totpQr = ref('');
+const totpInput = ref(null);
+const totpCopied = ref(false);
+const totpError = ref('');
+function sanitizeTotpCode(value) {
+ totpCode.value = value.replace(/\D/g, '').slice(0, 6);
+ totpError.value = '';
+}
+async function copyTotpSecret() {
+ try {
+  await navigator.clipboard.writeText(totpSetup.value.secret);
+  totpCopied.value = true;
+ } catch {
+  ElMessage.warning(settingStore.lang === 'zh' ? '无法访问剪贴板，请选择密钥手动复制' : 'Clipboard unavailable. Select the key and copy it manually.');
+ }
+}
 http.get('/my/totp').then(data => { totpEnabled.value = data.enabled; });
 async function openTotp() {
  if (totpBusy.value) return;
  totpBusy.value = true;
  try {
   totpCode.value = '';
+  totpError.value = '';
+  totpCopied.value = false;
   totpSetup.value = null;
   if (!totpEnabled.value) {
    totpSetup.value = await http.post('/my/totp/setup');
    const QRCode = await import('qrcode');
-   totpQr.value = await QRCode.toDataURL(totpSetup.value.uri);
+   totpQr.value = await QRCode.toDataURL(totpSetup.value.uri, {width: 220, margin: 4, errorCorrectionLevel: 'M'});
   }
   totpDialog.value = true;
  } finally { totpBusy.value = false; }
 }
 async function confirmTotp() {
- if (totpBusy.value) return;
+ if (totpBusy.value || !/^\d{6}$/.test(totpCode.value)) return;
  totpBusy.value = true;
  try {
   await http.post(totpEnabled.value ? '/my/totp/disable' : '/my/totp/enable', {code:totpCode.value});
   totpEnabled.value = !totpEnabled.value;
   totpDialog.value = false;
   totpSetup.value = null;
+  ElMessage.success(settingStore.lang === 'zh' ? (totpEnabled.value ? '两步验证已启用' : '两步验证已关闭') : (totpEnabled.value ? 'Two-step verification enabled' : 'Two-step verification disabled'));
+ } catch (error) {
+  totpError.value = error.message || (settingStore.lang === 'zh' ? '验证失败，请检查验证码后重试' : 'Verification failed. Check your code and try again.');
+  totpCode.value = '';
  } finally { totpBusy.value = false; }
 }
 
@@ -352,4 +389,43 @@ button { font: inherit; }
   .value-button, .static-value, .name-editor { width: 100%; max-width: 100%; }
   .language-options { grid-template-columns: minmax(0, 1fr); }
 }
+</style>
+
+<style>
+.authenticator-dialog.el-dialog { width: min(460px, calc(100vw - 32px)); padding: 28px; border-radius: 22px; border: 1px solid var(--el-border-color-lighter); box-shadow: 0 24px 80px rgba(15,23,42,.2); }
+.authenticator-dialog .el-dialog__header { padding: 0 22px 0 0; }
+.authenticator-dialog .el-dialog__headerbtn { top: 13px; right: 12px; }
+.authenticator-dialog .el-dialog__body { padding: 0; }
+.authenticator-dialog .authenticator-heading { display: flex; align-items: center; gap: 13px; }
+.authenticator-dialog .authenticator-icon { display: grid; place-items: center; width: 50px; height: 50px; flex-shrink: 0; border-radius: 16px; color: var(--el-color-primary); background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); }
+.authenticator-dialog .authenticator-eyebrow { font-size: 11px; color: var(--el-text-color-secondary); letter-spacing: .3px; }
+.authenticator-dialog h2 { margin: 5px 0 0; font-size: 21px; line-height: 1.35; font-weight: 650; color: var(--el-text-color-primary); letter-spacing: -.4px; }
+.authenticator-dialog .authenticator-intro { margin: 17px 0 24px; font-size: 12px; line-height: 1.7; color: var(--el-text-color-secondary); }
+.authenticator-dialog .authenticator-step { display: flex; gap: 11px; align-items: flex-start; }
+.authenticator-dialog .authenticator-step > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: var(--el-color-primary-light-9); color: var(--el-color-primary); font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.authenticator-dialog .authenticator-step strong, .authenticator-dialog .authenticator-step label { font-size: 13px; font-weight: 600; color: var(--el-text-color-primary); line-height: 24px; }
+.authenticator-dialog .authenticator-step p { margin: 3px 0 0; font-size: 11px; line-height: 1.6; color: var(--el-text-color-secondary); }
+.authenticator-dialog .authenticator-qr { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 0 18px; }
+.authenticator-dialog .authenticator-qr img { display: block; width: 184px; height: 184px; padding: 4px; background: white; border-radius: 12px; border: 1px solid #e8edf3; box-sizing: content-box; }
+.authenticator-dialog .authenticator-qr > span { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--el-text-color-secondary); }
+.authenticator-dialog .authenticator-secret { padding: 12px 14px; border: 1px solid var(--el-border-color-lighter); border-radius: 10px; background: var(--el-fill-color-light); }
+.authenticator-dialog .authenticator-secret-label { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 10px; color: var(--el-text-color-secondary); }
+.authenticator-dialog .authenticator-secret button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; padding: 2px; color: var(--el-color-primary); font: inherit; cursor: pointer; flex-shrink: 0; }
+.authenticator-dialog .authenticator-secret code { display: block; margin-top: 9px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; line-height: 1.8; letter-spacing: .6px; color: var(--el-text-color-primary); overflow-wrap: anywhere; user-select: all; }
+.authenticator-dialog .authenticator-backup { display: flex; gap: 7px; align-items: flex-start; margin: 12px 0 23px; font-size: 10px; line-height: 1.7; color: var(--el-text-color-secondary); }
+.authenticator-dialog .authenticator-backup svg { flex-shrink: 0; margin-top: 1px; color: var(--el-color-primary); }
+.authenticator-dialog .authenticator-code { margin-top: 14px; }
+.authenticator-dialog .authenticator-code .el-input__wrapper { height: 54px; border-radius: 11px; background: var(--el-fill-color-blank); }
+.authenticator-dialog .authenticator-code .el-input__inner { text-align: center; font-family: ui-monospace, Consolas, monospace; font-size: 26px; font-weight: 600; letter-spacing: 14px; padding-left: 14px; }
+.authenticator-dialog .authenticator-code .el-input__inner::placeholder { color: var(--el-text-color-placeholder); opacity: .5; }
+.authenticator-dialog .authenticator-code.has-error .el-input__wrapper { box-shadow: 0 0 0 1px var(--el-color-danger) inset; }
+.authenticator-dialog .authenticator-code-hint { margin: 9px 0 21px; font-size: 10px; line-height: 1.6; color: var(--el-text-color-secondary); }
+.authenticator-dialog .authenticator-code-hint.has-error { color: var(--el-color-danger); }
+.authenticator-dialog .authenticator-actions { display: flex; gap: 10px; padding-top: 18px; border-top: 1px solid var(--el-border-color-lighter); }
+.authenticator-dialog .authenticator-actions .el-button { height: 42px; border-radius: 10px; margin: 0; }
+.authenticator-dialog .authenticator-actions .el-button:first-child { flex: 1; }
+.authenticator-dialog .authenticator-actions .el-button:last-child { flex: 2; }
+.authenticator-dialog .authenticator-actions .el-button span { gap: 7px; }
+.authenticator-dialog button:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 3px; }
+@media (max-width: 480px) { .authenticator-dialog.el-dialog { padding: 22px; } .authenticator-dialog h2 { font-size: 19px; } }
 </style>
