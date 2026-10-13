@@ -11,3 +11,4 @@ export function logout() {
 export function register(form) {
     return http.post('/register', form)
 }
+export function verifyLoginTotp(challenge, code) { return http.post('/login/totp', {challenge, code}) }

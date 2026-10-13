@@ -1,4 +1,20 @@
 <template>
+  <el-dialog :model-value="!!totpChallenge" class="totp-login-dialog" :close-on-click-modal="false" :close-on-press-escape="!totpLoading" :show-close="!totpLoading" align-center @opened="totpInput?.focus()" @close="totpChallenge = ''">
+    <template #header><span class="totp-eyebrow"><Icon icon="solar:shield-check-linear" width="15"/>{{ settingStore.lang === 'zh' ? '账户安全验证' : 'ACCOUNT VERIFICATION' }}</span></template>
+    <div class="totp-panel">
+      <div class="totp-emblem"><Icon icon="solar:shield-keyhole-linear" width="32"/></div>
+      <h2>{{ settingStore.lang === 'zh' ? '两步验证' : 'Two-step verification' }}</h2>
+      <p class="totp-description">{{ settingStore.lang === 'zh' ? '打开 Google Authenticator，输入当前的动态验证码，完成安全登录。' : 'Open Google Authenticator and enter your current code to securely sign in.' }}</p>
+      <form @submit.prevent="submitTotp">
+        <label class="totp-label" for="login-totp-code">{{ settingStore.lang === 'zh' ? '6 位动态验证码' : '6-digit verification code' }}</label>
+        <el-input id="login-totp-code" ref="totpInput" v-model="totpCode" class="totp-code-input" :class="{ 'has-error': totpError }" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" :disabled="totpLoading" :aria-invalid="!!totpError" aria-describedby="totp-code-hint" @input="sanitizeTotpCode"/>
+        <div id="totp-code-hint" class="totp-hint" :class="{ 'has-error': totpError }" aria-live="polite"><Icon :icon="totpError ? 'solar:info-circle-linear' : 'solar:clock-circle-linear'" width="15"/><span>{{ totpError || (settingStore.lang === 'zh' ? '验证码每 30 秒更新，请使用当前显示的验证码' : 'Codes refresh every 30 seconds. Use the current code.') }}</span></div>
+        <el-button class="totp-submit" type="primary" native-type="submit" :loading="totpLoading" :disabled="totpCode.length !== 6">{{ settingStore.lang === 'zh' ? '验证并登录' : 'Verify and sign in' }}<Icon v-if="!totpLoading" icon="solar:arrow-right-linear" width="18"/></el-button>
+      </form>
+      <button class="totp-back" type="button" :disabled="totpLoading" @click="totpChallenge = ''"><Icon icon="solar:arrow-left-linear" width="16"/>{{ settingStore.lang === 'zh' ? '返回登录' : 'Back to sign in' }}</button>
+      <div class="totp-footer"><Icon icon="solar:lock-keyhole-linear" width="14"/><span>{{ settingStore.lang === 'zh' ? '两步验证为你的账户多加一层保护' : 'An extra layer of protection for your account' }}</span></div>
+    </div>
+  </el-dialog>
   <div id="login-box" :style=" background ? 'background: var(--el-bg-color)' : ''" v-loading="oauthLoading" :element-loading-text="$t('loggingIn')">
     <div class="login-backdrop" :class="{ 'custom-backdrop': settingStore.settings.background }" :style="background"></div>
     <div class="form-wrapper">
@@ -158,6 +174,7 @@
 import router from "@/router";
 import {useRoute} from "vue-router";
 import {computed, nextTick, reactive, ref} from "vue";
+import {verifyLoginTotp} from "@/request/login.js";
 import {login} from "@/request/login.js";
 import {register} from "@/request/login.js";
 import {websiteConfig} from "@/request/setting.js";
@@ -179,6 +196,28 @@ const userStore = useUserStore();
 const uiStore = useUiStore();
 const settingStore = useSettingStore();
 const route = useRoute();
+const totpChallenge = ref('');
+const totpCode = ref('');
+const totpLoading = ref(false);
+const totpInput = ref(null);
+const totpError = ref('');
+function sanitizeTotpCode(value) {
+ totpCode.value = value.replace(/\D/g, '').slice(0, 6);
+ totpError.value = '';
+}
+async function submitTotp() {
+ if (totpLoading.value || !/^\d{6}$/.test(totpCode.value)) return;
+ totpLoading.value = true;
+ try {
+  totpError.value = '';
+  const data = await verifyLoginTotp(totpChallenge.value, totpCode.value);
+  await saveToken(data.token);
+ } catch (error) {
+  totpError.value = error.message || (settingStore.lang === 'zh' ? '验证未完成，请检查验证码后重试' : 'Verification failed. Check your code and try again.');
+  totpCode.value = '';
+ }
+ finally { totpLoading.value = false; }
+}
 const loginLoading = ref(false)
 const bindLoading = ref(false)
 const oauthLoading = ref(false);
@@ -443,6 +482,14 @@ const submit = () => {
 }
 
 async function saveToken(token) {
+  if (token?.requiresTotp) {
+    totpChallenge.value = token.challenge;
+    totpCode.value = '';
+    totpError.value = '';
+    oauthLoading.value = false;
+    bindLoading.value = false;
+    return;
+  }
   localStorage.setItem('token', token)
   refreshWebsiteConfig()
   const user = await loginUserInfo(accountStore.preferredAccountId);
@@ -622,6 +669,37 @@ function submitRegister() {
 
 
 <style>
+
+.totp-login-dialog.el-dialog { width: min(420px, calc(100vw - 32px)); padding: 24px 28px 0; border: 1px solid var(--el-border-color-lighter); border-radius: 24px; box-shadow: 0 24px 80px rgba(15,23,42,.2); overflow: hidden; }
+.totp-login-dialog .el-dialog__header { padding: 0 24px 0 0; margin: 0; }
+.totp-login-dialog .el-dialog__headerbtn { top: 12px; right: 12px; }
+.totp-login-dialog .el-dialog__body { padding: 0; }
+.totp-login-dialog .totp-eyebrow { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: var(--el-text-color-secondary); }
+.totp-login-dialog .totp-panel { text-align: center; padding-top: 26px; }
+.totp-login-dialog .totp-emblem { display: grid; place-items: center; width: 68px; height: 68px; margin: 0 auto 18px; border-radius: 22px; color: var(--el-color-primary); background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-7); }
+.totp-login-dialog h2 { margin: 0 0 10px; font-size: 25px; font-weight: 650; letter-spacing: -.5px; color: var(--el-text-color-primary); }
+.totp-login-dialog .totp-description { margin: 0 auto 26px; max-width: 310px; color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.8; }
+.totp-login-dialog .totp-label { display: block; margin-bottom: 10px; text-align: left; color: var(--el-text-color-primary); font-weight: 500; font-size: 12px; }
+.totp-login-dialog .totp-code-input .el-input__wrapper { height: 62px; border-radius: 12px; padding: 0 12px; background: var(--el-fill-color-blank); }
+.totp-login-dialog .totp-code-input .el-input__inner { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 28px; font-weight: 600; letter-spacing: 12px; padding-left: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+.totp-login-dialog .totp-code-input .el-input__inner::placeholder { color: var(--el-text-color-placeholder); opacity: .5; }
+.totp-login-dialog .totp-code-input.has-error .el-input__wrapper { box-shadow: 0 0 0 1px var(--el-color-danger) inset; }
+.totp-login-dialog .totp-hint { display: flex; align-items: flex-start; gap: 6px; text-align: left; margin: 12px 0 24px; min-height: 34px; font-size: 11px; line-height: 1.6; color: var(--el-text-color-secondary); }
+.totp-login-dialog .totp-hint svg { flex-shrink: 0; margin-top: 1px; }
+.totp-login-dialog .totp-hint.has-error { color: var(--el-color-danger); }
+.totp-login-dialog .totp-submit { width: 100%; height: 46px; border-radius: 12px; font-size: 14px; font-weight: 600; }
+.totp-login-dialog .totp-submit span { gap: 10px; }
+.totp-login-dialog .totp-back { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; margin: 18px 0 24px; font: inherit; font-size: 12px; color: var(--el-text-color-secondary); cursor: pointer; }
+.totp-login-dialog .totp-back:hover { color: var(--el-color-primary); }
+.totp-login-dialog .totp-back:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 4px; border-radius: 3px; }
+.totp-login-dialog .totp-back:disabled { cursor: wait; opacity: .5; }
+.totp-login-dialog .totp-footer { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 0 -28px; padding: 16px 20px; border-top: 1px solid var(--el-border-color-lighter); background: var(--el-fill-color-light); color: var(--el-text-color-secondary); font-size: 10px; }
+@media (max-width: 400px) {
+ .totp-login-dialog.el-dialog { padding: 20px 20px 0; }
+ .totp-login-dialog .totp-footer { margin: 0 -20px; }
+ .totp-login-dialog .totp-code-input .el-input__inner { letter-spacing: 9px; padding-left: 9px; }
+}
+
 .el-select-dropdown__item {
   padding: 0 15px;
 }

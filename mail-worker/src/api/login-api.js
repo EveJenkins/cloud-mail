@@ -1,3 +1,5 @@
+import totpService from '../service/totp-service';
+import userService from '../service/user-service';
 import app from '../hono/hono';
 import loginService from '../service/login-service';
 import result from '../model/result';
@@ -18,3 +20,12 @@ app.delete('/logout', async (c) => {
 	return c.json(result.ok());
 });
 
+
+app.post('/login/totp', async c => {
+ const {challenge, code} = await c.req.json();
+ const id = await totpService.consume(c,challenge,code);
+ const user = await userService.selectById(c,id);
+ if (!user) throw new Error('User unavailable');
+ const token = await loginService.login(c,{email:user.email},true,id);
+ return c.json(result.ok({token}));
+});

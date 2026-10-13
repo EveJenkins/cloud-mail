@@ -1,4 +1,14 @@
 <template>
+  <el-dialog v-model="totpDialog" title="Google Authenticator" width="380px" @closed="totpSetup = null; totpQr = ''; totpCode = ''">
+    <template v-if="totpSetup">
+      <p>{{ settingStore.lang === 'zh' ? '在 Google Authenticator 扫描二维码，或手动输入以下密钥。请妥善备份密钥，以便手机丢失后恢复。' : 'Scan with Google Authenticator or enter this key manually. Keep a secure backup to recover if your phone is lost.' }}</p>
+      <img :src="totpQr" alt="Google Authenticator QR code" width="220" height="220"/>
+      <p style="overflow-wrap:anywhere"><code>{{ totpSetup.secret }}</code></p>
+    </template>
+    <p>{{ settingStore.lang === 'zh' ? '输入验证器中的6位验证码以确认操作' : 'Enter a 6-digit authenticator code to confirm' }}</p>
+    <el-input v-model="totpCode" maxlength="6" inputmode="numeric" autocomplete="one-time-code" @keyup.enter="confirmTotp"/>
+    <template #footer><el-button type="primary" :loading="totpBusy" @click="confirmTotp">{{ settingStore.lang === 'zh' ? '确认' : 'Confirm' }}</el-button></template>
+  </el-dialog>
   <div class="settings-page">
     <header class="settings-heading">
       <span class="heading-icon"><Icon icon="solar:settings-linear" width="24" height="24"/></span>
@@ -32,6 +42,10 @@
         <div class="setting-row">
           <div class="row-copy"><strong>{{$t('password')}}</strong><span>••••••••</span></div>
           <button class="outline-button" type="button" @click="pwdShow = true"><Icon icon="solar:key-linear" width="17"/>{{$t('changePwdBtn')}}</button>
+        </div>
+        <div class="setting-row">
+          <div class="row-copy"><strong>Google Authenticator</strong><span>{{ totpEnabled ? (settingStore.lang === 'zh' ? '已启用两步验证' : 'Two-step verification enabled') : (settingStore.lang === 'zh' ? '未启用两步验证' : 'Two-step verification disabled') }}</span></div>
+          <el-button :loading="totpBusy" @click="openTotp">{{ totpEnabled ? (settingStore.lang === 'zh' ? '解绑' : 'Disable') : (settingStore.lang === 'zh' ? '绑定' : 'Enable') }}</el-button>
         </div>
         <div class="security-note"><Icon icon="solar:lock-password-linear" width="18"/><span>{{ settingStore.lang === 'zh' ? '密码更新后，其他设备上的登录会话可能需要重新验证。' : 'Other devices may need to sign in again after a password change.' }}</span></div>
       </section>
@@ -75,6 +89,39 @@
   </div>
 </template>
 <script setup>
+import http from '@/axios/index.js';
+const totpEnabled = ref(false);
+const totpSetup = ref(null);
+const totpDialog = ref(false);
+const totpCode = ref('');
+const totpBusy = ref(false);
+const totpQr = ref('');
+http.get('/my/totp').then(data => { totpEnabled.value = data.enabled; });
+async function openTotp() {
+ if (totpBusy.value) return;
+ totpBusy.value = true;
+ try {
+  totpCode.value = '';
+  totpSetup.value = null;
+  if (!totpEnabled.value) {
+   totpSetup.value = await http.post('/my/totp/setup');
+   const QRCode = await import('qrcode');
+   totpQr.value = await QRCode.toDataURL(totpSetup.value.uri);
+  }
+  totpDialog.value = true;
+ } finally { totpBusy.value = false; }
+}
+async function confirmTotp() {
+ if (totpBusy.value) return;
+ totpBusy.value = true;
+ try {
+  await http.post(totpEnabled.value ? '/my/totp/disable' : '/my/totp/enable', {code:totpCode.value});
+  totpEnabled.value = !totpEnabled.value;
+  totpDialog.value = false;
+  totpSetup.value = null;
+ } finally { totpBusy.value = false; }
+}
+
 import {reactive, ref, defineOptions, computed} from 'vue'
 import {Icon} from '@iconify/vue'
 import {resetPassword, userDelete} from "@/request/my.js";

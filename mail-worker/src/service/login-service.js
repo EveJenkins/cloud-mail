@@ -1,3 +1,4 @@
+import totpService from './totp-service';
 import BizError from '../error/biz-error';
 import userService from './user-service';
 import emailUtils from '../utils/email-utils';
@@ -199,7 +200,7 @@ const loginService = {
 		return { type: regKeyRow.roleId, regKeyId: regKeyRow.regKeyId };
 	},
 
-	async login(c, params, noVerifyPwd = false) {
+	async login(c, params, noVerifyPwd = false, verifiedUserId = null) {
 
 		const { email, password } = params;
 
@@ -221,11 +222,15 @@ const loginService = {
 			throw new BizError(t('isBanUser'));
 		}
 
-		if (!await cryptoUtils.verifyPassword(password, userRow.salt, userRow.password) && !noVerifyPwd) {
+		if (!noVerifyPwd && !await cryptoUtils.verifyPassword(password, userRow.salt, userRow.password)) {
 			throw new BizError(t('IncorrectPwd'));
 		}
 
-		const uuid = uuidv4();
+		if ((await totpService.row(c, userRow.userId))?.enabled && verifiedUserId !== userRow.userId) {
+            return totpService.challenge(c, userRow.userId);
+        }
+
+        const uuid = uuidv4();
 		const jwt = await JwtUtils.generateToken(c,{ userId: userRow.userId, token: uuid });
 
 		let authInfo = await c.env.kv.get(KvConst.AUTH_INFO + userRow.userId, { type: 'json' });
