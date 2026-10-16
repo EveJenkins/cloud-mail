@@ -1,11 +1,11 @@
 <template>
-  <div class="content-box" ref="contentBox">
+  <div class="content-box">
     <div ref="container" class="content-html"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
 const props = defineProps({
   html: {
@@ -23,9 +23,7 @@ const props = defineProps({
 })
 
 const container = ref(null)
-const contentBox = ref(null)
 let shadowRoot = null
-let resizeObserver = null
 
 function escapeHtml(value) {
   return String(value || '')
@@ -91,9 +89,9 @@ function updateContent() {
       .shadow-content {
         background: #FFFFFF;
         color: #13181D;
-        width: fit-content;
+        width: 100%;
+        max-width: 100%;
         height: fit-content;
-        min-width: 100%;
         ${bodyStyle ? bodyStyle : ''} /* 注入 body 的 style */
       }
 
@@ -107,9 +105,25 @@ function updateContent() {
         word-break: break-word;
       }
 
-      img:not(table img) {
-        max-width: 100%;
+      /* 邮件原样渲染，但任何元素都不许比阅读区更宽，避免整封邮件被缩放 */
+      img, video {
+        max-width: 100% !important;
         height: auto !important;
+      }
+
+      table {
+        max-width: 100% !important;
+      }
+
+      /* Word/Outlook 的 <hr width="100%"> 边框会撑出 2px，这里按边框盒计算 */
+      hr {
+        max-width: 100% !important;
+        box-sizing: border-box;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
       }
 
     </style>
@@ -119,48 +133,23 @@ function updateContent() {
   `;
 }
 
-function autoScale() {
-  if (!shadowRoot || !contentBox.value) return
-
-  const parent = contentBox.value
-  const shadowContent = shadowRoot.querySelector('.shadow-content')
-
-  if (!shadowContent) return
-
-  const parentWidth = parent.offsetWidth
-  const childWidth = shadowContent.scrollWidth
-
-  if (parentWidth <= 0 || childWidth <= 0) return
-
-  const scale = Math.min(1, parentWidth / childWidth)
-
-  const hostElement = shadowRoot.host
-  hostElement.style.zoom = scale
-}
-
 onMounted(() => {
   shadowRoot = container.value.attachShadow({ mode: 'open' })
   updateContent()
-  autoScale()
-  if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(() => autoScale())
-    resizeObserver.observe(contentBox.value)
-  }
 })
 
 watch(() => [props.html, props.fallbackText], () => {
   updateContent()
-  autoScale()
 })
-
-onUnmounted(() => resizeObserver?.disconnect())
 </script>
 
 <style scoped>
 .content-box {
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  /* 极少数无法收窄的邮件（如单元格内写死 min-width）允许横向滚动，不再整体缩放 */
+  overflow-x: auto;
+  overflow-y: hidden;
   font-family: Inter, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
 }
 

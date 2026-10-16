@@ -1557,6 +1557,8 @@ async function handleRestore() {
 
 /* 读信页两栏：左正文 + 右信息栏 */
 .read-main { min-width: 0; display: grid; gap: 12px; align-content: start; }
+/* 网格项默认 min-width:auto，会被正文里超宽的表格/图片撑开，把整个正文区顶宽 */
+.read-main > * { min-width: 0; }
 .read-side { min-width: 0; display: grid; gap: 12px; align-content: start; position: sticky; top: 0; }
 /* 窗口宽 - 侧栏224 - 列表360 后正文不足 ~560px 时收成单栏 */
 @media (max-width: 1519px) {
